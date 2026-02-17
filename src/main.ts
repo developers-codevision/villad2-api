@@ -18,6 +18,11 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'media'), {
     prefix: '/media/',
   });
+  app.enableCors({
+    origin: true, // En producción, reemplaza con los dominios permitidos
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
   await app.listen(3000);
 }
 bootstrap();
