@@ -81,12 +81,24 @@ export class AuthService {
   private async getTokens(payload: any) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-        expiresIn: this.configService.get<number>('JWT_ACCESS_EXPIRES_IN'),
+        secret: this.configService.get<string>(
+          'JWT_ACCESS_SECRET',
+          'your-default-access-secret',
+        ),
+        expiresIn: this.configService.get<number>(
+          'JWT_ACCESS_EXPIRES_IN',
+          9000000,
+        ),
       }),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        expiresIn: this.configService.get<number>('JWT_REFRESH_EXPIRES_IN'),
+        secret: this.configService.get<string>(
+          'JWT_REFRESH_SECRET',
+          'your-default-refresh-secret',
+        ),
+        expiresIn: this.configService.get<number>(
+          'JWT_REFRESH_EXPIRES_IN',
+          900000000,
+        ),
       }),
     ]);
 
@@ -132,7 +144,10 @@ export class AuthService {
   async verifyRefreshToken(token: string): Promise<any> {
     try {
       return await this.jwtService.verify(token, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        secret: this.configService.get<string>(
+          'JWT_REFRESH_SECRET',
+          'your-default-refresh-secret',
+        ),
       });
     } catch (error) {
       throw new UnauthorizedException('Invalid refresh token');
