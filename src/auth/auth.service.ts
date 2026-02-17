@@ -48,6 +48,7 @@ export class AuthService {
 
   async refreshTokens(userId: number, refreshToken: string) {
     const user = await this.usersService.findOne(userId);
+    console.log(user.refreshToken);
     if (!user || !user.refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
     }

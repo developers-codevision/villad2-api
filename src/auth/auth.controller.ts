@@ -21,6 +21,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { RegisterDto } from './dto/register.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -64,9 +65,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async refreshTokens(@Body() body: { refreshToken: string }) {
-    const { refreshToken } = body;
+  async refreshTokens(@Body() refreshTokenDTO: RefreshTokenDto) {
+    const { refreshToken } = refreshTokenDTO;
+    console.log(refreshToken);
     const payload = await this.authService.verifyRefreshToken(refreshToken);
+    console.log(payload);
     return this.authService.refreshTokens(payload.sub, refreshToken);
   }
 
