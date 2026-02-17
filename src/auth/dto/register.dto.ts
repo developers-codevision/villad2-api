@@ -1,5 +1,5 @@
 // auth/dto/register.dto.ts
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { IsArray, IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -22,4 +22,7 @@ export class RegisterDto {
   @IsString()
   @IsNotEmpty()
   phone: string;
+
+  @IsArray()
+  roles: string[];
 }
