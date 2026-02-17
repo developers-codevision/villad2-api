@@ -1,41 +1,44 @@
-# Etapa 1: Construcción de la aplicación
-FROM node:18-alpine AS builder
+# Etapa 1: Construcción
+FROM node:22-alpine AS builder
 
-# Configuración del directorio de trabajo
 WORKDIR /app
 
-# Instalar pnpm globalmente
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Habilitar Corepack y preparar pnpm (usa la versión de tu package.json si tienes "packageManager" definido)
+RUN corepack enable
 
-# Copiar los archivos necesarios
-COPY pnpm-lock.yaml ./
-COPY package.json ./
+# Si no tienes "packageManager" en package.json, especifica la versión aquí
+# RUN corepack prepare pnpm@9.15.4 --activate
 
-# Instalar dependencias con pnpm
+COPY package.json pnpm-lock.yaml ./
+
+RUN pnpm config set fetch-retries 5
+RUN pnpm config set fetch-retry-mintimeout 100000
+RUN pnpm config set fetch-retry-maxtimeout 600000
+RUN pnpm config set network-timeout 1000000
+
+# Ahora sí el install
 RUN pnpm install --frozen-lockfile
 
-# Copiar el resto del código fuente
 COPY . .
-
-# Construir la aplicación
 RUN pnpm run build
 
-# Etapa 2: Ejecución de la aplicación
-FROM node:18-alpine
+# Etapa 2: Producción
+FROM node:22-alpine
 
-# Configuración del directorio de trabajo
 WORKDIR /app
 
-# Instalar pnpm globalmente
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Habilitar Corepack (no necesitas preparar versión específica si usas el campo packageManager en package.json)
+RUN corepack enable
 
-# Copiar solo lo necesario desde la etapa de construcción
+# Copiar archivos de dependencias
+COPY package.json pnpm-lock.yaml ./
+
+# Instalar SOLO dependencias de producción (imagen más pequeña y sin symlinks rotos)
+RUN pnpm install --prod --frozen-lockfile
+
+# Copiar el build desde la etapa anterior
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
-COPY package.json ./
 
-# Exponer el puerto de la API
 EXPOSE 3000
 
-# Comando para iniciar la aplicación
-CMD ["pnpm", "run", "start:prod"]
+CMD ["node", "dist/main.js"]

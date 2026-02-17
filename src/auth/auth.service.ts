@@ -46,7 +46,7 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(userId: string, refreshToken: string) {
+  async refreshTokens(userId: number, refreshToken: string) {
     const user = await this.usersService.findOne(userId);
     if (!user || !user.refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
@@ -71,7 +71,7 @@ export class AuthService {
     return tokens;
   }
 
-  private async updateRefreshToken(userId: string, refreshToken: string) {
+  private async updateRefreshToken(userId: number, refreshToken: string) {
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await this.usersService.update(userId, {
       refreshToken: hashedRefreshToken,

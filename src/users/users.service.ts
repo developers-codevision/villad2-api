@@ -38,7 +38,7 @@ export class UsersService {
     return this.usersRepository.find();
   }
 
-  async findOne(id: string): Promise<User> {
+  async findOne(id: number): Promise<User> {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -54,20 +54,20 @@ export class UsersService {
     return this.usersRepository.findOne({ where: { email } });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findOne(id);
     Object.assign(user, updateUserDto);
     return this.usersRepository.save(user);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: number): Promise<void> {
     const result = await this.usersRepository.softDelete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
   }
 
-  async setRefreshToken(userId: string, refreshToken: string): Promise<void> {
+  async setRefreshToken(userId: number, refreshToken: string): Promise<void> {
     const user = await this.findOne(userId);
     user.refreshToken = refreshToken;
     await this.usersRepository.save(user);

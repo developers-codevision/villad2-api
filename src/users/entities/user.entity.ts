@@ -12,8 +12,8 @@ import * as bcrypt from 'bcrypt';
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column({ type: 'varchar', length: 50, unique: true, nullable: false })
   username: string;
@@ -36,8 +36,8 @@ export class User {
   @Column({ type: 'boolean', default: false })
   isVerified: boolean;
 
-  @Column({ type: 'varchar', length: 50, array: true, default: ['user'] })
-  roles: string[];
+  @Column({ type: 'json' })
+  roles: string[] = ['user'];
 
   @Column({ type: 'varchar', length: 100, nullable: true })
   resetPasswordToken: string;
