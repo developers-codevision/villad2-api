@@ -47,7 +47,12 @@ export class UsersService {
   }
 
   async findByUsername(username: string): Promise<User | undefined | null> {
-    return this.usersRepository.findOne({ where: { username } });
+    return this.usersRepository
+      .createQueryBuilder('user')
+      .where('user.username = :username', { username })
+      .addSelect('user.password') // Incluir password explícitamente
+      .addSelect('user.refreshToken') // Incluir refreshToken si lo necesitas
+      .getOne();
   }
 
   async findByEmail(email: string): Promise<User | undefined | null> {
