@@ -35,6 +35,7 @@ export class UsersController {
 
   @Get()
   @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get all users (Admin only)' })
   async findAll() {
     return this.usersService.findAll();

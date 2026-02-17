@@ -8,9 +8,20 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('API Documentation')
-    .setDescription('API Documentation')
+    .setTitle('Tu API')
+    .setDescription('Descripción')
     .setVersion('1.0')
+    .addBearerAuth( // <-- Importante: Configurar Bearer Auth
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Ingresa tu token JWT',
+        in: 'header',
+      },
+      'access-token', // <-- Nombre del esquema
+    )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
