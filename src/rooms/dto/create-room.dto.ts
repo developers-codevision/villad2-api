@@ -5,7 +5,6 @@ import {
   IsArray,
   IsEnum,
   IsOptional,
-  IsUrl,
   Min,
   Max,
   MinLength,
@@ -20,6 +19,39 @@ import {
 import { Type } from 'class-transformer';
 import { PartialType } from '@nestjs/mapped-types';
 import { RoomType, RoomStatus } from '../enums/room-enums.enum';
+import { Transform } from 'class-transformer';
+
+function toStringArray(value: unknown): string[] | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (Array.isArray(value))
+    return value
+      .map(String)
+      .map((v) => v.trim())
+      .filter(Boolean);
+  if (typeof value === 'string') {
+    const s = value.trim();
+    if (!s) return undefined;
+    // JSON array en string
+    if (s.startsWith('[') && s.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(s);
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map(String)
+            .map((v) => v.trim())
+            .filter(Boolean);
+        }
+      } catch {}
+    }
+    // CSV
+    return s
+      .split(',')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  }
+  return [String(value).trim()].filter(Boolean);
+}
+
 export class CreateRoomDto {
   @ApiProperty({
     description: 'Room number/identifier',
@@ -97,18 +129,19 @@ export class CreateRoomDto {
   @ApiProperty({
     description: 'List of room amenities',
     example: ['TV', 'Minibar', 'Aire acondicionado'],
-    type: [String],
+    type: 'array',
   })
   @IsArray()
   @ArrayMinSize(1, { message: 'Debe incluir al menos una comodidad' })
   @ArrayMaxSize(20, { message: 'Máximo 20 comodidades permitidas' })
   @IsString({ each: true, message: 'Cada comodidad debe ser texto' })
   @IsNotEmpty({ each: true, message: 'Las comodidades no pueden estar vacías' })
+  @Transform(({ value }) => toStringArray(value))
   roomAmenities: string[];
   @ApiProperty({
     description: 'List of bathroom amenities',
     example: ['Ducha', 'Secador de pelo', 'Artículos de aseo'],
-    type: [String],
+    type: 'array',
     required: false,
   })
   @IsArray()
@@ -116,6 +149,7 @@ export class CreateRoomDto {
   @ArrayMinSize(1, { message: 'Debe incluir al menos una comodidad de baño' })
   @ArrayMaxSize(15, { message: 'Máximo 15 comodidades de baño permitidas' })
   @IsString({ each: true, message: 'Cada comodidad de baño debe ser texto' })
+  @Transform(({ value }) => toStringArray(value))
   bathroomAmenities?: string[];
   @ApiProperty({
     description: 'Current status of the room',
@@ -127,22 +161,6 @@ export class CreateRoomDto {
   @IsEnum(RoomStatus, { message: 'Estado no válido' })
   @IsOptional()
   status?: RoomStatus;
-  @ApiProperty({
-    description: 'Main photo of the room (max 10MB each, jpg/jpeg/png)',
-    type: 'array',
-    items: { type: 'string', format: 'binary' },
-    required: false,
-  })
-  @IsNotEmpty({ message: 'La foto principal es requerida' })
-  mainPhoto: any;
-  @ApiProperty({
-    description: 'Additional room photos (max 10MB each, jpg/jpeg/png)',
-    type: 'array',
-    items: { type: 'string', format: 'binary' },
-    required: false,
-  })
-  @IsOptional()
-  additionalPhotos?: any[];
   @ApiProperty({
     description: 'Floor number where the room is located',
     example: 1,

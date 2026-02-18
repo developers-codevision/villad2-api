@@ -67,6 +67,7 @@ export class RoomsController {
     console.log('Files:', files);
     console.log('CreateRoomDto:', createRoomDto);
 
+    console.log(createRoomDto);
     return this.roomsService.create(createRoomDto, {
       mainPhoto: files.mainPhoto,
       additionalPhotos: files.additionalPhotos || [],
