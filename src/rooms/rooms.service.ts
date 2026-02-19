@@ -78,7 +78,7 @@ export class RoomsService {
       const savedAdditionalPaths = await Promise.all(
         files.additionalPhotos.map((file) => this.fileService.saveFile(file)),
       );
-      finalAdditional = [...finalAdditional, ...savedAdditionalPaths];
+      finalAdditional = savedAdditionalPaths;
     }
 
     const oldSet = new Set<string>([...oldMain, ...oldAdditional]);
