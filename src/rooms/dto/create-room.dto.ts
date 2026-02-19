@@ -240,4 +240,17 @@ export class CreateRoomDto {
   additionalPhotos?: string[];
 }
 
-export class UpdateRoomDto extends PartialType(CreateRoomDto) {}
+export class UpdateRoomDto extends PartialType(CreateRoomDto) {
+  @ApiProperty({
+    description:
+      'List of existing photo paths to keep (any photo not in this list may be removed)',
+    type: 'array',
+    required: false,
+    example: ['media/rooms/room-1/main.jpg', 'media/rooms/room-1/a1.jpg'],
+  })
+  @IsArray()
+  @IsOptional()
+  @Transform(({ value }) => toStringArray(value))
+  @IsString({ each: true })
+  keepPhotos?: string[];
+}

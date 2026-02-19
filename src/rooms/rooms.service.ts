@@ -63,8 +63,19 @@ export class RoomsService {
     const oldMain = room.mainPhoto || [];
     const oldAdditional = room.additionalPhotos || [];
 
-    let finalMain = updateRoomDto.mainPhoto ?? oldMain;
-    let finalAdditional = updateRoomDto.additionalPhotos ?? oldAdditional;
+    const keepPhotos = Array.isArray(updateRoomDto.keepPhotos)
+      ? updateRoomDto.keepPhotos
+      : undefined;
+
+    let finalMain =
+      keepPhotos !== undefined
+        ? oldMain.filter((p) => keepPhotos.includes(p))
+        : (updateRoomDto.mainPhoto ?? oldMain);
+
+    let finalAdditional =
+      keepPhotos !== undefined
+        ? oldAdditional.filter((p) => keepPhotos.includes(p))
+        : (updateRoomDto.additionalPhotos ?? oldAdditional);
 
     if (!Array.isArray(finalMain)) finalMain = [];
     if (!Array.isArray(finalAdditional)) finalAdditional = [];
@@ -78,7 +89,11 @@ export class RoomsService {
       const savedAdditionalPaths = await Promise.all(
         files.additionalPhotos.map((file) => this.fileService.saveFile(file)),
       );
-      finalAdditional = savedAdditionalPaths;
+      if (keepPhotos !== undefined) {
+        finalAdditional = [...finalAdditional, ...savedAdditionalPaths];
+      } else {
+        finalAdditional = savedAdditionalPaths;
+      }
     }
 
     const oldSet = new Set<string>([...oldMain, ...oldAdditional]);
@@ -91,7 +106,9 @@ export class RoomsService {
         .map((p) => this.fileService.deleteFile(p)),
     );
 
-    Object.assign(room, updateRoomDto);
+    const dtoWithoutKeepPhotos = { ...updateRoomDto };
+    delete dtoWithoutKeepPhotos.keepPhotos;
+    Object.assign(room, dtoWithoutKeepPhotos);
     room.mainPhoto = finalMain;
     room.additionalPhotos = finalAdditional;
 
