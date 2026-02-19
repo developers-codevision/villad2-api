@@ -17,20 +17,23 @@ import {
   Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { RoomType, RoomStatus } from '../enums/room-enums.enum';
 import { Transform } from 'class-transformer';
 
 function toStringArray(value: unknown): string[] | undefined {
   if (value === undefined || value === null || value === '') return undefined;
-  if (Array.isArray(value))
-    return value
+  if (Array.isArray(value)) {
+    const arr = value
       .map(String)
       .map((v) => v.trim())
-      .filter(Boolean);
+      .filter((v) => v && v !== 'string');
+    return arr.length ? arr : undefined;
+  }
   if (typeof value === 'string') {
     const s = value.trim();
     if (!s) return undefined;
+    if (s === 'string') return undefined;
     // JSON array en string
     if (s.startsWith('[') && s.endsWith(']')) {
       try {
@@ -39,17 +42,20 @@ function toStringArray(value: unknown): string[] | undefined {
           return parsed
             .map(String)
             .map((v) => v.trim())
-            .filter(Boolean);
+            .filter((v) => v && v !== 'string');
         }
       } catch {}
     }
     // CSV
-    return s
+    const csv = s
       .split(',')
       .map((v) => v.trim())
-      .filter(Boolean);
+      .filter((v) => v && v !== 'string');
+    return csv.length ? csv : undefined;
   }
-  return [String(value).trim()].filter(Boolean);
+  const single = String(value).trim();
+  if (!single || single === 'string') return undefined;
+  return [single];
 }
 
 export class CreateRoomDto {
@@ -220,6 +226,18 @@ export class CreateRoomDto {
   @IsOptional()
   @Type(() => Boolean)
   isPetFriendly?: boolean;
+
+  @IsArray()
+  @IsOptional()
+  @Transform(({ value }) => toStringArray(value))
+  @IsString({ each: true })
+  mainPhoto?: string[];
+
+  @IsArray()
+  @IsOptional()
+  @Transform(({ value }) => toStringArray(value))
+  @IsString({ each: true })
+  additionalPhotos?: string[];
 }
 
 export class UpdateRoomDto extends PartialType(CreateRoomDto) {}

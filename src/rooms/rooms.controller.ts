@@ -23,6 +23,8 @@ import {
   ApiQuery,
   ApiBody,
   ApiConsumes,
+  ApiExtraModels,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { RoomsService } from './rooms.service';
@@ -35,6 +37,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from '../config/multer.config';
 @ApiTags('rooms')
 @Controller('rooms')
+@ApiExtraModels(UpdateRoomDto)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
   @Post()
@@ -107,11 +110,52 @@ export class RoomsController {
   }
 
   @Put(':id')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'mainPhoto', maxCount: 1 },
+        { name: 'additionalPhotos', maxCount: 10 },
+      ],
+      multerOptions,
+    ),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(UpdateRoomDto) },
+        {
+          type: 'object',
+          properties: {
+            mainPhoto: {
+              type: 'string',
+              format: 'binary',
+            },
+            additionalPhotos: {
+              type: 'array',
+              items: {
+                type: 'string',
+                format: 'binary',
+              },
+            },
+          },
+        },
+      ],
+    },
+  })
   async update(
     @Param('id', ParseIntPipe) id: number,
+    @UploadedFiles()
+    files: {
+      mainPhoto?: Express.Multer.File[];
+      additionalPhotos?: Express.Multer.File[];
+    },
     @Body() updateRoomDto: UpdateRoomDto,
   ): Promise<Room> {
-    return this.roomsService.update(id, updateRoomDto);
+    return this.roomsService.update(id, updateRoomDto, {
+      mainPhoto: files?.mainPhoto,
+      additionalPhotos: files?.additionalPhotos || [],
+    });
   }
 
   @Delete(':id')

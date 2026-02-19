@@ -50,9 +50,51 @@ export class RoomsService {
     return room;
   }
 
-  async update(id: number, updateRoomDto: UpdateRoomDto): Promise<Room> {
+  async update(
+    id: number,
+    updateRoomDto: UpdateRoomDto,
+    files?: {
+      mainPhoto?: Express.Multer.File[];
+      additionalPhotos?: Express.Multer.File[];
+    },
+  ): Promise<Room> {
     const room = await this.findOne(id);
+
+    const oldMain = room.mainPhoto || [];
+    const oldAdditional = room.additionalPhotos || [];
+
+    let finalMain = updateRoomDto.mainPhoto ?? oldMain;
+    let finalAdditional = updateRoomDto.additionalPhotos ?? oldAdditional;
+
+    if (!Array.isArray(finalMain)) finalMain = [];
+    if (!Array.isArray(finalAdditional)) finalAdditional = [];
+
+    if (files?.mainPhoto && files.mainPhoto.length > 0) {
+      const savedMainPath = await this.fileService.saveFile(files.mainPhoto[0]);
+      finalMain = [savedMainPath];
+    }
+
+    if (files?.additionalPhotos && files.additionalPhotos.length > 0) {
+      const savedAdditionalPaths = await Promise.all(
+        files.additionalPhotos.map((file) => this.fileService.saveFile(file)),
+      );
+      finalAdditional = [...finalAdditional, ...savedAdditionalPaths];
+    }
+
+    const oldSet = new Set<string>([...oldMain, ...oldAdditional]);
+    const newSet = new Set<string>([...finalMain, ...finalAdditional]);
+    const toDelete = [...oldSet].filter((p) => !newSet.has(p));
+
+    await Promise.all(
+      toDelete
+        .filter((p) => typeof p === 'string' && p.startsWith('media/rooms/'))
+        .map((p) => this.fileService.deleteFile(p)),
+    );
+
     Object.assign(room, updateRoomDto);
+    room.mainPhoto = finalMain;
+    room.additionalPhotos = finalAdditional;
+
     return await this.roomRepository.save(room);
   }
 
