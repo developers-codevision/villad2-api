@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room } from '../rooms/entities/room.entity';
@@ -49,6 +53,37 @@ export class ReservationsService {
       throw new NotFoundException(`Room with ID ${dto.roomId} not found`);
     }
 
+    // Early/late check-in/out conflict validation
+    if (dto.earlyCheckIn) {
+      const conflict = await this.reservationRepository.findOne({
+        where: {
+          roomId: dto.roomId,
+          checkOutDate: dto.checkInDate,
+          lateCheckOut: true,
+        },
+      });
+      if (conflict) {
+        throw new ConflictException(
+          'Early check-in conflicts with another reservation that has late check-out on the same date.',
+        );
+      }
+    }
+
+    if (dto.lateCheckOut) {
+      const conflict = await this.reservationRepository.findOne({
+        where: {
+          roomId: dto.roomId,
+          checkInDate: dto.checkOutDate,
+          earlyCheckIn: true,
+        },
+      });
+      if (conflict) {
+        throw new ConflictException(
+          'Late check-out conflicts with another reservation that has early check-in on the same date.',
+        );
+      }
+    }
+
     const client = this.clientRepository.create({
       firstName: dto.mainGuest.firstName,
       lastName: dto.mainGuest.lastName,
@@ -69,6 +104,8 @@ export class ReservationsService {
       extraGuestsCount: dto.extraGuestsCount ?? 0,
       notes: dto.notes,
       additionalGuests: dto.additionalGuests,
+      earlyCheckIn: dto.earlyCheckIn ?? false,
+      lateCheckOut: dto.lateCheckOut ?? false,
     });
 
     return this.reservationRepository.save(reservation);
@@ -138,6 +175,14 @@ export class ReservationsService {
 
     if (dto.additionalGuests !== undefined) {
       reservation.additionalGuests = dto.additionalGuests;
+    }
+
+    if (dto.earlyCheckIn !== undefined) {
+      reservation.earlyCheckIn = dto.earlyCheckIn;
+    }
+
+    if (dto.lateCheckOut !== undefined) {
+      reservation.lateCheckOut = dto.lateCheckOut;
     }
 
     if (dto.mainGuest !== undefined) {

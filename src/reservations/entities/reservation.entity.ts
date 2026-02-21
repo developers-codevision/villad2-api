@@ -71,4 +71,10 @@ export class Reservation {
 
   @Column({ type: 'json', nullable: true })
   additionalGuests?: AdditionalGuest[];
+
+  @Column({ type: 'boolean', default: false })
+  earlyCheckIn: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  lateCheckOut: boolean;
 }

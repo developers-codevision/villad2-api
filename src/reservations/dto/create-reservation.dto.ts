@@ -3,6 +3,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEmail,
   IsEnum,
@@ -216,4 +217,22 @@ export class CreateReservationDto {
   @ValidateNested({ each: true })
   @Type(() => CreateReservationGuestDto)
   additionalGuests?: CreateReservationGuestDto[];
+
+  @ApiPropertyOptional({
+    description:
+      'Early check-in request (guest wants to check in before standard time)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  earlyCheckIn?: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Late check-out request (guest wants to check out after standard time)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  lateCheckOut?: boolean;
 }
