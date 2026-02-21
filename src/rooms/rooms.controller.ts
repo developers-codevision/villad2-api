@@ -37,7 +37,7 @@ import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from '../config/multer.config';
 @ApiTags('rooms')
 @Controller('rooms')
-@ApiExtraModels(UpdateRoomDto)
+@ApiExtraModels(UpdateRoomDto, CreateRoomDto)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
   @Post()
@@ -58,7 +58,29 @@ export class RoomsController {
     type: RoomResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Bad Request' })
-  @ApiBody({ type: CreateRoomDto })
+  @ApiBody({
+    schema: {
+      allOf: [
+        { $ref: getSchemaPath(CreateRoomDto) },
+        {
+          type: 'object',
+          properties: {
+            mainPhoto: {
+              type: 'string',
+              format: 'binary',
+            },
+            additionalPhotos: {
+              type: 'array',
+              items: {
+                type: 'string',
+                format: 'binary',
+              },
+            },
+          },
+        },
+      ],
+    },
+  })
   async create(
     @UploadedFiles()
     files: {
