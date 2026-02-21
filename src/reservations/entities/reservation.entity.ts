@@ -1,0 +1,74 @@
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+import { Room } from '../../rooms/entities/room.entity';
+import { Client } from './client.entity';
+
+export enum ReservationStatus {
+  PENDING = 'pendiente',
+  CONFIRMED = 'confirmada',
+  CANCELED = 'cancelada',
+  COMPLETED = 'completada',
+}
+
+export type AdditionalGuest = {
+  firstName: string;
+  lastName: string;
+  sex: 'M' | 'F' | 'otro';
+};
+
+@Entity('reservations')
+export class Reservation {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: 'varchar', length: 20, unique: true })
+  reservationNumber: string;
+
+  @Column({ type: 'int' })
+  roomId: number;
+
+  @ManyToOne(() => Room)
+  @JoinColumn({ name: 'roomId' })
+  room: Room;
+
+  @Column({ type: 'int' })
+  clientId: number;
+
+  @ManyToOne(() => Client)
+  @JoinColumn({ name: 'clientId' })
+  client: Client;
+
+  @Column({ type: 'date' })
+  checkInDate: string;
+
+  @Column({ type: 'date' })
+  checkOutDate: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  reservedAt: Date;
+
+  @Column({
+    type: 'enum',
+    enum: ReservationStatus,
+    default: ReservationStatus.PENDING,
+  })
+  status: ReservationStatus;
+
+  @Column({ type: 'int' })
+  baseGuestsCount: number;
+
+  @Column({ type: 'int', default: 0 })
+  extraGuestsCount: number;
+
+  @Column({ type: 'text', nullable: true })
+  notes?: string;
+
+  @Column({ type: 'json', nullable: true })
+  additionalGuests?: AdditionalGuest[];
+}
