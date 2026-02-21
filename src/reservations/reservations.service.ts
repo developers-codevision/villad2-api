@@ -102,6 +102,22 @@ export class ReservationsService {
     });
     const savedClient = await this.clientRepository.save(client);
 
+    // Calculate total price
+    const checkIn = new Date(dto.checkInDate);
+    const checkOut = new Date(dto.checkOutDate);
+    const nights = Math.ceil(
+      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    if (nights <= 0) {
+      throw new ConflictException(
+        'Check-out date must be after check-in date.',
+      );
+    }
+    const basePrice = nights * room.pricePerNight;
+    const extraGuestsCharge =
+      nights * (dto.extraGuestsCount ?? 0) * room.extraGuestCharge;
+    const totalPrice = basePrice + extraGuestsCharge;
+
     const reservation = this.reservationRepository.create({
       reservationNumber: generateReservationNumber(),
       roomId: dto.roomId,
@@ -115,6 +131,7 @@ export class ReservationsService {
       additionalGuests: dto.additionalGuests,
       earlyCheckIn: dto.earlyCheckIn ?? false,
       lateCheckOut: dto.lateCheckOut ?? false,
+      totalPrice,
     });
 
     return this.reservationRepository.save(reservation);
@@ -151,6 +168,7 @@ export class ReservationsService {
   async update(id: number, dto: UpdateReservationDto): Promise<Reservation> {
     const reservation = await this.findOne(id);
 
+    let roomChanged = false;
     if (dto.roomId !== undefined) {
       const room = await this.roomRepository.findOne({
         where: { id: dto.roomId },
@@ -159,6 +177,7 @@ export class ReservationsService {
         throw new NotFoundException(`Room with ID ${dto.roomId} not found`);
       }
       reservation.roomId = dto.roomId;
+      roomChanged = true;
     }
 
     if (dto.checkInDate !== undefined) {
@@ -172,11 +191,13 @@ export class ReservationsService {
       reservation.status = mapStatusToEntity(dto.status) ?? reservation.status;
     }
 
-    if (dto.baseGuestsCount !== undefined)
+    if (dto.baseGuestsCount !== undefined) {
       reservation.baseGuestsCount = dto.baseGuestsCount;
+    }
 
-    if (dto.extraGuestsCount !== undefined)
+    if (dto.extraGuestsCount !== undefined) {
       reservation.extraGuestsCount = dto.extraGuestsCount;
+    }
 
     if (dto.notes !== undefined) {
       reservation.notes = dto.notes;
@@ -192,6 +213,38 @@ export class ReservationsService {
 
     if (dto.lateCheckOut !== undefined) {
       reservation.lateCheckOut = dto.lateCheckOut;
+    }
+
+    // Recalculate total price if room, dates, or extra guests changed
+    if (
+      roomChanged ||
+      dto.checkInDate !== undefined ||
+      dto.checkOutDate !== undefined ||
+      dto.extraGuestsCount !== undefined
+    ) {
+      const room = await this.roomRepository.findOne({
+        where: { id: reservation.roomId },
+      });
+      if (!room) {
+        throw new NotFoundException(
+          `Room with ID ${reservation.roomId} not found`,
+        );
+      }
+
+      const checkIn = new Date(reservation.checkInDate);
+      const checkOut = new Date(reservation.checkOutDate);
+      const nights = Math.ceil(
+        (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      if (nights <= 0) {
+        throw new ConflictException(
+          'Check-out date must be after check-in date.',
+        );
+      }
+      const basePrice = nights * room.pricePerNight;
+      const extraGuestsCharge =
+        nights * reservation.extraGuestsCount * room.extraGuestCharge;
+      reservation.totalPrice = basePrice + extraGuestsCharge;
     }
 
     if (dto.mainGuest !== undefined) {
@@ -212,7 +265,6 @@ export class ReservationsService {
           : client.sex;
       client.email = dto.mainGuest.email ?? client.email;
       client.phone = dto.mainGuest.phone ?? client.phone;
-
       await this.clientRepository.save(client);
     }
 

@@ -9,6 +9,7 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
@@ -228,8 +229,7 @@ export class CreateReservationDto {
   earlyCheckIn?: boolean;
 
   @ApiPropertyOptional({
-    description:
-      'Late check-out request (guest wants to check out after standard time)',
+    description: 'Late check-out request (guest wants to check out after standard time)',
     example: false,
   })
   @IsOptional()

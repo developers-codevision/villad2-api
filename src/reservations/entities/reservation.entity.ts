@@ -77,4 +77,11 @@ export class Reservation {
 
   @Column({ type: 'boolean', default: false })
   lateCheckOut: boolean;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+  })
+  totalPrice: number;
 }
