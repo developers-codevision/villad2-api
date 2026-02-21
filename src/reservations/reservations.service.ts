@@ -53,6 +53,15 @@ export class ReservationsService {
       throw new NotFoundException(`Room with ID ${dto.roomId} not found`);
     }
 
+    // Capacity validation: total guests must not exceed room capacity
+    const totalGuests = dto.baseGuestsCount + (dto.extraGuestsCount ?? 0);
+    const maxCapacity = room.baseCapacity + room.extraCapacity;
+    if (totalGuests > maxCapacity) {
+      throw new ConflictException(
+        `Total guests (${totalGuests}) exceed room capacity (${maxCapacity}).`,
+      );
+    }
+
     // Early/late check-in/out conflict validation
     if (dto.earlyCheckIn) {
       const conflict = await this.reservationRepository.findOne({

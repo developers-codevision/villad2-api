@@ -39,7 +39,19 @@ export class Room {
   @Column({
     type: 'int',
   })
-  capacity: number;
+  baseCapacity: number;
+
+  @Column({
+    type: 'int',
+  })
+  extraCapacity: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+  })
+  extraGuestCharge: number;
 
   @Column({
     type: 'enum',

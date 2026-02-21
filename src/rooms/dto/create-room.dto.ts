@@ -112,17 +112,40 @@ export class CreateRoomDto {
   @Type(() => Number)
   pricePerNight: number;
   @ApiProperty({
-    description: 'Maximum room capacity',
+    description: 'Base capacity of the room (included guests)',
     example: 2,
     minimum: 1,
     maximum: 20,
   })
   @IsNumber()
-  @IsPositive({ message: 'La capacidad debe ser un número positivo' })
-  @Min(1, { message: 'La capacidad mínima es 1 persona' })
-  @Max(20, { message: 'La capacidad máxima es 20 personas' })
+  @IsPositive({ message: 'La capacidad base debe ser un número positivo' })
+  @Min(1, { message: 'La capacidad base mínima es 1' })
+  @Max(20, { message: 'La capacidad base máxima es 20' })
   @Type(() => Number)
-  capacity: number;
+  baseCapacity: number;
+  @ApiProperty({
+    description: 'Extra capacity of the room (additional guests allowed)',
+    example: 1,
+    minimum: 0,
+    maximum: 20,
+  })
+  @IsNumber()
+  @Min(0, { message: 'La capacidad extra mínima es 0' })
+  @Max(20, { message: 'La capacidad extra máxima es 20' })
+  @Type(() => Number)
+  extraCapacity: number;
+  @ApiProperty({
+    description: 'Charge per extra guest (per night)',
+    example: 25.5,
+    minimum: 0,
+    maximum: 1000,
+  })
+  @IsNumber()
+  @IsPositive({ message: 'El recargo extra debe ser un número positivo' })
+  @Min(0, { message: 'El recargo extra mínimo es 0' })
+  @Max(1000, { message: 'El recargo extra máximo es 1000' })
+  @Type(() => Number)
+  extraGuestCharge: number;
   @ApiProperty({
     description: 'Type of the room',
     enum: RoomType,
