@@ -1,9 +1,8 @@
 export enum RoomType {
-  INDIVIDUAL = 'individual',
-  DOUBLE = 'double',
-  SUITE = 'suite',
-  FAMILY = 'family',
-  PRESIDENTIAL = 'presidential',
+  STANDARD_ECONOMIC = 'standard_economic',
+  STANDARD = 'standard',
+  STANDARD_PLUS = 'standard_plus',
+  SUITE_BALCONY = 'suite_balcony',
 }
 
 export enum RoomStatus {

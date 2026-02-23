@@ -149,7 +149,7 @@ export class CreateRoomDto {
   @ApiProperty({
     description: 'Type of the room',
     enum: RoomType,
-    example: RoomType.DOUBLE,
+    example: RoomType.STANDARD,
   })
   @IsEnum(RoomType, {
     message: 'Tipo de habitación no válido',

@@ -56,7 +56,7 @@ export class Room {
   @Column({
     type: 'enum',
     enum: RoomType,
-    default: RoomType.DOUBLE,
+    default: RoomType.STANDARD,
   })
   roomType: RoomType;
 

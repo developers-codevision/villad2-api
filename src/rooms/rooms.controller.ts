@@ -110,7 +110,7 @@ export class RoomsController {
     required: false,
     description: 'Filter rooms by type',
     enum: RoomType,
-    example: RoomType.DOUBLE,
+    example: RoomType.STANDARD,
   })
   async findAll(@Query('type') type?: RoomType): Promise<Room[]> {
     if (type) {

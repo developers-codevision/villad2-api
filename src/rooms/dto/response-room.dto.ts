@@ -37,7 +37,7 @@ export class RoomResponseDto {
   @ApiProperty({
     description: 'Type of the room',
     enum: RoomType,
-    example: RoomType.DOUBLE,
+    example: RoomType.STANDARD,
   })
   roomType: RoomType;
 
