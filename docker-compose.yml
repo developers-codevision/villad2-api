@@ -7,18 +7,16 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # Estos nombres DEBEN coincidir con los de tu configService.get()
       - DB_HOST=mariadb
       - DB_PORT=3306
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - DB_DATABASE=hostal
     volumes:
-      - .:/app               # ← monta todo tu código local
-      - /app/node_modules    # ← protege node_modules del host
-    command: pnpm run start:dev
+      - .:/app
+      - /app/node_modules
     networks:
-    - hostal-net
+      - hostal-net
     depends_on:
       - mariadb
     restart: always
