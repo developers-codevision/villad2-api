@@ -300,4 +300,62 @@ export class ReservationsService {
 
     return Array.from(occupiedDates).sort();
   }
+
+  async getOccupiedDatesByRoom(): Promise<{ [roomId: number]: string[] }> {
+    const reservations = await this.reservationRepository.find({
+      where: [
+        { status: ReservationStatus.CONFIRMED },
+        { status: ReservationStatus.PENDING },
+      ],
+      select: ['roomId', 'checkInDate', 'checkOutDate'],
+    });
+
+    const occupiedDatesByRoom: { [roomId: number]: Set<string> } = {};
+
+    reservations.forEach((reservation) => {
+      const checkIn = new Date(reservation.checkInDate);
+      const checkOut = new Date(reservation.checkOutDate);
+
+      if (!occupiedDatesByRoom[reservation.roomId]) {
+        occupiedDatesByRoom[reservation.roomId] = new Set<string>();
+      }
+
+      // Include check-in date but exclude check-out date
+      for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+        occupiedDatesByRoom[reservation.roomId].add(d.toISOString().split('T')[0]);
+      }
+    });
+
+    // Convert Sets to sorted arrays
+    const result: { [roomId: number]: string[] } = {};
+    Object.keys(occupiedDatesByRoom).forEach((roomId) => {
+      result[parseInt(roomId)] = Array.from(occupiedDatesByRoom[parseInt(roomId)]).sort();
+    });
+
+    return result;
+  }
+
+  async getOccupiedDatesByRoomId(roomId: number): Promise<string[]> {
+    const reservations = await this.reservationRepository.find({
+      where: [
+        { status: ReservationStatus.CONFIRMED, roomId },
+        { status: ReservationStatus.PENDING, roomId },
+      ],
+      select: ['checkInDate', 'checkOutDate'],
+    });
+
+    const occupiedDates = new Set<string>();
+
+    reservations.forEach((reservation) => {
+      const checkIn = new Date(reservation.checkInDate);
+      const checkOut = new Date(reservation.checkOutDate);
+
+      // Include check-in date but exclude check-out date
+      for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+        occupiedDates.add(d.toISOString().split('T')[0]);
+      }
+    });
+
+    return Array.from(occupiedDates).sort();
+  }
 }

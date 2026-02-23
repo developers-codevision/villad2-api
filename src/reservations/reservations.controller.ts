@@ -49,14 +49,27 @@ export class ReservationsController {
   }
 
   @Get('occupied-dates')
-  @ApiOperation({ summary: 'Get all occupied dates from confirmed and pending reservations' })
+  @ApiOperation({ summary: 'Get all occupied dates from confirmed and pending reservations grouped by room ID' })
   @ApiResponse({
     status: 200,
-    description: 'List of occupied dates sorted in ascending order',
+    description: 'Object with room IDs as keys and arrays of occupied dates as values',
+    type: 'object',
+  })
+  getOccupiedDates(): Promise<{ [roomId: number]: string[] }> {
+    return this.reservationsService.getOccupiedDatesByRoom();
+  }
+
+  @Get('occupied-dates/:roomId')
+  @ApiOperation({ summary: 'Get occupied dates for a specific room from confirmed and pending reservations' })
+  @ApiResponse({
+    status: 200,
+    description: 'Array of occupied dates for the specified room sorted in ascending order',
     type: [String],
   })
-  getOccupiedDates(): Promise<string[]> {
-    return this.reservationsService.getOccupiedDates();
+  @ApiResponse({ status: 404, description: 'Room not found' })
+  @ApiParam({ name: 'roomId', description: 'Room ID', example: 1 })
+  getOccupiedDatesByRoom(@Param('roomId', ParseIntPipe) roomId: number): Promise<string[]> {
+    return this.reservationsService.getOccupiedDatesByRoomId(roomId);
   }
 
   @Get(':id')
