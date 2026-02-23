@@ -9,7 +9,6 @@ import {
   IsEnum,
   IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
@@ -24,8 +23,8 @@ import { Type } from 'class-transformer';
 export enum ReservationStatus {
   PENDING = 'pendiente',
   CONFIRMED = 'confirmada',
-  CANCELED = 'cancelada',
-  COMPLETED = 'completada',
+  CANCELLED = 'cancelada',
+  FINISHED = 'terminada',
 }
 
 export enum GuestSex {

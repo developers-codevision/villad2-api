@@ -48,6 +48,17 @@ export class ReservationsController {
     return this.reservationsService.findAll();
   }
 
+  @Get('occupied-dates')
+  @ApiOperation({ summary: 'Get all occupied dates from confirmed and pending reservations' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of occupied dates sorted in ascending order',
+    type: [String],
+  })
+  getOccupiedDates(): Promise<string[]> {
+    return this.reservationsService.getOccupiedDates();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a reservation by ID' })
   @ApiResponse({

@@ -276,4 +276,28 @@ export class ReservationsService {
     await this.reservationRepository.delete(reservation.id);
     await this.clientRepository.delete(reservation.clientId);
   }
+
+  async getOccupiedDates(): Promise<string[]> {
+    const reservations = await this.reservationRepository.find({
+      where: [
+        { status: ReservationStatus.CONFIRMED },
+        { status: ReservationStatus.PENDING },
+      ],
+      select: ['checkInDate', 'checkOutDate'],
+    });
+
+    const occupiedDates = new Set<string>();
+
+    reservations.forEach((reservation) => {
+      const checkIn = new Date(reservation.checkInDate);
+      const checkOut = new Date(reservation.checkOutDate);
+
+      // Include check-in date but exclude check-out date
+      for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+        occupiedDates.add(d.toISOString().split('T')[0]);
+      }
+    });
+
+    return Array.from(occupiedDates).sort();
+  }
 }

@@ -12,8 +12,8 @@ import { Client } from './client.entity';
 export enum ReservationStatus {
   PENDING = 'pendiente',
   CONFIRMED = 'confirmada',
-  CANCELED = 'cancelada',
-  COMPLETED = 'completada',
+  CANCELLED = 'cancelada',
+  FINISHED = 'terminada',
 }
 
 export type AdditionalGuest = {
