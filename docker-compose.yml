@@ -12,9 +12,13 @@ services:
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - DB_DATABASE=hostal
+      - STRIPE_SECRET_KEY=sk_test_tu_clave
+      - STRIPE_PUBLISHABLE_KEY=pk_test_tu_clave
+      - STRIPE_WEBHOOK_SECRET=whsec_tu_secreto
     volumes:
-      - .:/app
-      - /app/node_modules
+      - ./src:/app/src
+      - ./test:/app/test
+      - ./tsconfig.json:/app/tsconfig.json
     networks:
       - hostal-net
     depends_on:

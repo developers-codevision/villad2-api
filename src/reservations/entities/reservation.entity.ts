@@ -84,4 +84,10 @@ export class Reservation {
     scale: 2,
   })
   totalPrice: number;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  stripePaymentIntentId?: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  paymentStatus?: string;
 }

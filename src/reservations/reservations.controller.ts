@@ -7,6 +7,8 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -19,11 +21,17 @@ import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { Reservation } from './entities/reservation.entity';
+import { PaymentType } from '../payments/entities/payment.entity';
+import { PaymentsService } from '../payments/payments.service';
 
 @ApiTags('reservations')
 @Controller('reservations')
 export class ReservationsController {
-  constructor(private readonly reservationsService: ReservationsService) {}
+  constructor(
+    private readonly reservationsService: ReservationsService,
+    @Inject(forwardRef(() => PaymentsService))
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new reservation' })
@@ -37,15 +45,34 @@ export class ReservationsController {
     return this.reservationsService.create(dto);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all reservations' })
+  @Post('with-payment')
+  @ApiOperation({ summary: 'Create reservation with payment checkout' })
   @ApiResponse({
-    status: 200,
-    description: 'List reservations',
-    type: [Reservation],
+    status: 201,
+    description: 'Reservation created with payment session',
   })
-  findAll(): Promise<Reservation[]> {
-    return this.reservationsService.findAll();
+  async createWithPayment(@Body() dto: CreateReservationDto): Promise<{
+    reservation: Reservation;
+    paymentSession: {
+      sessionId: string;
+      url: string;
+    };
+  }> {
+    // Crear la reservación primero
+    const reservation = await this.reservationsService.create(dto);
+
+    // Crear sesión de checkout para el pago
+    const paymentSession = await this.paymentsService.createCheckoutSession({
+      reservationId: reservation.id,
+      amount: reservation.totalPrice,
+      currency: 'usd', // o configurable
+      type: PaymentType.RESERVATION,
+    });
+
+    return {
+      reservation,
+      paymentSession,
+    };
   }
 
   @Get('occupied-dates')
