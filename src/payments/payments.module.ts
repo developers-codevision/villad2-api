@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { PaymentsController } from './payments.controller';
+import { PaymentRedirectController } from './payment-redirect.controller';
 import { PaymentsService } from './payments.service';
 import { Payment } from './entities/payment.entity';
 import { Reservation } from '../reservations/entities/reservation.entity';
@@ -11,7 +12,7 @@ import { Reservation } from '../reservations/entities/reservation.entity';
     TypeOrmModule.forFeature([Payment, Reservation]),
     ConfigModule,
   ],
-  controllers: [PaymentsController],
+  controllers: [PaymentsController, PaymentRedirectController],
   providers: [PaymentsService],
   exports: [PaymentsService],
 })

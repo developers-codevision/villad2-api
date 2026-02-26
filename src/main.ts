@@ -6,9 +6,13 @@ import { AppModule } from './app.module';
 import { join } from 'path';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Configure raw body parser for Stripe webhook endpoint BEFORE other middleware
+  app.use('/payments/webhook', express.raw({ type: 'application/json' }));
 
   const config = new DocumentBuilder()
     .setTitle('Tu API')

@@ -8,10 +8,12 @@ import {
   Headers,
   HttpStatus,
   Logger,
+  Req,
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import Stripe from 'stripe';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 
@@ -19,11 +21,18 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 @Controller('payments')
 export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);
+  private readonly stripe: Stripe;
 
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY is not defined');
+    }
+    this.stripe = new Stripe(stripeSecretKey);
+  }
 
   @Post('create-checkout-session')
   @ApiOperation({ summary: 'Crear una sesión de checkout de Stripe' })
@@ -50,9 +59,9 @@ export class PaymentsController {
   @Post('webhook')
   @ApiOperation({ summary: 'Webhook de Stripe para notificaciones de pago' })
   async handleStripeWebhook(
-    @Body() event: any,
     @Headers('stripe-signature') signature: string,
     @Res() response: Response,
+    @Req() request: Request,
   ): Promise<void> {
     const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
 
@@ -62,14 +71,37 @@ export class PaymentsController {
       return;
     }
 
+    if (!signature) {
+      this.logger.error('No stripe-signature header found');
+      response.status(HttpStatus.BAD_REQUEST).send();
+      return;
+    }
+
     try {
-      // Aquí deberías verificar la firma del webhook
-      // const event = this.stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      
+      // Get the raw body from the request
+      const body = request.body as string | Buffer;
+
+      if (!body) {
+        this.logger.error('No webhook payload was provided');
+        response.status(HttpStatus.BAD_REQUEST).send();
+        return;
+      }
+
+      // Verificar la firma del webhook
+      const event = this.stripe.webhooks.constructEvent(
+        body,
+        signature,
+        webhookSecret,
+      );
+
+      this.logger.log(`Webhook received: ${event.type}`);
+
       await this.paymentsService.handleWebhook(event);
       response.status(HttpStatus.OK).send();
     } catch (error) {
-      this.logger.error('Webhook error:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error('Webhook signature verification failed:', errorMessage);
       response.status(HttpStatus.BAD_REQUEST).send();
     }
   }
