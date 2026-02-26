@@ -9,6 +9,7 @@ import {
   Put,
   Inject,
   forwardRef,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -72,6 +73,29 @@ export class ReservationsController {
     return {
       reservation,
       paymentSession,
+    };
+  }
+
+  @Get('session-status')
+  @ApiOperation({ summary: 'Get Stripe checkout session status' })
+  @ApiResponse({
+    status: 200,
+    description: 'Session status retrieved successfully',
+  })
+  async getSessionStatus(@Query('session_id') sessionId: string) {
+    const session = await this.paymentsService.retrieveCheckoutSession(sessionId, {
+      expand: ['payment_intent'],
+    });
+
+    return {
+      status: session.status,
+      payment_status: session.payment_status,
+      payment_intent_id: typeof session.payment_intent === 'object' 
+        ? session.payment_intent?.id 
+        : session.payment_intent,
+      payment_intent_status: typeof session.payment_intent === 'object' 
+        ? session.payment_intent?.status 
+        : undefined,
     };
   }
 

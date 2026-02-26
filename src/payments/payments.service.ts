@@ -91,6 +91,10 @@ export class PaymentsService {
     };
   }
 
+  async retrieveCheckoutSession(sessionId: string, options?: { expand?: string[] }): Promise<Stripe.Checkout.Session> {
+    return await this.stripe.checkout.sessions.retrieve(sessionId, options);
+  }
+
   async confirmCheckoutSession(sessionId: string): Promise<Payment> {
     // Recuperar la sesión de Stripe
     const session = await this.stripe.checkout.sessions.retrieve(sessionId);
