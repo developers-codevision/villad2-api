@@ -14,6 +14,7 @@ import {
   ReservationStatus as ReservationStatusDto,
 } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
+import { FindReservationsDto, PaginatedReservationsResponse } from './dto/find-reservations.dto';
 
 function mapSexToClientSex(sex: GuestSex): ClientSex {
   return sex as unknown as ClientSex;
@@ -147,6 +148,145 @@ export class ReservationsService {
         id: 'DESC',
       },
     });
+  }
+
+  async findWithFilters(filters: FindReservationsDto): Promise<PaginatedReservationsResponse> {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = 'id',
+      sortOrder = 'DESC',
+      reservationNumber,
+      roomId,
+      clientEmail,
+      clientName,
+      status,
+      checkInDateFrom,
+      checkInDateTo,
+      checkOutDateFrom,
+      checkOutDateTo,
+      minPrice,
+      maxPrice,
+      earlyCheckIn,
+      lateCheckOut,
+    } = filters;
+
+    // Build query conditions
+    const queryBuilder = this.reservationRepository
+      .createQueryBuilder('reservation')
+      .leftJoinAndSelect('reservation.room', 'room')
+      .leftJoinAndSelect('reservation.client', 'client');
+
+    // Apply filters
+    if (reservationNumber) {
+      queryBuilder.andWhere('reservation.reservationNumber LIKE :reservationNumber', {
+        reservationNumber: `%${reservationNumber}%`,
+      });
+    }
+
+    if (roomId) {
+      queryBuilder.andWhere('reservation.roomId = :roomId', { roomId });
+    }
+
+    if (clientEmail) {
+      queryBuilder.andWhere('client.email LIKE :clientEmail', {
+        clientEmail: `%${clientEmail}%`,
+      });
+    }
+
+    if (clientName) {
+      queryBuilder.andWhere(
+        '(client.firstName LIKE :clientName OR client.lastName LIKE :clientName OR CONCAT(client.firstName, " ", client.lastName) LIKE :clientName)',
+        { clientName: `%${clientName}%` },
+      );
+    }
+
+    if (status) {
+      queryBuilder.andWhere('reservation.status = :status', { status });
+    }
+
+    if (checkInDateFrom) {
+      queryBuilder.andWhere('reservation.checkInDate >= :checkInDateFrom', {
+        checkInDateFrom,
+      });
+    }
+
+    if (checkInDateTo) {
+      queryBuilder.andWhere('reservation.checkInDate <= :checkInDateTo', {
+        checkInDateTo,
+      });
+    }
+
+    if (checkOutDateFrom) {
+      queryBuilder.andWhere('reservation.checkOutDate >= :checkOutDateFrom', {
+        checkOutDateFrom,
+      });
+    }
+
+    if (checkOutDateTo) {
+      queryBuilder.andWhere('reservation.checkOutDate <= :checkOutDateTo', {
+        checkOutDateTo,
+      });
+    }
+
+    if (minPrice) {
+      queryBuilder.andWhere('reservation.totalPrice >= :minPrice', { minPrice });
+    }
+
+    if (maxPrice) {
+      queryBuilder.andWhere('reservation.totalPrice <= :maxPrice', { maxPrice });
+    }
+
+    if (earlyCheckIn !== undefined) {
+      queryBuilder.andWhere('reservation.earlyCheckIn = :earlyCheckIn', {
+        earlyCheckIn,
+      });
+    }
+
+    if (lateCheckOut !== undefined) {
+      queryBuilder.andWhere('reservation.lateCheckOut = :lateCheckOut', {
+        lateCheckOut,
+      });
+    }
+
+    // Get total count
+    const total = await queryBuilder.getCount();
+
+    // Apply sorting and pagination
+    const validSortFields = [
+      'id',
+      'reservationNumber',
+      'checkInDate',
+      'checkOutDate',
+      'totalPrice',
+      'status',
+      'createdAt',
+      'updatedAt',
+    ];
+
+    const sortField = validSortFields.includes(sortBy) ? sortBy : 'id';
+    queryBuilder.orderBy(`reservation.${sortField}`, sortOrder);
+
+    const offset = (page - 1) * limit;
+    queryBuilder.skip(offset).take(limit);
+
+    // Get results
+    const reservations = await queryBuilder.getMany();
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit);
+    const hasNext = page < totalPages;
+    const hasPrevious = page > 1;
+
+    return {
+      reservations,
+      total,
+      page,
+      limit,
+      totalPages,
+      hasNext,
+      hasPrevious,
+    };
   }
 
   async findOne(id: number): Promise<Reservation> {

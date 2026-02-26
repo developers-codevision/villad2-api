@@ -17,10 +17,12 @@ import {
   ApiParam,
   ApiResponse,
   ApiTags,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
+import { FindReservationsDto, PaginatedReservationsResponse } from './dto/find-reservations.dto';
 import { Reservation } from './entities/reservation.entity';
 import { PaymentType } from '../payments/entities/payment.entity';
 import { PaymentsService } from '../payments/payments.service';
@@ -97,6 +99,34 @@ export class ReservationsController {
         ? session.payment_intent?.status 
         : undefined,
     };
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Get all reservations with pagination and filters' })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated list of reservations',
+    type: PaginatedReservationsResponse,
+  })
+  @ApiQuery({ name: 'page', required: false, type: 'number', description: 'Page number' })
+  @ApiQuery({ name: 'limit', required: false, type: 'number', description: 'Items per page' })
+  @ApiQuery({ name: 'sortBy', required: false, type: 'string', description: 'Sort field' })
+  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: 'Sort order' })
+  @ApiQuery({ name: 'reservationNumber', required: false, type: 'string', description: 'Reservation number' })
+  @ApiQuery({ name: 'roomId', required: false, type: 'number', description: 'Room ID' })
+  @ApiQuery({ name: 'clientEmail', required: false, type: 'string', description: 'Client email' })
+  @ApiQuery({ name: 'clientName', required: false, type: 'string', description: 'Client name' })
+  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'], description: 'Reservation status' })
+  @ApiQuery({ name: 'checkInDateFrom', required: false, type: 'string', description: 'Check-in date from (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'checkInDateTo', required: false, type: 'string', description: 'Check-in date to (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'checkOutDateFrom', required: false, type: 'string', description: 'Check-out date from (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'checkOutDateTo', required: false, type: 'string', description: 'Check-out date to (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'minPrice', required: false, type: 'number', description: 'Minimum price' })
+  @ApiQuery({ name: 'maxPrice', required: false, type: 'number', description: 'Maximum price' })
+  @ApiQuery({ name: 'earlyCheckIn', required: false, type: 'boolean', description: 'Early check-in' })
+  @ApiQuery({ name: 'lateCheckOut', required: false, type: 'boolean', description: 'Late check-out' })
+  async findWithFilters(@Query() filters: FindReservationsDto): Promise<PaginatedReservationsResponse> {
+    return this.reservationsService.findWithFilters(filters);
   }
 
   @Get('occupied-dates')
