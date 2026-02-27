@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { Room } from '../rooms/entities/room.entity';
 import { Client, ClientSex } from './entities/client.entity';
 import { Reservation, ReservationStatus } from './entities/reservation.entity';
+import { Payment } from '../payments/entities/payment.entity';
 import {
   CreateReservationDto,
   GuestSex,
@@ -44,6 +45,8 @@ export class ReservationsService {
     private readonly clientRepository: Repository<Client>,
     @InjectRepository(Room)
     private readonly roomRepository: Repository<Room>,
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>,
   ) {}
 
   async create(dto: CreateReservationDto): Promise<Reservation> {
@@ -413,8 +416,21 @@ export class ReservationsService {
 
   async remove(id: number): Promise<void> {
     const reservation = await this.findOne(id);
+
+    // Primero eliminar pagos asociados a la reserva
+    await this.paymentRepository.delete({ reservationId: reservation.id });
+
+    // Luego eliminar la reserva
     await this.reservationRepository.delete(reservation.id);
-    await this.clientRepository.delete(reservation.clientId);
+
+    // Finalmente eliminar el cliente (si no tiene otras reservas)
+    const otherReservations = await this.reservationRepository.findOne({
+      where: { clientId: reservation.clientId },
+    });
+
+    if (!otherReservations) {
+      await this.clientRepository.delete(reservation.clientId);
+    }
   }
 
   async getOccupiedDates(): Promise<string[]> {
