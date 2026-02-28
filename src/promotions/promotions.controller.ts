@@ -153,26 +153,6 @@ export class PromotionsController {
     return this.promotionsService.changeStatus(+id, status);
   }
 
-  @Patch(':id/photo')
-  @ApiOperation({ summary: 'Add photo to a promotion' })
-  @ApiResponse({ status: 200, description: 'Photo added successfully', type: Promotion })
-  @ApiResponse({ status: 404, description: 'Promotion not found' })
-  @ApiParam({ name: 'id', description: 'Promotion ID' })
-  @ApiBody({ schema: { type: 'object', properties: { photo: { type: 'string', description: 'Photo path' } } } })
-  addPhoto(@Param('id') id: string, @Body('photo') photo: string) {
-    return this.promotionsService.addPhoto(+id, photo);
-  }
-
-  @Delete(':id/photo')
-  @ApiOperation({ summary: 'Remove photo from a promotion' })
-  @ApiResponse({ status: 200, description: 'Photo removed successfully', type: Promotion })
-  @ApiResponse({ status: 404, description: 'Promotion not found' })
-  @ApiParam({ name: 'id', description: 'Promotion ID' })
-  @ApiBody({ schema: { type: 'object', properties: { photo: { type: 'string', description: 'Photo path' } } } })
-  removePhoto(@Param('id') id: string, @Body('photo') photo: string) {
-    return this.promotionsService.removePhoto(+id, photo);
-  }
-
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a promotion' })
   @ApiResponse({ status: 204, description: 'Promotion deleted successfully' })
