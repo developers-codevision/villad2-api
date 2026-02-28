@@ -78,6 +78,15 @@ export class Reservation {
   @Column({ type: 'boolean', default: false })
   lateCheckOut: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  transferRoundTrip: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  transferOneWay: boolean;
+
+  @Column({ type: 'int', default: 0 })
+  breakfasts: number;
+
   @Column({
     type: 'decimal',
     precision: 10,

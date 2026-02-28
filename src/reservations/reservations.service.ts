@@ -120,7 +120,9 @@ export class ReservationsService {
     const basePrice = nights * room.pricePerNight;
     const extraGuestsCharge =
       nights * (dto.extraGuestsCount ?? 0) * room.extraGuestCharge;
-    const totalPrice = basePrice + extraGuestsCharge;
+    const transferCharge = (dto.transferOneWay ? 40 : 0) + (dto.transferRoundTrip ? 30 : 0);
+    const breakfastsCharge = (dto.breakfasts ?? 0) * 8;
+    const totalPrice = basePrice + extraGuestsCharge + transferCharge + breakfastsCharge;
 
     const reservation = this.reservationRepository.create({
       reservationNumber: generateReservationNumber(),
@@ -135,6 +137,9 @@ export class ReservationsService {
       additionalGuests: dto.additionalGuests,
       earlyCheckIn: dto.earlyCheckIn ?? false,
       lateCheckOut: dto.lateCheckOut ?? false,
+      transferOneWay: dto.transferOneWay ?? false,
+      transferRoundTrip: dto.transferRoundTrip ?? false,
+      breakfasts: dto.breakfasts ?? 0,
       totalPrice,
     });
 
@@ -358,12 +363,27 @@ export class ReservationsService {
       reservation.lateCheckOut = dto.lateCheckOut;
     }
 
-    // Recalculate total price if room, dates, or extra guests changed
+    if (dto.transferOneWay !== undefined) {
+      reservation.transferOneWay = dto.transferOneWay;
+    }
+
+    if (dto.transferRoundTrip !== undefined) {
+      reservation.transferRoundTrip = dto.transferRoundTrip;
+    }
+
+    if (dto.breakfasts !== undefined) {
+      reservation.breakfasts = dto.breakfasts;
+    }
+
+    // Recalculate total price if room, dates, extra guests, transfers, or breakfasts changed
     if (
       roomChanged ||
       dto.checkInDate !== undefined ||
       dto.checkOutDate !== undefined ||
-      dto.extraGuestsCount !== undefined
+      dto.extraGuestsCount !== undefined ||
+      dto.transferOneWay !== undefined ||
+      dto.transferRoundTrip !== undefined ||
+      dto.breakfasts !== undefined
     ) {
       const room = await this.roomRepository.findOne({
         where: { id: reservation.roomId },
@@ -387,7 +407,9 @@ export class ReservationsService {
       const basePrice = nights * room.pricePerNight;
       const extraGuestsCharge =
         nights * reservation.extraGuestsCount * room.extraGuestCharge;
-      reservation.totalPrice = basePrice + extraGuestsCharge;
+      const transferCharge = (reservation.transferOneWay ? 40 : 0) + (reservation.transferRoundTrip ? 35 : 0);
+      const breakfastsCharge = reservation.breakfasts * 8;
+      reservation.totalPrice = basePrice + extraGuestsCharge + transferCharge + breakfastsCharge;
     }
 
     if (dto.mainGuest !== undefined) {

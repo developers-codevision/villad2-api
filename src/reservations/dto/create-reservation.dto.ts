@@ -234,4 +234,32 @@ export class CreateReservationDto {
   @IsOptional()
   @IsBoolean()
   lateCheckOut?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Transfer one way (airport/station to hotel)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  transferOneWay?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Transfer round trip (hotel to airport/station)',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  transferRoundTrip?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Number of breakfasts (8 dollars each)',
+    example: 2,
+    minimum: 0,
+    maximum: 100,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  breakfasts?: number;
 }
