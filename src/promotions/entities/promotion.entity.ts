@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsString } from 'class-validator';
 
 export enum PromotionStatus {
   ACTIVE = 'ACTIVE',
@@ -50,11 +51,13 @@ export class Promotion {
   time: string;
 
   @ApiProperty({
-    description: 'Service included in promotion',
-    example: 'All-inclusive package',
+    description: 'Services included in promotion',
+    example: ['breakfast', 'spa', 'guided-tours'],
   })
-  @Column({ type: 'varchar', length: 255, default: '' })
-  service: string;
+  @Column({ type: 'simple-array' })
+  @IsArray()
+  @IsString({ each: true })
+  services: string[];
 
   @ApiProperty({
     description: 'Promotion description',

@@ -4,9 +4,11 @@ import {
   IsOptional,
   IsString,
   IsInt,
+  IsArray,
   MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { PromotionStatus } from '../entities/promotion.entity';
 
 export class CreatePromotionDto {
@@ -47,14 +49,19 @@ export class CreatePromotionDto {
   time?: string;
 
   @ApiPropertyOptional({
-    description: 'Service included in promotion',
-    maxLength: 255,
-    example: 'All-inclusive package',
+    description: 'Services included in promotion',
+    example: ['breakfast', 'spa', 'guided-tours'],
   })
   @IsOptional()
-  @IsString()
-  @MaxLength(255)
-  service?: string;
+  @IsArray()
+  @IsString({ each: true })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.split(',').map((service) => service.trim());
+    }
+    return value as string[];
+  })
+  services?: string[];
 
   @ApiPropertyOptional({
     description: 'Promotion description',
