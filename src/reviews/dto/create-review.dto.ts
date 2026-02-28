@@ -1,9 +1,12 @@
 import {
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   MaxLength,
+  Min,
+  Max,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReviewStatus } from '../entities/review.entity';
@@ -36,6 +39,18 @@ export class CreateReviewDto {
   @IsNotEmpty()
   @IsString()
   content: string;
+
+  @ApiProperty({
+    description: 'Star rating (1-5)',
+    example: 5,
+    minimum: 1,
+    maximum: 5,
+  })
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(1)
+  @Max(5)
+  stars: number;
 
   @ApiPropertyOptional({
     description: 'Response to the review',

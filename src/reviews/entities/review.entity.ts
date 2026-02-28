@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Min, Max } from 'class-validator';
 
 export enum ReviewStatus {
   ACTIVE = 'ACTIVE',
@@ -41,6 +42,17 @@ export class Review {
   })
   @Column({ type: 'text' })
   content: string;
+
+  @ApiProperty({
+    description: 'Star rating (1-5)',
+    example: 5,
+    minimum: 1,
+    maximum: 5,
+  })
+  @Column({ type: 'int' })
+  @Min(1)
+  @Max(5)
+  stars: number;
 
   @ApiPropertyOptional({
     description: 'Response to the review',
