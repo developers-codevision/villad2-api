@@ -10,6 +10,7 @@ import { AuthModule } from './auth/auth.module';
 import { ReservationsModule } from './reservations/reservations.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { PromotionsModule } from './promotions/promotions.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     ReservationsModule,
     PaymentsModule,
     ReviewsModule,
+    PromotionsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
