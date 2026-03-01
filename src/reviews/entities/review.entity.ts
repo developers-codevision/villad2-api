@@ -37,6 +37,13 @@ export class Review {
   country: string;
 
   @ApiProperty({
+    description: 'Review title',
+    example: 'Excellent Stay',
+  })
+  @Column({ type: 'varchar', length: 255 })
+  title: string;
+
+  @ApiProperty({
     description: 'Review content',
     example: 'Great experience! The service was excellent.',
   })

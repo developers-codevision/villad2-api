@@ -35,6 +35,17 @@ export class UpdateReviewDto {
   country?: string;
 
   @ApiPropertyOptional({
+    description: 'Review title',
+    maxLength: 255,
+    example: 'Excellent Stay',
+  })
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(255)
+  title?: string;
+
+  @ApiPropertyOptional({
     description: 'Review content',
     example: 'Great experience! The service was excellent.',
   })
