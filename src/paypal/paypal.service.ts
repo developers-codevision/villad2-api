@@ -39,7 +39,12 @@ export class PaypalService {
     orderId: string;
     reservation: Reservation;
   }> {
-    const { reservation: reservationData, currency, metadata, type } = createPaypalOrderWithReservationDto;
+    const {
+      reservation: reservationData,
+      metadata,
+      type,
+    } = createPaypalOrderWithReservationDto;
+    const currency = 'USD'; // Hardcoded to USD like in reservations module
 
     try {
       // Create the reservation first

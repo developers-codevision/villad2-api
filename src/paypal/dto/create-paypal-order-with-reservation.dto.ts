@@ -10,12 +10,13 @@ export class CreatePaypalOrderWithReservationDto {
   })
   reservation: CreateReservationDto;
 
-  @ApiProperty({
-    description: 'Currency for the payment',
+  @ApiPropertyOptional({
+    description: 'Currency for the payment (defaults to USD)',
     example: 'USD',
   })
+  @IsOptional()
   @IsString()
-  currency: string;
+  currency?: string;
 
   @ApiPropertyOptional({
     description: 'Payment type',
