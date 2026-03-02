@@ -23,6 +23,7 @@ import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { FindReservationsDto, PaginatedReservationsResponse } from './dto/find-reservations.dto';
+import { DayOccupiedHours } from './dto/occupied-hours.dto';
 import { Reservation } from './entities/reservation.entity';
 import { PaymentType } from '../payments/entities/payment.entity';
 import { PaymentsService } from '../payments/payments.service';
@@ -129,28 +130,39 @@ export class ReservationsController {
     return this.reservationsService.findWithFilters(filters);
   }
 
-  @Get('occupied-dates')
-  @ApiOperation({ summary: 'Get all occupied dates from confirmed and pending reservations grouped by room ID' })
+  @Get('occupied-hours/:roomId')
+  @ApiOperation({ summary: 'Get occupied hours by day for a specific room' })
   @ApiResponse({
     status: 200,
-    description: 'Object with room IDs as keys and arrays of occupied dates as values',
-    type: 'object',
-  })
-  getOccupiedDates(): Promise<{ [roomId: number]: string[] }> {
-    return this.reservationsService.getOccupiedDatesByRoom();
-  }
-
-  @Get('occupied-dates/:roomId')
-  @ApiOperation({ summary: 'Get occupied dates for a specific room from confirmed and pending reservations' })
-  @ApiResponse({
-    status: 200,
-    description: 'Array of occupied dates for the specified room sorted in ascending order',
-    type: [String],
+    description: 'Array of days with occupied hour ranges',
+    type: [DayOccupiedHours],
   })
   @ApiResponse({ status: 404, description: 'Room not found' })
   @ApiParam({ name: 'roomId', description: 'Room ID', example: 1 })
-  getOccupiedDatesByRoom(@Param('roomId', ParseIntPipe) roomId: number): Promise<string[]> {
-    return this.reservationsService.getOccupiedDatesByRoomId(roomId);
+  @ApiQuery({ name: 'startDate', required: false, type: 'string', description: 'Start date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'endDate', required: false, type: 'string', description: 'End date (YYYY-MM-DD)' })
+  getOccupiedHoursByRoom(
+    @Param('roomId', ParseIntPipe) roomId: number,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ): Promise<DayOccupiedHours[]> {
+    return this.reservationsService.getOccupiedHoursByRoom(roomId, startDate, endDate);
+  }
+
+  @Get('occupied-hours')
+  @ApiOperation({ summary: 'Get occupied hours by day for all rooms' })
+  @ApiResponse({
+    status: 200,
+    description: 'Object with room IDs as keys and arrays of days with occupied hour ranges',
+    type: 'object',
+  })
+  @ApiQuery({ name: 'startDate', required: false, type: 'string', description: 'Start date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'endDate', required: false, type: 'string', description: 'End date (YYYY-MM-DD)' })
+  getAllRoomsOccupiedHours(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ): Promise<{ [roomId: number]: DayOccupiedHours[] }> {
+    return this.reservationsService.getAllRoomsOccupiedHours(startDate, endDate);
   }
 
   @Get(':id')

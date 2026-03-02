@@ -16,6 +16,7 @@ import {
 } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { FindReservationsDto, PaginatedReservationsResponse } from './dto/find-reservations.dto';
+import { HourRange, DayOccupiedHours } from './dto/occupied-hours.dto';
 
 function mapSexToClientSex(sex: GuestSex): ClientSex {
   return sex as unknown as ClientSex;
@@ -535,5 +536,139 @@ export class ReservationsService {
     });
 
     return Array.from(occupiedDates).sort();
+  }
+
+  private generateHourRangesForDay(
+    reservationsForDay: any[],
+  ): HourRange[] | null {
+    if (reservationsForDay.length === 0) {
+      return null;
+    }
+
+    const ranges: HourRange[] = [];
+
+    reservationsForDay.forEach((reservation) => {
+      const checkInTime = reservation.earlyCheckIn ? '10:00' : '15:00';
+      const checkOutTime = reservation.lateCheckOut ? '13:00' : '11:00';
+
+      ranges.push({
+        start: checkInTime,
+        end: checkOutTime,
+      });
+    });
+
+    // Merge overlapping ranges
+    const mergedRanges = this.mergeOverlappingRanges(ranges);
+    return mergedRanges;
+  }
+
+  private mergeOverlappingRanges(ranges: HourRange[]): HourRange[] {
+    if (ranges.length === 0) return [];
+
+    // Sort ranges by start time
+    const sortedRanges = ranges.sort((a, b) => a.start.localeCompare(b.start));
+
+    const merged: HourRange[] = [sortedRanges[0]];
+
+    for (let i = 1; i < sortedRanges.length; i++) {
+      const current = sortedRanges[i];
+      const lastMerged = merged[merged.length - 1];
+
+      // If current range overlaps or is adjacent to last merged range
+      if (current.start <= lastMerged.end) {
+        lastMerged.end =
+          lastMerged.end > current.end ? lastMerged.end : current.end;
+      } else {
+        merged.push(current);
+      }
+    }
+
+    return merged;
+  }
+
+  private getDateRange(startDate: Date, endDate: Date): string[] {
+    const dates: string[] = [];
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      dates.push(currentDate.toISOString().split('T')[0]);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return dates;
+  }
+
+  async getOccupiedHoursByRoom(
+    roomId: number,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<DayOccupiedHours[]> {
+    const reservations = await this.reservationRepository.find({
+      where: [
+        { status: ReservationStatus.CONFIRMED, roomId },
+        { status: ReservationStatus.PENDING, roomId },
+      ],
+      select: ['checkInDate', 'checkOutDate', 'earlyCheckIn', 'lateCheckOut'],
+      order: { checkInDate: 'ASC' },
+    });
+
+    // Determine date range
+    let dateRange: string[];
+
+    if (startDate && endDate) {
+      dateRange = this.getDateRange(new Date(startDate), new Date(endDate));
+    } else if (reservations.length > 0) {
+      const firstDate = new Date(
+        Math.min(...reservations.map((r) => new Date(r.checkInDate).getTime())),
+      );
+      const lastDate = new Date(
+        Math.max(...reservations.map((r) => new Date(r.checkOutDate).getTime())),
+      );
+      dateRange = this.getDateRange(firstDate, lastDate);
+    } else {
+      return [];
+    }
+
+    const result: DayOccupiedHours[] = [];
+
+    dateRange.forEach((date) => {
+      const reservationsForDay = reservations.filter((reservation) => {
+        const checkIn = new Date(reservation.checkInDate);
+        const checkOut = new Date(reservation.checkOutDate);
+        const currentDate = new Date(date);
+
+        return currentDate >= checkIn && currentDate < checkOut;
+      });
+
+      const occupiedRanges = this.generateHourRangesForDay(reservationsForDay);
+
+      result.push({
+        date,
+        occupiedRanges,
+      });
+    });
+
+    return result;
+  }
+
+  async getAllRoomsOccupiedHours(
+    startDate?: string,
+    endDate?: string,
+  ): Promise<{ [roomId: number]: DayOccupiedHours[] }> {
+    const rooms = await this.roomRepository.find({
+      select: ['id'],
+    });
+
+    const result: { [roomId: number]: DayOccupiedHours[] } = {};
+
+    for (const room of rooms) {
+      result[room.id] = await this.getOccupiedHoursByRoom(
+        room.id,
+        startDate,
+        endDate,
+      );
+    }
+
+    return result;
   }
 }
