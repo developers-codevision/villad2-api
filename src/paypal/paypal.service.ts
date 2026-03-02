@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -21,6 +22,8 @@ import {
 
 @Injectable()
 export class PaypalService {
+  private readonly logger = new Logger(PaypalService.name);
+
   constructor(
     @InjectRepository(PaypalPayment)
     private readonly paypalPaymentRepository: Repository<PaypalPayment>,
@@ -47,11 +50,30 @@ export class PaypalService {
     const currency = 'USD'; // Hardcoded to USD like in reservations module
 
     try {
+      this.logger.debug(
+        `Creating PayPal order with reservation data: ${JSON.stringify(reservationData)}`,
+      );
+
+      // Validate that reservation data has roomId
+      if (!reservationData || !reservationData.roomId) {
+        throw new BadRequestException(
+          'Reservation data must include roomId and all required fields',
+        );
+      }
+
       // Create the reservation first
       const reservation = await this.reservationsService.create(reservationData);
+      this.logger.debug(`Reservation created with ID: ${reservation.id}`);
 
       // Fetch the reservation with room relation for the order builder
       const reservationWithRoom = await this.findReservation(reservation.id);
+      if (!reservationWithRoom) {
+        throw new NotFoundException('Reservation not found after creation');
+      }
+
+      this.logger.debug(
+        `Reservation with room loaded. Room: ${reservationWithRoom.room?.name || 'N/A'}, TotalPrice: ${reservationWithRoom.totalPrice}`,
+      );
 
       // Create PayPal order using the calculated total price
       const orderRequest = this.orderBuilder.buildOrder({
@@ -80,11 +102,17 @@ export class PaypalService {
         order,
       );
 
+      this.logger.debug(`PayPal order created successfully: ${order.id}`);
+
       return {
         orderId: order.id,
         reservation,
       };
     } catch (error) {
+      this.logger.error(
+        `Error creating PayPal order with reservation: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+        error instanceof Error ? error.stack : '',
+      );
       if (error instanceof BadRequestException) {
         throw error;
       }

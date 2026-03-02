@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEnum } from 'class-validator';
+import { IsString, IsOptional, IsEnum, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 import { PaymentType } from '../../payments/entities/payment.entity';
 import { CreateReservationDto } from '../../reservations/dto/create-reservation.dto';
 
@@ -8,6 +9,8 @@ export class CreatePaypalOrderWithReservationDto {
     description: 'Reservation data to create the reservation and calculate the total price',
     type: () => CreateReservationDto,
   })
+  @ValidateNested()
+  @Type(() => CreateReservationDto)
   reservation: CreateReservationDto;
 
   @ApiPropertyOptional({

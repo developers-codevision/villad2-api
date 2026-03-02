@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reservation } from '../../reservations/entities/reservation.entity';
 
@@ -38,6 +38,7 @@ export class OrderBuilder {
   constructor(private readonly configService: ConfigService) {}
 
   buildOrder(options: OrderBuilderOptions): PayPalOrderRequest {
+    this.validateOrderOptions(options);
     const { reservationId, amount, currency, reservation } = options;
 
     return {
@@ -63,25 +64,43 @@ export class OrderBuilder {
   }
 
   private buildDescription(reservation: Reservation): string {
+    if (!reservation) {
+      throw new BadRequestException('Reservation is required to build description');
+    }
+    if (!reservation.roomId) {
+      throw new BadRequestException(
+        'Reservation must have a roomId to build order description',
+      );
+    }
     const roomName = reservation.room?.name || `Room ${reservation.roomId}`;
     return `Reservación ${reservation.reservationNumber} - Habitación ${roomName}`;
   }
 
   validateOrderOptions(options: OrderBuilderOptions): void {
-    if (!options.reservationId) {
-      throw new Error('Reservation ID is required');
+    if (!options) {
+      throw new BadRequestException('Order options are required');
     }
 
-    if (!options.amount || options.amount <= 0) {
-      throw new Error('Amount must be greater than 0');
+    if (!options.reservationId) {
+      throw new BadRequestException('Reservation ID is required');
+    }
+
+    if (options.amount === undefined || options.amount === null || options.amount <= 0) {
+      throw new BadRequestException('Amount must be a positive number greater than 0');
     }
 
     if (!options.currency || options.currency.length !== 3) {
-      throw new Error('Currency must be a valid 3-letter code');
+      throw new BadRequestException('Currency must be a valid 3-letter code (e.g., USD)');
     }
 
     if (!options.reservation) {
-      throw new Error('Reservation data is required');
+      throw new BadRequestException('Reservation data is required');
+    }
+
+    if (!options.reservation.roomId) {
+      throw new BadRequestException(
+        'Reservation must have a roomId - ensure the reservation was created with a valid room',
+      );
     }
   }
 }
