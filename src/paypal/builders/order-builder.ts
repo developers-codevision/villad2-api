@@ -16,7 +16,10 @@ export interface PayPalOrderRequest {
   application_context: {
     brand_name: string;
     landing_page?: 'BILLING' | 'LOGIN' | 'NO_ACCOUNT' | 'SIGNUP';
-    shipping_preference: 'GET_FROM_FILE' | 'NO_SHIPPING' | 'SET_PROVIDED_ADDRESS';
+    shipping_preference:
+      | 'GET_FROM_FILE'
+      | 'NO_SHIPPING'
+      | 'SET_PROVIDED_ADDRESS';
     user_action: 'CONTINUE' | 'PAY_NOW';
     return_url?: string;
     cancel_url?: string;
@@ -32,7 +35,7 @@ export interface OrderBuilderOptions {
 
 @Injectable()
 export class OrderBuilder {
-  constructor(private readonly configService: ConfigService) { }
+  constructor(private readonly configService: ConfigService) {}
 
   buildOrder(options: OrderBuilderOptions): PayPalOrderRequest {
     const { reservationId, amount, currency, reservation } = options;
@@ -60,7 +63,7 @@ export class OrderBuilder {
   }
 
   private buildDescription(reservation: Reservation): string {
-    const roomName = reservation.room?.name || 'N/A';
+    const roomName = reservation.room?.name || `Room ${reservation.roomId}`;
     return `Reservación ${reservation.reservationNumber} - Habitación ${roomName}`;
   }
 

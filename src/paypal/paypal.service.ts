@@ -50,12 +50,15 @@ export class PaypalService {
       // Create the reservation first
       const reservation = await this.reservationsService.create(reservationData);
 
+      // Fetch the reservation with room relation for the order builder
+      const reservationWithRoom = await this.findReservation(reservation.id);
+
       // Create PayPal order using the calculated total price
       const orderRequest = this.orderBuilder.buildOrder({
         reservationId: reservation.id,
         amount: reservation.totalPrice,
         currency,
-        reservation,
+        reservation: reservationWithRoom,
       });
 
       const order: PayPalOrderResponse = await this.paypalClient.makeRequest(
