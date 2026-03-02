@@ -12,6 +12,7 @@ import {
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PaypalService } from './paypal.service';
 import { CreatePaypalPaymentDto } from './dto/create-paypal-payment.dto';
+import { CreatePaypalOrderWithReservationDto } from './dto/create-paypal-order-with-reservation.dto';
 
 @ApiTags('paypal')
 @Controller('paypal')
@@ -19,23 +20,21 @@ export class PaypalController {
   private readonly logger = new Logger(PaypalController.name);
 
   constructor(private readonly paypalService: PaypalService) {}
-
-  @Post('create-order')
-  @ApiOperation({ summary: 'Create PayPal order' })
-  @ApiResponse({ status: 201, description: 'PayPal order created successfully' })
+  @Post('create-order-with-reservation')
+  @ApiOperation({ summary: 'Create PayPal order with reservation data' })
+  @ApiResponse({ status: 201, description: 'PayPal order created successfully with reservation' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  @ApiResponse({ status: 404, description: 'Reservation not found' })
-  async createOrder(@Body() createPaypalPaymentDto: CreatePaypalPaymentDto) {
+  async createOrderWithReservation(@Body() dto: CreatePaypalOrderWithReservationDto) {
     try {
-      const result = await this.paypalService.createOrder(createPaypalPaymentDto);
+      const result = await this.paypalService.createOrderWithReservation(dto);
       return {
         success: true,
         data: result,
-        message: 'PayPal order created successfully',
+        message: 'PayPal order and reservation created successfully',
       };
     } catch (error) {
       this.logger.error(
-        `Failed to create PayPal order: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+        `Failed to create PayPal order with reservation: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
       );
       throw error;
     }

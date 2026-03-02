@@ -7,7 +7,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaypalPayment } from './entities/paypal-payment.entity';
 import { CreatePaypalPaymentDto } from './dto/create-paypal-payment.dto';
+import { CreatePaypalOrderWithReservationDto } from './dto/create-paypal-order-with-reservation.dto';
 import { Reservation } from '../reservations/entities/reservation.entity';
+import { ReservationsService } from '../reservations/reservations.service';
 import { PaypalClient } from './client/paypal-client';
 import { OrderBuilder } from './builders/order-builder';
 import { PaymentProcessor } from './processors/payment-processor';
@@ -24,25 +26,29 @@ export class PaypalService {
     private readonly paypalPaymentRepository: Repository<PaypalPayment>,
     @InjectRepository(Reservation)
     private readonly reservationRepository: Repository<Reservation>,
+    private readonly reservationsService: ReservationsService,
     private readonly paypalClient: PaypalClient,
     private readonly orderBuilder: OrderBuilder,
     private readonly paymentProcessor: PaymentProcessor,
     private readonly webhookHandler: WebhookHandler,
-  ) { }
+  ) {}
 
-  async createOrder(
-    createPaypalPaymentDto: CreatePaypalPaymentDto,
+  async createOrderWithReservation(
+    createPaypalOrderWithReservationDto: CreatePaypalOrderWithReservationDto,
   ): Promise<{
     orderId: string;
+    reservation: Reservation;
   }> {
-    const { reservationId, amount, currency, metadata } = createPaypalPaymentDto;
-
-    const reservation = await this.findReservation(reservationId);
+    const { reservation: reservationData, currency, metadata, type } = createPaypalOrderWithReservationDto;
 
     try {
+      // Create the reservation first
+      const reservation = await this.reservationsService.create(reservationData);
+
+      // Create PayPal order using the calculated total price
       const orderRequest = this.orderBuilder.buildOrder({
-        reservationId,
-        amount,
+        reservationId: reservation.id,
+        amount: reservation.totalPrice,
         currency,
         reservation,
       });
@@ -55,25 +61,27 @@ export class PaypalService {
 
       await this.paymentProcessor.createPaymentRecord(
         order.id,
-        reservationId,
-        amount,
+        reservation.id,
+        reservation.totalPrice,
         currency,
         {
           ...metadata,
           reservationNumber: reservation.reservationNumber,
+          type,
         },
         order,
       );
 
       return {
         orderId: order.id,
+        reservation,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
       }
       throw new BadRequestException(
-        `PayPal order creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `PayPal order creation with reservation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
     }
   }

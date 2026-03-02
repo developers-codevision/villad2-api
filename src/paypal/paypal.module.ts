@@ -9,11 +9,13 @@ import { PaymentProcessor } from './processors/payment-processor';
 import { WebhookHandler } from './handlers/webhook-handler';
 import { PaypalPayment } from './entities/paypal-payment.entity';
 import { Reservation } from '../reservations/entities/reservation.entity';
+import { ReservationsModule } from '../reservations/reservations.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PaypalPayment, Reservation]),
     ConfigModule,
+    ReservationsModule,
   ],
   controllers: [PaypalController],
   providers: [
