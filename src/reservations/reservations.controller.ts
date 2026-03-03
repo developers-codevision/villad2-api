@@ -23,7 +23,7 @@ import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { FindReservationsDto, PaginatedReservationsResponse } from './dto/find-reservations.dto';
-import { DayOccupiedHours } from './dto/occupied-hours.dto';
+import { HourRange } from './dto/occupied-hours.dto';
 import { Reservation } from './entities/reservation.entity';
 import { PaymentType } from '../payments/entities/payment.entity';
 import { PaymentsService } from '../payments/payments.service';
@@ -134,8 +134,8 @@ export class ReservationsController {
   @ApiOperation({ summary: 'Get occupied hours by day for a specific room' })
   @ApiResponse({
     status: 200,
-    description: 'Array of days with occupied hour ranges',
-    type: [DayOccupiedHours],
+    description: 'Array of occupied hour ranges',
+    type: [HourRange],
   })
   @ApiResponse({ status: 404, description: 'Room not found' })
   @ApiParam({ name: 'roomId', description: 'Room ID', example: 1 })
@@ -145,7 +145,7 @@ export class ReservationsController {
     @Param('roomId', ParseIntPipe) roomId: number,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-  ): Promise<DayOccupiedHours[]> {
+  ): Promise<HourRange[]> {
     return this.reservationsService.getOccupiedHoursByRoom(roomId, startDate, endDate);
   }
 
@@ -161,7 +161,7 @@ export class ReservationsController {
   getAllRoomsOccupiedHours(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-  ): Promise<{ [roomId: number]: DayOccupiedHours[] }> {
+  ): Promise<{ [roomId: number]: HourRange[] }> {
     return this.reservationsService.getAllRoomsOccupiedHours(startDate, endDate);
   }
 

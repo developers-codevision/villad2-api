@@ -44,10 +44,10 @@ export class Reservation {
   @JoinColumn({ name: 'clientId' })
   client: Client;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'varchar', length: 19 })
   checkInDate: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'varchar', length: 19 })
   checkOutDate: string;
 
   @CreateDateColumn({ type: 'timestamp' })

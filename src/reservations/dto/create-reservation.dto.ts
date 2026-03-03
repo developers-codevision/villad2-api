@@ -140,16 +140,16 @@ export class CreateReservationDto {
   roomId: number;
 
   @ApiProperty({
-    description: 'Check-in date (fecha_entrada) in ISO format (YYYY-MM-DD)',
-    example: '2026-02-21',
+    description: 'Check-in datetime (fecha_entrada) in ISO 8601 format (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ssZ). If earlyCheckIn is true, hour will be adjusted to 12:00',
+    example: '2026-02-21T14:00:00',
   })
   @IsDateString()
   checkInDate: string;
 
   @ApiProperty({
     description:
-      'Check-out date (fecha_salida) in ISO format (YYYY-MM-DD). Must be greater than checkInDate',
-    example: '2026-02-23',
+      'Check-out datetime (fecha_salida) in ISO 8601 format (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ssZ). If lateCheckOut is true, hour will be adjusted to 16:00. Must be greater than checkInDate',
+    example: '2026-02-23T11:00:00',
   })
   @IsDateString()
   checkOutDate: string;

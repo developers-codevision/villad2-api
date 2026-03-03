@@ -15,8 +15,11 @@ import {
   ReservationStatus as ReservationStatusDto,
 } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
-import { FindReservationsDto, PaginatedReservationsResponse } from './dto/find-reservations.dto';
-import { HourRange, DayOccupiedHours } from './dto/occupied-hours.dto';
+import {
+  FindReservationsDto,
+  PaginatedReservationsResponse,
+} from './dto/find-reservations.dto';
+import { HourRange } from './dto/occupied-hours.dto';
 
 function mapSexToClientSex(sex: GuestSex): ClientSex {
   return sex as unknown as ClientSex;
@@ -50,6 +53,15 @@ export class ReservationsService {
     private readonly paymentRepository: Repository<Payment>,
   ) {}
 
+  private parseDateTimeString(dateStr: string): Date {
+    // Formato esperado: YYYY-MM-DDTHH:mm:ss
+    const [datePart, timePart] = dateStr.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes, seconds] = timePart.split(':').map(Number);
+
+    return new Date(year, month - 1, day, hours, minutes, seconds);
+  }
+
   async create(dto: CreateReservationDto): Promise<Reservation> {
     const room = await this.roomRepository.findOne({
       where: { id: dto.roomId },
@@ -67,16 +79,20 @@ export class ReservationsService {
       );
     }
 
+    // Convert dates to Date objects for comparison
+    const checkInDate = new Date(dto.checkInDate);
+    const checkOutDate = new Date(dto.checkOutDate);
+
     // Early/late check-in/out conflict validation
     if (dto.earlyCheckIn) {
       const conflict = await this.reservationRepository.findOne({
         where: {
           roomId: dto.roomId,
-          checkOutDate: dto.checkInDate,
           lateCheckOut: true,
         },
       });
-      if (conflict) {
+      // Check if the early check-in date matches a late checkout date
+      if (conflict && this.isSameDateString(dto.checkInDate, conflict.checkOutDate)) {
         throw new ConflictException(
           'Early check-in conflicts with another reservation that has late check-out on the same date.',
         );
@@ -87,11 +103,11 @@ export class ReservationsService {
       const conflict = await this.reservationRepository.findOne({
         where: {
           roomId: dto.roomId,
-          checkInDate: dto.checkOutDate,
           earlyCheckIn: true,
         },
       });
-      if (conflict) {
+      // Check if the late checkout date matches an early checkin date
+      if (conflict && this.isSameDateString(dto.checkOutDate, conflict.checkInDate)) {
         throw new ConflictException(
           'Late check-out conflicts with another reservation that has early check-in on the same date.',
         );
@@ -107,11 +123,21 @@ export class ReservationsService {
     });
     const savedClient = await this.clientRepository.save(client);
 
-    // Calculate total price
-    const checkIn = new Date(dto.checkInDate);
-    const checkOut = new Date(dto.checkOutDate);
+    // Adjust check-in and check-out times based on early/late flags
+    const adjustedCheckInDate = this.adjustCheckInTimeString(
+      dto.checkInDate,
+      dto.earlyCheckIn ?? false,
+    );
+    const adjustedCheckOutDate = this.adjustCheckOutTimeString(
+      dto.checkOutDate,
+      dto.lateCheckOut ?? false,
+    );
+
+    // Calculate total price using adjusted dates
+    const checkInTime = new Date(adjustedCheckInDate).getTime();
+    const checkOutTime = new Date(adjustedCheckOutDate).getTime();
     const nights = Math.ceil(
-      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
+      (checkOutTime - checkInTime) / (1000 * 60 * 60 * 24),
     );
     if (nights <= 0) {
       throw new ConflictException(
@@ -121,16 +147,18 @@ export class ReservationsService {
     const basePrice = nights * room.pricePerNight;
     const extraGuestsCharge =
       nights * (dto.extraGuestsCount ?? 0) * room.extraGuestCharge;
-    const transferCharge = (dto.transferOneWay ? 40 : 0) + (dto.transferRoundTrip ? 30 : 0);
+    const transferCharge =
+      (dto.transferOneWay ? 40 : 0) + (dto.transferRoundTrip ? 30 : 0);
     const breakfastsCharge = (dto.breakfasts ?? 0) * 8;
-    const totalPrice = basePrice + extraGuestsCharge + transferCharge + breakfastsCharge;
+    const totalPrice =
+      basePrice + extraGuestsCharge + transferCharge + breakfastsCharge;
 
     const reservation = this.reservationRepository.create({
       reservationNumber: generateReservationNumber(),
       roomId: dto.roomId,
       clientId: savedClient.id,
-      checkInDate: dto.checkInDate,
-      checkOutDate: dto.checkOutDate,
+      checkInDate: adjustedCheckInDate,
+      checkOutDate: adjustedCheckOutDate,
       status: mapStatusToEntity(dto.status) ?? ReservationStatus.PENDING,
       baseGuestsCount: dto.baseGuestsCount,
       extraGuestsCount: dto.extraGuestsCount ?? 0,
@@ -159,7 +187,9 @@ export class ReservationsService {
     });
   }
 
-  async findWithFilters(filters: FindReservationsDto): Promise<PaginatedReservationsResponse> {
+  async findWithFilters(
+    filters: FindReservationsDto,
+  ): Promise<PaginatedReservationsResponse> {
     const {
       page = 1,
       limit = 10,
@@ -188,9 +218,12 @@ export class ReservationsService {
 
     // Apply filters
     if (reservationNumber) {
-      queryBuilder.andWhere('reservation.reservationNumber LIKE :reservationNumber', {
-        reservationNumber: `%${reservationNumber}%`,
-      });
+      queryBuilder.andWhere(
+        'reservation.reservationNumber LIKE :reservationNumber',
+        {
+          reservationNumber: `%${reservationNumber}%`,
+        },
+      );
     }
 
     if (roomId) {
@@ -239,11 +272,15 @@ export class ReservationsService {
     }
 
     if (minPrice) {
-      queryBuilder.andWhere('reservation.totalPrice >= :minPrice', { minPrice });
+      queryBuilder.andWhere('reservation.totalPrice >= :minPrice', {
+        minPrice,
+      });
     }
 
     if (maxPrice) {
-      queryBuilder.andWhere('reservation.totalPrice <= :maxPrice', { maxPrice });
+      queryBuilder.andWhere('reservation.totalPrice <= :maxPrice', {
+        maxPrice,
+      });
     }
 
     if (earlyCheckIn !== undefined) {
@@ -329,11 +366,15 @@ export class ReservationsService {
       roomChanged = true;
     }
 
+    let dateOrFlagChanged = false;
+
     if (dto.checkInDate !== undefined) {
       reservation.checkInDate = dto.checkInDate;
+      dateOrFlagChanged = true;
     }
     if (dto.checkOutDate !== undefined) {
       reservation.checkOutDate = dto.checkOutDate;
+      dateOrFlagChanged = true;
     }
 
     if (dto.status !== undefined) {
@@ -358,10 +399,24 @@ export class ReservationsService {
 
     if (dto.earlyCheckIn !== undefined) {
       reservation.earlyCheckIn = dto.earlyCheckIn;
+      dateOrFlagChanged = true;
     }
 
     if (dto.lateCheckOut !== undefined) {
       reservation.lateCheckOut = dto.lateCheckOut;
+      dateOrFlagChanged = true;
+    }
+
+    // Adjust times if dates or early/late flags changed
+    if (dateOrFlagChanged) {
+      reservation.checkInDate = this.adjustCheckInTimeString(
+        reservation.checkInDate,
+        reservation.earlyCheckIn,
+      );
+      reservation.checkOutDate = this.adjustCheckOutTimeString(
+        reservation.checkOutDate,
+        reservation.lateCheckOut,
+      );
     }
 
     if (dto.transferOneWay !== undefined) {
@@ -379,8 +434,7 @@ export class ReservationsService {
     // Recalculate total price if room, dates, extra guests, transfers, or breakfasts changed
     if (
       roomChanged ||
-      dto.checkInDate !== undefined ||
-      dto.checkOutDate !== undefined ||
+      dateOrFlagChanged ||
       dto.extraGuestsCount !== undefined ||
       dto.transferOneWay !== undefined ||
       dto.transferRoundTrip !== undefined ||
@@ -408,9 +462,12 @@ export class ReservationsService {
       const basePrice = nights * room.pricePerNight;
       const extraGuestsCharge =
         nights * reservation.extraGuestsCount * room.extraGuestCharge;
-      const transferCharge = (reservation.transferOneWay ? 40 : 0) + (reservation.transferRoundTrip ? 35 : 0);
+      const transferCharge =
+        (reservation.transferOneWay ? 40 : 0) +
+        (reservation.transferRoundTrip ? 35 : 0);
       const breakfastsCharge = reservation.breakfasts * 8;
-      reservation.totalPrice = basePrice + extraGuestsCharge + transferCharge + breakfastsCharge;
+      reservation.totalPrice =
+        basePrice + extraGuestsCharge + transferCharge + breakfastsCharge;
     }
 
     if (dto.mainGuest !== undefined) {
@@ -472,7 +529,11 @@ export class ReservationsService {
       const checkOut = new Date(reservation.checkOutDate);
 
       // Include check-in date but exclude check-out date
-      for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+      for (
+        let d = new Date(checkIn);
+        d < checkOut;
+        d.setDate(d.getDate() + 1)
+      ) {
         occupiedDates.add(d.toISOString().split('T')[0]);
       }
     });
@@ -500,15 +561,23 @@ export class ReservationsService {
       }
 
       // Include check-in date but exclude check-out date
-      for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
-        occupiedDatesByRoom[reservation.roomId].add(d.toISOString().split('T')[0]);
+      for (
+        let d = new Date(checkIn);
+        d < checkOut;
+        d.setDate(d.getDate() + 1)
+      ) {
+        occupiedDatesByRoom[reservation.roomId].add(
+          d.toISOString().split('T')[0],
+        );
       }
     });
 
     // Convert Sets to sorted arrays
     const result: { [roomId: number]: string[] } = {};
     Object.keys(occupiedDatesByRoom).forEach((roomId) => {
-      result[parseInt(roomId)] = Array.from(occupiedDatesByRoom[parseInt(roomId)]).sort();
+      result[parseInt(roomId)] = Array.from(
+        occupiedDatesByRoom[parseInt(roomId)],
+      ).sort();
     });
 
     return result;
@@ -530,7 +599,11 @@ export class ReservationsService {
       const checkOut = new Date(reservation.checkOutDate);
 
       // Include check-in date but exclude check-out date
-      for (let d = new Date(checkIn); d < checkOut; d.setDate(d.getDate() + 1)) {
+      for (
+        let d = new Date(checkIn);
+        d < checkOut;
+        d.setDate(d.getDate() + 1)
+      ) {
         occupiedDates.add(d.toISOString().split('T')[0]);
       }
     });
@@ -540,6 +613,7 @@ export class ReservationsService {
 
   private generateHourRangesForDay(
     reservationsForDay: any[],
+    date: string,
   ): HourRange[] | null {
     if (reservationsForDay.length === 0) {
       return null;
@@ -548,12 +622,37 @@ export class ReservationsService {
     const ranges: HourRange[] = [];
 
     reservationsForDay.forEach((reservation) => {
-      const checkInTime = reservation.earlyCheckIn ? '10:00' : '15:00';
-      const checkOutTime = reservation.lateCheckOut ? '13:00' : '11:00';
+      // Extraer horas reales de checkInDate y checkOutDate
+      const checkInDateTime = this.parseDateTimeString(reservation.checkInDate);
+      const checkOutDateTime = this.parseDateTimeString(reservation.checkOutDate);
+
+      // Determinar las horas para este día específico
+      const currentDate = new Date(date + 'T00:00:00');
+      const nextDay = new Date(date + 'T00:00:00');
+      nextDay.setDate(nextDay.getDate() + 1);
+
+      let startTime: string;
+      let endTime: string;
+
+      // Si el check-in es el mismo día, usar la hora real de check-in
+      if (checkInDateTime.toDateString() === currentDate.toDateString()) {
+        startTime = `${String(checkInDateTime.getHours()).padStart(2, '0')}:${String(checkInDateTime.getMinutes()).padStart(2, '0')}`;
+      } else {
+        // Si el check-in fue en días anteriores, empezar a las 00:00
+        startTime = '00:00';
+      }
+
+      // Si el check-out es el mismo día, usar la hora real de check-out
+      if (checkOutDateTime.toDateString() === currentDate.toDateString()) {
+        endTime = `${String(checkOutDateTime.getHours()).padStart(2, '0')}:${String(checkOutDateTime.getMinutes()).padStart(2, '0')}`;
+      } else {
+        // Si el check-out es en días posteriores, terminar a las 23:59
+        endTime = '23:59';
+      }
 
       ranges.push({
-        start: checkInTime,
-        end: checkOutTime,
+        start: startTime,
+        end: endTime,
       });
     });
 
@@ -602,7 +701,7 @@ export class ReservationsService {
     roomId: number,
     startDate?: string,
     endDate?: string,
-  ): Promise<DayOccupiedHours[]> {
+  ): Promise<HourRange[]> {
     const reservations = await this.reservationRepository.find({
       where: [
         { status: ReservationStatus.CONFIRMED, roomId },
@@ -612,39 +711,36 @@ export class ReservationsService {
       order: { checkInDate: 'ASC' },
     });
 
-    // Determine date range
-    let dateRange: string[];
-
-    if (startDate && endDate) {
-      dateRange = this.getDateRange(new Date(startDate), new Date(endDate));
-    } else if (reservations.length > 0) {
-      const firstDate = new Date(
-        Math.min(...reservations.map((r) => new Date(r.checkInDate).getTime())),
-      );
-      const lastDate = new Date(
-        Math.max(...reservations.map((r) => new Date(r.checkOutDate).getTime())),
-      );
-      dateRange = this.getDateRange(firstDate, lastDate);
-    } else {
+    if (reservations.length === 0) {
       return [];
     }
 
-    const result: DayOccupiedHours[] = [];
+    // Filtrar por rango de fechas si se proporcionan
+    let filteredReservations = reservations;
+    if (startDate && endDate) {
+      filteredReservations = reservations.filter((reservation) => {
+        const checkIn = this.parseDateTimeString(reservation.checkInDate);
+        const checkOut = this.parseDateTimeString(reservation.checkOutDate);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
 
-    dateRange.forEach((date) => {
-      const reservationsForDay = reservations.filter((reservation) => {
-        const checkIn = new Date(reservation.checkInDate);
-        const checkOut = new Date(reservation.checkOutDate);
-        const currentDate = new Date(date);
-
-        return currentDate >= checkIn && currentDate < checkOut;
+        return checkIn <= end && checkOut >= start;
       });
+    }
 
-      const occupiedRanges = this.generateHourRangesForDay(reservationsForDay);
+    const result: HourRange[] = [];
+
+    filteredReservations.forEach((reservation) => {
+      const checkIn = this.parseDateTimeString(reservation.checkInDate);
+      const checkOut = this.parseDateTimeString(reservation.checkOutDate);
+
+      // Formatear fechas completas con horas
+      const startDateTime = `${checkIn.toISOString().split('T')[0]}T${String(checkIn.getHours()).padStart(2, '0')}:${String(checkIn.getMinutes()).padStart(2, '0')}`;
+      const endDateTime = `${checkOut.toISOString().split('T')[0]}T${String(checkOut.getHours()).padStart(2, '0')}:${String(checkOut.getMinutes()).padStart(2, '0')}`;
 
       result.push({
-        date,
-        occupiedRanges,
+        start: startDateTime,
+        end: endDateTime,
       });
     });
 
@@ -654,12 +750,12 @@ export class ReservationsService {
   async getAllRoomsOccupiedHours(
     startDate?: string,
     endDate?: string,
-  ): Promise<{ [roomId: number]: DayOccupiedHours[] }> {
+  ): Promise<{ [roomId: number]: HourRange[] }> {
     const rooms = await this.roomRepository.find({
       select: ['id'],
     });
 
-    const result: { [roomId: number]: DayOccupiedHours[] } = {};
+    const result: { [roomId: number]: HourRange[] } = {};
 
     for (const room of rooms) {
       result[room.id] = await this.getOccupiedHoursByRoom(
@@ -670,5 +766,107 @@ export class ReservationsService {
     }
 
     return result;
+  }
+
+  /**
+   * Adjusts check-in time based on early check-in flag
+   * If earlyCheckIn is true, sets time to 12:00 (noon)
+   * Otherwise, keeps the original time
+   */
+  private adjustCheckInTimeString(dateStr: string, earlyCheckIn: boolean): string {
+    if (!earlyCheckIn) {
+      return dateStr;
+    }
+    
+    // Parse the ISO string and adjust hours
+    const date = new Date(dateStr);
+    date.setHours(12, 0, 0, 0);
+    
+    // Return as ISO string without timezone conversion
+    return this.dateToISOString(date);
+  }
+
+  /**
+   * Adjusts check-out time based on late check-out flag
+   * If lateCheckOut is true, sets time to 16:00 (4:00 PM)
+   * Otherwise, keeps the original time
+   */
+  private adjustCheckOutTimeString(dateStr: string, lateCheckOut: boolean): string {
+    if (!lateCheckOut) {
+      return dateStr;
+    }
+    
+    // Parse the ISO string and adjust hours
+    const date = new Date(dateStr);
+    date.setHours(16, 0, 0, 0);
+    
+    // Return as ISO string without timezone conversion
+    return this.dateToISOString(date);
+  }
+
+  /**
+   * Converts a Date to ISO string format (local time, not UTC)
+   */
+  private dateToISOString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  }
+
+  /**
+   * Adjusts check-in time based on early check-in flag
+   * If earlyCheckIn is true, sets time to 12:00 (noon)
+   * Otherwise, keeps the original time
+   */
+  private adjustCheckInTime(date: Date, earlyCheckIn: boolean): Date {
+    const adjusted = new Date(date);
+    if (earlyCheckIn) {
+      adjusted.setHours(12, 0, 0, 0);
+    } else {
+      // Keep original time, or set to default time if needed
+      // Currently keeping the provided time
+    }
+    return adjusted;
+  }
+
+  /**
+   * Adjusts check-out time based on late check-out flag
+   * If lateCheckOut is true, sets time to 16:00 (4:00 PM)
+   * Otherwise, keeps the original time
+   */
+  private adjustCheckOutTime(date: Date, lateCheckOut: boolean): Date {
+    const adjusted = new Date(date);
+    if (lateCheckOut) {
+      adjusted.setHours(16, 0, 0, 0);
+    } else {
+      // Keep original time, or set to default time if needed
+      // Currently keeping the provided time
+    }
+    return adjusted;
+  }
+
+  /**
+   * Checks if two date strings are on the same day
+   */
+  private isSameDateString(date1Str: string, date2Str: string): boolean {
+    const date1 = date1Str.split('T')[0]; // Extract YYYY-MM-DD
+    const date2 = date2Str.split('T')[0]; // Extract YYYY-MM-DD
+    return date1 === date2;
+  }
+
+  /**
+   * Checks if two dates are on the same day
+   */
+  private isSameDay(date1: Date, date2: Date): boolean {
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
   }
 }
