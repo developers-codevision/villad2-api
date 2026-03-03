@@ -79,50 +79,6 @@ export class ReservationsService {
       );
     }
 
-    // Convert dates to Date objects for comparison
-    const checkInDate = new Date(dto.checkInDate);
-    const checkOutDate = new Date(dto.checkOutDate);
-
-    // Early/late check-in/out conflict validation
-    if (dto.earlyCheckIn) {
-      const conflict = await this.reservationRepository.findOne({
-        where: {
-          roomId: dto.roomId,
-          lateCheckOut: true,
-        },
-      });
-      // Check if the early check-in date matches a late checkout date
-      if (conflict && this.isSameDateString(dto.checkInDate, conflict.checkOutDate)) {
-        throw new ConflictException(
-          'Early check-in conflicts with another reservation that has late check-out on the same date.',
-        );
-      }
-    }
-
-    if (dto.lateCheckOut) {
-      const conflict = await this.reservationRepository.findOne({
-        where: {
-          roomId: dto.roomId,
-          earlyCheckIn: true,
-        },
-      });
-      // Check if the late checkout date matches an early checkin date
-      if (conflict && this.isSameDateString(dto.checkOutDate, conflict.checkInDate)) {
-        throw new ConflictException(
-          'Late check-out conflicts with another reservation that has early check-in on the same date.',
-        );
-      }
-    }
-
-    const client = this.clientRepository.create({
-      firstName: dto.mainGuest.firstName,
-      lastName: dto.mainGuest.lastName,
-      sex: mapSexToClientSex(dto.mainGuest.sex),
-      email: dto.mainGuest.email,
-      phone: dto.mainGuest.phone,
-    });
-    const savedClient = await this.clientRepository.save(client);
-
     // Adjust check-in and check-out times based on early/late flags
     const adjustedCheckInDate = this.adjustCheckInTimeString(
       dto.checkInDate,
@@ -132,6 +88,22 @@ export class ReservationsService {
       dto.checkOutDate,
       dto.lateCheckOut ?? false,
     );
+
+    // Check for conflicting reservations
+    await this.validateNoConflictingReservations(
+      dto.roomId,
+      adjustedCheckInDate,
+      adjustedCheckOutDate,
+    );
+
+    const client = this.clientRepository.create({
+      firstName: dto.mainGuest.firstName,
+      lastName: dto.mainGuest.lastName,
+      sex: mapSexToClientSex(dto.mainGuest.sex),
+      email: dto.mainGuest.email,
+      phone: dto.mainGuest.phone,
+    });
+    const savedClient = await this.clientRepository.save(client);
 
     // Calculate total price using adjusted dates
     const checkInTime = new Date(adjustedCheckInDate).getTime();
@@ -419,6 +391,16 @@ export class ReservationsService {
       );
     }
 
+    // Check for conflicting reservations if room or dates changed
+    if (roomChanged || dateOrFlagChanged) {
+      await this.validateNoConflictingReservationsForUpdate(
+        id,
+        reservation.roomId,
+        reservation.checkInDate,
+        reservation.checkOutDate,
+      );
+    }
+
     if (dto.transferOneWay !== undefined) {
       reservation.transferOneWay = dto.transferOneWay;
     }
@@ -611,92 +593,6 @@ export class ReservationsService {
     return Array.from(occupiedDates).sort();
   }
 
-  private generateHourRangesForDay(
-    reservationsForDay: any[],
-    date: string,
-  ): HourRange[] | null {
-    if (reservationsForDay.length === 0) {
-      return null;
-    }
-
-    const ranges: HourRange[] = [];
-
-    reservationsForDay.forEach((reservation) => {
-      // Extraer horas reales de checkInDate y checkOutDate
-      const checkInDateTime = this.parseDateTimeString(reservation.checkInDate);
-      const checkOutDateTime = this.parseDateTimeString(reservation.checkOutDate);
-
-      // Determinar las horas para este día específico
-      const currentDate = new Date(date + 'T00:00:00');
-      const nextDay = new Date(date + 'T00:00:00');
-      nextDay.setDate(nextDay.getDate() + 1);
-
-      let startTime: string;
-      let endTime: string;
-
-      // Si el check-in es el mismo día, usar la hora real de check-in
-      if (checkInDateTime.toDateString() === currentDate.toDateString()) {
-        startTime = `${String(checkInDateTime.getHours()).padStart(2, '0')}:${String(checkInDateTime.getMinutes()).padStart(2, '0')}`;
-      } else {
-        // Si el check-in fue en días anteriores, empezar a las 00:00
-        startTime = '00:00';
-      }
-
-      // Si el check-out es el mismo día, usar la hora real de check-out
-      if (checkOutDateTime.toDateString() === currentDate.toDateString()) {
-        endTime = `${String(checkOutDateTime.getHours()).padStart(2, '0')}:${String(checkOutDateTime.getMinutes()).padStart(2, '0')}`;
-      } else {
-        // Si el check-out es en días posteriores, terminar a las 23:59
-        endTime = '23:59';
-      }
-
-      ranges.push({
-        start: startTime,
-        end: endTime,
-      });
-    });
-
-    // Merge overlapping ranges
-    const mergedRanges = this.mergeOverlappingRanges(ranges);
-    return mergedRanges;
-  }
-
-  private mergeOverlappingRanges(ranges: HourRange[]): HourRange[] {
-    if (ranges.length === 0) return [];
-
-    // Sort ranges by start time
-    const sortedRanges = ranges.sort((a, b) => a.start.localeCompare(b.start));
-
-    const merged: HourRange[] = [sortedRanges[0]];
-
-    for (let i = 1; i < sortedRanges.length; i++) {
-      const current = sortedRanges[i];
-      const lastMerged = merged[merged.length - 1];
-
-      // If current range overlaps or is adjacent to last merged range
-      if (current.start <= lastMerged.end) {
-        lastMerged.end =
-          lastMerged.end > current.end ? lastMerged.end : current.end;
-      } else {
-        merged.push(current);
-      }
-    }
-
-    return merged;
-  }
-
-  private getDateRange(startDate: Date, endDate: Date): string[] {
-    const dates: string[] = [];
-    const currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      dates.push(currentDate.toISOString().split('T')[0]);
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return dates;
-  }
-
   async getOccupiedHoursByRoom(
     roomId: number,
     startDate?: string,
@@ -773,15 +669,18 @@ export class ReservationsService {
    * If earlyCheckIn is true, sets time to 12:00 (noon)
    * Otherwise, keeps the original time
    */
-  private adjustCheckInTimeString(dateStr: string, earlyCheckIn: boolean): string {
+  private adjustCheckInTimeString(
+    dateStr: string,
+    earlyCheckIn: boolean,
+  ): string {
     if (!earlyCheckIn) {
       return dateStr;
     }
-    
+
     // Parse the ISO string and adjust hours
     const date = new Date(dateStr);
     date.setHours(12, 0, 0, 0);
-    
+
     // Return as ISO string without timezone conversion
     return this.dateToISOString(date);
   }
@@ -791,15 +690,18 @@ export class ReservationsService {
    * If lateCheckOut is true, sets time to 16:00 (4:00 PM)
    * Otherwise, keeps the original time
    */
-  private adjustCheckOutTimeString(dateStr: string, lateCheckOut: boolean): string {
+  private adjustCheckOutTimeString(
+    dateStr: string,
+    lateCheckOut: boolean,
+  ): string {
     if (!lateCheckOut) {
       return dateStr;
     }
-    
+
     // Parse the ISO string and adjust hours
     const date = new Date(dateStr);
     date.setHours(16, 0, 0, 0);
-    
+
     // Return as ISO string without timezone conversion
     return this.dateToISOString(date);
   }
@@ -814,40 +716,8 @@ export class ReservationsService {
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const seconds = String(date.getSeconds()).padStart(2, '0');
-    
+
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-  }
-
-  /**
-   * Adjusts check-in time based on early check-in flag
-   * If earlyCheckIn is true, sets time to 12:00 (noon)
-   * Otherwise, keeps the original time
-   */
-  private adjustCheckInTime(date: Date, earlyCheckIn: boolean): Date {
-    const adjusted = new Date(date);
-    if (earlyCheckIn) {
-      adjusted.setHours(12, 0, 0, 0);
-    } else {
-      // Keep original time, or set to default time if needed
-      // Currently keeping the provided time
-    }
-    return adjusted;
-  }
-
-  /**
-   * Adjusts check-out time based on late check-out flag
-   * If lateCheckOut is true, sets time to 16:00 (4:00 PM)
-   * Otherwise, keeps the original time
-   */
-  private adjustCheckOutTime(date: Date, lateCheckOut: boolean): Date {
-    const adjusted = new Date(date);
-    if (lateCheckOut) {
-      adjusted.setHours(16, 0, 0, 0);
-    } else {
-      // Keep original time, or set to default time if needed
-      // Currently keeping the provided time
-    }
-    return adjusted;
   }
 
   /**
@@ -860,13 +730,87 @@ export class ReservationsService {
   }
 
   /**
-   * Checks if two dates are on the same day
+   * Validates that there are no conflicting reservations for the same room
+   * A conflict exists when:
+   * - Room is the same
+   * - Status is PENDING or CONFIRMED
+   * - Date ranges overlap (including same day conflicts)
    */
-  private isSameDay(date1: Date, date2: Date): boolean {
-    return (
-      date1.getFullYear() === date2.getFullYear() &&
-      date1.getMonth() === date2.getMonth() &&
-      date1.getDate() === date2.getDate()
-    );
+  private async validateNoConflictingReservations(
+    roomId: number,
+    checkInDate: string,
+    checkOutDate: string,
+  ): Promise<void> {
+    const conflictingReservations = await this.reservationRepository.find({
+      where: [
+        { status: ReservationStatus.PENDING, roomId },
+        { status: ReservationStatus.CONFIRMED, roomId },
+      ],
+      select: ['id', 'checkInDate', 'checkOutDate', 'status'],
+    });
+
+    const newCheckIn = new Date(checkInDate);
+    const newCheckOut = new Date(checkOutDate);
+
+    for (const reservation of conflictingReservations) {
+      const existingCheckIn = new Date(reservation.checkInDate);
+      const existingCheckOut = new Date(reservation.checkOutDate);
+
+      // Check if date ranges overlap
+      // Overlap occurs if: newCheckIn < existingCheckOut AND newCheckOut > existingCheckIn
+      if (
+        (newCheckIn <= existingCheckOut && newCheckIn >= existingCheckIn) ||
+        (newCheckOut >= existingCheckIn && newCheckOut <= existingCheckOut)
+      ) {
+        throw new ConflictException(
+          `Room ${roomId} is already reserved from ${existingCheckIn.toISOString()} to ${existingCheckOut.toISOString()}. ` +
+            `Requested dates ${checkInDate} to ${checkOutDate} conflict with existing reservation.`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Validates that there are no conflicting reservations for the same room during update
+   * Excludes the current reservation being updated from the conflict check
+   */
+  private async validateNoConflictingReservationsForUpdate(
+    reservationId: number,
+    roomId: number,
+    checkInDate: string,
+    checkOutDate: string,
+  ): Promise<void> {
+    const conflictingReservations = await this.reservationRepository.find({
+      where: [
+        { status: ReservationStatus.PENDING, roomId },
+        { status: ReservationStatus.CONFIRMED, roomId },
+      ],
+      select: ['id', 'checkInDate', 'checkOutDate', 'status'],
+    });
+
+    const newCheckIn = new Date(checkInDate);
+    const newCheckOut = new Date(checkOutDate);
+
+    for (const reservation of conflictingReservations) {
+      // Skip the current reservation being updated
+      if (reservation.id === reservationId) {
+        continue;
+      }
+
+      const existingCheckIn = new Date(reservation.checkInDate);
+      const existingCheckOut = new Date(reservation.checkOutDate);
+
+      // Check if date ranges overlap
+      // Overlap occurs if: newCheckIn < existingCheckOut AND newCheckOut > existingCheckIn
+      if (
+        (newCheckIn <= existingCheckOut && newCheckIn >= existingCheckIn) ||
+        (newCheckOut >= existingCheckIn && newCheckOut <= existingCheckOut)
+      ) {
+        throw new ConflictException(
+          `Room ${roomId} is already reserved from ${existingCheckIn.toISOString()} to ${existingCheckOut.toISOString()}. ` +
+            `Requested dates ${checkInDate} to ${checkOutDate} conflict with existing reservation.`,
+        );
+      }
+    }
   }
 }

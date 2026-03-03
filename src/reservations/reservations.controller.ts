@@ -22,7 +22,10 @@ import {
 import { ReservationsService } from './reservations.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
-import { FindReservationsDto, PaginatedReservationsResponse } from './dto/find-reservations.dto';
+import {
+  FindReservationsDto,
+  PaginatedReservationsResponse,
+} from './dto/find-reservations.dto';
 import { HourRange } from './dto/occupied-hours.dto';
 import { Reservation } from './entities/reservation.entity';
 import { PaymentType } from '../payments/entities/payment.entity';
@@ -86,19 +89,24 @@ export class ReservationsController {
     description: 'Session status retrieved successfully',
   })
   async getSessionStatus(@Query('session_id') sessionId: string) {
-    const session = await this.paymentsService.retrieveCheckoutSession(sessionId, {
-      expand: ['payment_intent'],
-    });
+    const session = await this.paymentsService.retrieveCheckoutSession(
+      sessionId,
+      {
+        expand: ['payment_intent'],
+      },
+    );
 
     return {
       status: session.status,
       payment_status: session.payment_status,
-      payment_intent_id: typeof session.payment_intent === 'object' 
-        ? session.payment_intent?.id 
-        : session.payment_intent,
-      payment_intent_status: typeof session.payment_intent === 'object' 
-        ? session.payment_intent?.status 
-        : undefined,
+      payment_intent_id:
+        typeof session.payment_intent === 'object'
+          ? session.payment_intent?.id
+          : session.payment_intent,
+      payment_intent_status:
+        typeof session.payment_intent === 'object'
+          ? session.payment_intent?.status
+          : undefined,
     };
   }
 
@@ -109,24 +117,111 @@ export class ReservationsController {
     description: 'Paginated list of reservations',
     type: PaginatedReservationsResponse,
   })
-  @ApiQuery({ name: 'page', required: false, type: 'number', description: 'Page number' })
-  @ApiQuery({ name: 'limit', required: false, type: 'number', description: 'Items per page' })
-  @ApiQuery({ name: 'sortBy', required: false, type: 'string', description: 'Sort field' })
-  @ApiQuery({ name: 'sortOrder', required: false, enum: ['ASC', 'DESC'], description: 'Sort order' })
-  @ApiQuery({ name: 'reservationNumber', required: false, type: 'string', description: 'Reservation number' })
-  @ApiQuery({ name: 'roomId', required: false, type: 'number', description: 'Room ID' })
-  @ApiQuery({ name: 'clientEmail', required: false, type: 'string', description: 'Client email' })
-  @ApiQuery({ name: 'clientName', required: false, type: 'string', description: 'Client name' })
-  @ApiQuery({ name: 'status', required: false, enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'], description: 'Reservation status' })
-  @ApiQuery({ name: 'checkInDateFrom', required: false, type: 'string', description: 'Check-in date from (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'checkInDateTo', required: false, type: 'string', description: 'Check-in date to (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'checkOutDateFrom', required: false, type: 'string', description: 'Check-out date from (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'checkOutDateTo', required: false, type: 'string', description: 'Check-out date to (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'minPrice', required: false, type: 'number', description: 'Minimum price' })
-  @ApiQuery({ name: 'maxPrice', required: false, type: 'number', description: 'Maximum price' })
-  @ApiQuery({ name: 'earlyCheckIn', required: false, type: 'boolean', description: 'Early check-in' })
-  @ApiQuery({ name: 'lateCheckOut', required: false, type: 'boolean', description: 'Late check-out' })
-  async findWithFilters(@Query() filters: FindReservationsDto): Promise<PaginatedReservationsResponse> {
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    type: 'string',
+    description: 'Sort field',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sort order',
+  })
+  @ApiQuery({
+    name: 'reservationNumber',
+    required: false,
+    type: 'string',
+    description: 'Reservation number',
+  })
+  @ApiQuery({
+    name: 'roomId',
+    required: false,
+    type: 'number',
+    description: 'Room ID',
+  })
+  @ApiQuery({
+    name: 'clientEmail',
+    required: false,
+    type: 'string',
+    description: 'Client email',
+  })
+  @ApiQuery({
+    name: 'clientName',
+    required: false,
+    type: 'string',
+    description: 'Client name',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'],
+    description: 'Reservation status',
+  })
+  @ApiQuery({
+    name: 'checkInDateFrom',
+    required: false,
+    type: 'string',
+    description: 'Check-in date from (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'checkInDateTo',
+    required: false,
+    type: 'string',
+    description: 'Check-in date to (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'checkOutDateFrom',
+    required: false,
+    type: 'string',
+    description: 'Check-out date from (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'checkOutDateTo',
+    required: false,
+    type: 'string',
+    description: 'Check-out date to (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'minPrice',
+    required: false,
+    type: 'number',
+    description: 'Minimum price',
+  })
+  @ApiQuery({
+    name: 'maxPrice',
+    required: false,
+    type: 'number',
+    description: 'Maximum price',
+  })
+  @ApiQuery({
+    name: 'earlyCheckIn',
+    required: false,
+    type: 'boolean',
+    description: 'Early check-in',
+  })
+  @ApiQuery({
+    name: 'lateCheckOut',
+    required: false,
+    type: 'boolean',
+    description: 'Late check-out',
+  })
+  async findWithFilters(
+    @Query() filters: FindReservationsDto,
+  ): Promise<PaginatedReservationsResponse> {
     return this.reservationsService.findWithFilters(filters);
   }
 
@@ -139,30 +234,58 @@ export class ReservationsController {
   })
   @ApiResponse({ status: 404, description: 'Room not found' })
   @ApiParam({ name: 'roomId', description: 'Room ID', example: 1 })
-  @ApiQuery({ name: 'startDate', required: false, type: 'string', description: 'Start date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: false, type: 'string', description: 'End date (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: 'string',
+    description: 'Start date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: 'string',
+    description: 'End date (YYYY-MM-DD)',
+  })
   getOccupiedHoursByRoom(
     @Param('roomId', ParseIntPipe) roomId: number,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ): Promise<HourRange[]> {
-    return this.reservationsService.getOccupiedHoursByRoom(roomId, startDate, endDate);
+    return this.reservationsService.getOccupiedHoursByRoom(
+      roomId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get('occupied-hours')
   @ApiOperation({ summary: 'Get occupied hours by day for all rooms' })
   @ApiResponse({
     status: 200,
-    description: 'Object with room IDs as keys and arrays of days with occupied hour ranges',
+    description:
+      'Object with room IDs as keys and arrays of days with occupied hour ranges',
     type: 'object',
   })
-  @ApiQuery({ name: 'startDate', required: false, type: 'string', description: 'Start date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'endDate', required: false, type: 'string', description: 'End date (YYYY-MM-DD)' })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: 'string',
+    description: 'Start date (YYYY-MM-DD)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: 'string',
+    description: 'End date (YYYY-MM-DD)',
+  })
   getAllRoomsOccupiedHours(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ): Promise<{ [roomId: number]: HourRange[] }> {
-    return this.reservationsService.getAllRoomsOccupiedHours(startDate, endDate);
+    return this.reservationsService.getAllRoomsOccupiedHours(
+      startDate,
+      endDate,
+    );
   }
 
   @Get(':id')
