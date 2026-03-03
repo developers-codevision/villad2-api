@@ -19,6 +19,7 @@ import {
   PayPalOrderResponse,
   PayPalCaptureResponse,
 } from './client/interfaces/paypal-api.interface';
+import { CreateReservationDto } from 'src/reservations/dto/create-reservation.dto';
 
 @Injectable()
 export class PaypalService {
@@ -37,32 +38,23 @@ export class PaypalService {
   ) {}
 
   async createOrderWithReservation(
-    createPaypalOrderWithReservationDto: CreatePaypalOrderWithReservationDto,
+    createPaypalOrderWithReservationDto: CreateReservationDto,
   ): Promise<{
     orderId: string;
     reservation: Reservation;
   }> {
-    const {
-      reservation: reservationData,
-      metadata,
-      type,
-    } = createPaypalOrderWithReservationDto;
-    const currency = 'USD'; // Hardcoded to USD like in reservations module
+    console.log(createPaypalOrderWithReservationDto);
+
+    const reservationData = createPaypalOrderWithReservationDto;
 
     try {
       this.logger.debug(
         `Creating PayPal order with reservation data: ${JSON.stringify(reservationData)}`,
       );
 
-      // Validate that reservation data has roomId
-      if (!reservationData || !reservationData.roomId) {
-        throw new BadRequestException(
-          'Reservation data must include roomId and all required fields',
-        );
-      }
-
       // Create the reservation first
-      const reservation = await this.reservationsService.create(reservationData);
+      const reservation =
+        await this.reservationsService.create(reservationData);
       this.logger.debug(`Reservation created with ID: ${reservation.id}`);
 
       // Fetch the reservation with room relation for the order builder
@@ -79,7 +71,7 @@ export class PaypalService {
       const orderRequest = this.orderBuilder.buildOrder({
         reservationId: reservation.id,
         amount: reservation.totalPrice,
-        currency,
+        currency: 'USD',
         reservation: reservationWithRoom,
       });
 
@@ -93,11 +85,9 @@ export class PaypalService {
         order.id,
         reservation.id,
         reservation.totalPrice,
-        currency,
+        'USD',
         {
-          ...metadata,
           reservationNumber: reservation.reservationNumber,
-          type,
         },
         order,
       );
@@ -124,11 +114,12 @@ export class PaypalService {
 
   async capturePayment(orderId: string): Promise<PaypalPayment> {
     try {
-      const capture: PayPalCaptureResponse = await this.paypalClient.makeRequest(
-        `/v2/checkout/orders/${orderId}/capture`,
-        'POST',
-        {},
-      );
+      const capture: PayPalCaptureResponse =
+        await this.paypalClient.makeRequest(
+          `/v2/checkout/orders/${orderId}/capture`,
+          'POST',
+          {},
+        );
 
       return await this.paymentProcessor.processCapture(orderId, capture);
     } catch (error) {

@@ -1,38 +1,15 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsEnum, ValidateNested } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { PaymentType } from '../../payments/entities/payment.entity';
 import { CreateReservationDto } from '../../reservations/dto/create-reservation.dto';
 
 export class CreatePaypalOrderWithReservationDto {
   @ApiProperty({
-    description: 'Reservation data to create the reservation and calculate the total price',
+    description:
+      'Reservation data to create the reservation and calculate the total price',
     type: () => CreateReservationDto,
   })
   @ValidateNested()
   @Type(() => CreateReservationDto)
   reservation: CreateReservationDto;
-
-  @ApiPropertyOptional({
-    description: 'Currency for the payment (defaults to USD)',
-    example: 'USD',
-  })
-  @IsOptional()
-  @IsString()
-  currency?: string;
-
-  @ApiPropertyOptional({
-    description: 'Payment type',
-    enum: PaymentType,
-  })
-  @IsOptional()
-  @IsEnum(PaymentType)
-  type?: PaymentType;
-
-  @ApiPropertyOptional({
-    description: 'Additional metadata for the payment',
-    example: { source: 'web', campaign: 'summer2024' },
-  })
-  @IsOptional()
-  metadata?: Record<string, any>;
 }

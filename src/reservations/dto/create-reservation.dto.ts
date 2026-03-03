@@ -1,7 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
-  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsDateString,
@@ -212,7 +211,6 @@ export class CreateReservationDto {
   })
   @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @ArrayMaxSize(200)
   @ValidateNested({ each: true })
   @Type(() => CreateReservationGuestDto)

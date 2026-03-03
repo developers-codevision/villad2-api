@@ -11,8 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PaypalService } from './paypal.service';
-import { CreatePaypalPaymentDto } from './dto/create-paypal-payment.dto';
-import { CreatePaypalOrderWithReservationDto } from './dto/create-paypal-order-with-reservation.dto';
+import { CreateReservationDto } from 'src/reservations/dto/create-reservation.dto';
 
 @ApiTags('paypal')
 @Controller('paypal')
@@ -24,8 +23,9 @@ export class PaypalController {
   @ApiOperation({ summary: 'Create PayPal order with reservation data' })
   @ApiResponse({ status: 201, description: 'PayPal order created successfully with reservation' })
   @ApiResponse({ status: 400, description: 'Bad request' })
-  async createOrderWithReservation(@Body() dto: CreatePaypalOrderWithReservationDto) {
+  async createOrderWithReservation(@Body() dto: CreateReservationDto) {
     try {
+      console.log(dto)
       const result = await this.paypalService.createOrderWithReservation(dto);
       return {
         success: true,
