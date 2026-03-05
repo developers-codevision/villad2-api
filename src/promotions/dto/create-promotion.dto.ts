@@ -57,7 +57,16 @@ export class CreatePromotionDto {
   @IsString({ each: true })
   @Transform(({ value }) => {
     if (typeof value === 'string') {
-      return value.split(',').map((service) => service.trim());
+      try {
+        // Try to parse as JSON array first
+        const parsed = JSON.parse(value) as unknown;
+        if (Array.isArray(parsed)) {
+          return parsed as string[];
+        }
+      } catch {
+        // If not valid JSON, treat as comma-separated string
+        return value.split(',').map((service) => service.trim());
+      }
     }
     return value as string[];
   })
