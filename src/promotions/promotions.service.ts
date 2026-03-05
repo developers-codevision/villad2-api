@@ -17,7 +17,7 @@ export class PromotionsService {
 
   async create(createPromotionDto: CreatePromotionDto): Promise<Promotion> {
     const photoPath = createPromotionDto.photo;
-    
+
     // If there's a photo but promotion creation fails, clean up the orphaned file
     if (photoPath) {
       try {
@@ -37,7 +37,6 @@ export class PromotionsService {
         throw error;
       }
     }
-    
     // No photo, just create the promotion
     const promotion = this.promotionRepository.create(createPromotionDto);
     return await this.promotionRepository.save(promotion);
@@ -83,15 +82,34 @@ export class PromotionsService {
     return promotion;
   }
 
-  async update(id: number, updatePromotionDto: UpdatePromotionDto): Promise<Promotion> {
+  async update(
+    id: number,
+    updatePromotionDto: UpdatePromotionDto,
+  ): Promise<Promotion> {
     const promotion = await this.findOne(id);
-    let newPhotoPath = updatePromotionDto.photo;
-    
-    // If there's a new photo but update fails, clean up the orphaned file
-    if (newPhotoPath && newPhotoPath !== promotion.photo) {
+    const newPhotoPath = updatePromotionDto.photo;
+    const oldPhotoPath = promotion.photo;
+
+    // If there's a new photo and it's different from the current one
+    if (newPhotoPath && newPhotoPath !== oldPhotoPath) {
       try {
         Object.assign(promotion, updatePromotionDto);
-        return await this.promotionRepository.save(promotion);
+        const updatedPromotion = await this.promotionRepository.save(promotion);
+
+        // After successful update, delete the old photo
+        if (oldPhotoPath) {
+          const oldFilePath = path.join(process.cwd(), oldPhotoPath);
+          try {
+            if (fs.existsSync(oldFilePath)) {
+              fs.unlinkSync(oldFilePath);
+              console.log('Deleted old promotion photo:', oldPhotoPath);
+            }
+          } catch (deleteError) {
+            console.error('Error deleting old promotion photo:', deleteError);
+          }
+        }
+
+        return updatedPromotion;
       } catch (error) {
         // If database save fails, delete the uploaded file
         const filePath = path.join(process.cwd(), newPhotoPath);
@@ -106,7 +124,7 @@ export class PromotionsService {
         throw error;
       }
     }
-    
+
     // No new photo or same photo, just update normally
     Object.assign(promotion, updatePromotionDto);
     return await this.promotionRepository.save(promotion);
