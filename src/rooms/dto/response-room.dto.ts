@@ -59,7 +59,7 @@ export class RoomResponseDto {
   @ApiProperty({
     description: 'Current status of the room',
     enum: RoomStatus,
-    example: RoomStatus.AVAILABLE,
+    example: RoomStatus.VACIA_LIMPIA,
   })
   status: RoomStatus;
 

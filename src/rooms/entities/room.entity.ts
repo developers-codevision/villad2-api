@@ -76,7 +76,7 @@ export class Room {
   @Column({
     type: 'enum',
     enum: RoomStatus,
-    default: RoomStatus.AVAILABLE,
+    default: RoomStatus.VACIA_LIMPIA,
   })
   status: RoomStatus;
 

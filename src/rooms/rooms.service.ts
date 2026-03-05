@@ -131,7 +131,7 @@ export class RoomsService {
   async findAvailableRooms(roomType?: string): Promise<Room[]> {
     const query = this.roomRepository
       .createQueryBuilder('room')
-      .where('room.status = :status', { status: RoomStatus.AVAILABLE });
+      .where('room.status = :status', { status: RoomStatus.VACIA_LIMPIA });
 
     if (roomType) {
       query.andWhere('room.roomType = :roomType', { roomType });

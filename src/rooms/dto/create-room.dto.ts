@@ -183,9 +183,9 @@ export class CreateRoomDto {
   @ApiProperty({
     description: 'Current status of the room',
     enum: RoomStatus,
-    example: RoomStatus.AVAILABLE,
+    example: RoomStatus.VACIA_LIMPIA,
     required: false,
-    default: RoomStatus.AVAILABLE,
+    default: RoomStatus.VACIA_LIMPIA,
   })
   @IsEnum(RoomStatus, { message: 'Estado no válido' })
   @IsOptional()
