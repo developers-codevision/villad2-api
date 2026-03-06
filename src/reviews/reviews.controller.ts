@@ -78,13 +78,13 @@ export class ReviewsController {
   }
 
   @Patch(':id/response')
-  @ApiOperation({ summary: 'Add response to a review' })
-  @ApiResponse({ status: 200, description: 'Response added successfully', type: Review })
+  @ApiOperation({ summary: 'Update response of a review (add or remove)' })
+  @ApiResponse({ status: 200, description: 'Response updated successfully', type: Review })
   @ApiResponse({ status: 404, description: 'Review not found' })
   @ApiParam({ name: 'id', description: 'Review ID' })
-  @ApiBody({ schema: { type: 'object', properties: { response: { type: 'string', description: 'Response text' } } } })
-  addResponse(@Param('id') id: string, @Body('response') response: string) {
-    return this.reviewsService.addResponse(+id, response);
+  @ApiBody({ schema: { type: 'object', properties: { response: { type: 'string', nullable: true, description: 'Response text (null to remove response)' } } } })
+  updateResponse(@Param('id') id: string, @Body('response') response: string | null) {
+    return this.reviewsService.updateResponse(+id, response);
   }
 
   @Delete(':id')

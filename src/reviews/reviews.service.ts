@@ -77,7 +77,7 @@ export class ReviewsService {
     return await this.reviewRepository.save(review);
   }
 
-  async addResponse(id: number, response: string): Promise<Review> {
+  async updateResponse(id: number, response: string | null): Promise<Review> {
     const review = await this.findOne(id);
     review.response = response;
     return await this.reviewRepository.save(review);
