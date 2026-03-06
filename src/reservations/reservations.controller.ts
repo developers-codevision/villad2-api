@@ -27,6 +27,7 @@ import {
   PaginatedReservationsResponse,
 } from './dto/find-reservations.dto';
 import { HourRange } from './dto/occupied-hours.dto';
+import { CheckInDto, CheckOutDto } from './dto/check-in.dto';
 import { Reservation } from './entities/reservation.entity';
 import { PaymentType } from '../payments/entities/payment.entity';
 import { PaymentsService } from '../payments/payments.service';
@@ -328,5 +329,37 @@ export class ReservationsController {
   ): Promise<{ success: true }> {
     await this.reservationsService.remove(id);
     return { success: true };
+  }
+
+  @Post(':id/check-in')
+  @ApiOperation({ summary: 'Check-in a reservation' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reservation checked in successfully',
+    type: Reservation,
+  })
+  @ApiResponse({ status: 404, description: 'Reservation not found' })
+  @ApiResponse({ status: 409, description: 'Reservation cannot be checked in' })
+  @ApiParam({ name: 'id', description: 'Reservation ID', example: 1 })
+  checkIn(@Param('id', ParseIntPipe) id: number): Promise<Reservation> {
+    return this.reservationsService.checkIn(id);
+  }
+
+  @Post(':id/check-out')
+  @ApiOperation({ summary: 'Check-out a reservation' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reservation checked out successfully',
+    type: Reservation,
+  })
+  @ApiResponse({ status: 404, description: 'Reservation not found' })
+  @ApiResponse({ status: 409, description: 'Reservation cannot be checked out' })
+  @ApiParam({ name: 'id', description: 'Reservation ID', example: 1 })
+  @ApiBody({ type: CheckOutDto, required: false })
+  checkOut(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CheckOutDto,
+  ): Promise<Reservation> {
+    return this.reservationsService.checkOut(id, dto.roomStatus);
   }
 }

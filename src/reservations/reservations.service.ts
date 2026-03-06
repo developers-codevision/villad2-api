@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room } from '../rooms/entities/room.entity';
+import { RoomStatus } from '../rooms/enums/room-enums.enum';
 import { Client, ClientSex } from './entities/client.entity';
 import { Reservation, ReservationStatus } from './entities/reservation.entity';
 import { Payment } from '../payments/entities/payment.entity';
@@ -812,5 +813,65 @@ export class ReservationsService {
         );
       }
     }
+  }
+
+  async checkIn(reservationId: number): Promise<Reservation> {
+    const reservation = await this.findOne(reservationId);
+
+    // Validate reservation status
+    if (reservation.status !== ReservationStatus.CONFIRMED) {
+      throw new ConflictException(
+        `Cannot check-in reservation with status ${reservation.status}. Only confirmed reservations can be checked in.`,
+      );
+    }
+
+    // Update room status to occupied
+    const room = await this.roomRepository.findOne({
+      where: { id: reservation.roomId },
+    });
+    if (!room) {
+      throw new NotFoundException(
+        `Room with ID ${reservation.roomId} not found`,
+      );
+    }
+
+    room.status = RoomStatus.OCUPADA;
+    await this.roomRepository.save(room);
+
+    return this.reservationRepository.save(reservation);
+  }
+
+  async checkOut(
+    reservationId: number,
+    roomStatus?: RoomStatus,
+  ): Promise<Reservation> {
+    const reservation = await this.findOne(reservationId);
+
+    // Validate reservation status
+    if (reservation.status !== ReservationStatus.CONFIRMED) {
+      throw new ConflictException(
+        `Cannot check-out reservation with status ${reservation.status}. Only finished reservations can be checked out.`,
+      );
+    }
+
+    reservation.status = ReservationStatus.FINISHED;
+    await this.reservationRepository.save(reservation);
+
+    // Update room status
+    const room = await this.roomRepository.findOne({
+      where: { id: reservation.roomId },
+    });
+    if (!room) {
+      throw new NotFoundException(
+        `Room with ID ${reservation.roomId} not found`,
+      );
+    }
+
+    // Use provided room status or default to VACIA_SUCIA
+    room.status = roomStatus || RoomStatus.VACIA_SUCIA;
+    await this.roomRepository.save(room);
+
+    // Reservation is already in FINISHED status, keep it that way
+    return reservation;
   }
 }
