@@ -99,4 +99,12 @@ export class Reservation {
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   paymentStatus?: string;
+
+  /**
+   * Timestamp at which a PENDING reservation expires if payment is not completed.
+   * Set when a PayPal/Stripe order is created. A cron job periodically cancels
+   * PENDING reservations whose expiry has passed.
+   */
+  @Column({ type: 'timestamp', nullable: true })
+  paymentExpiresAt?: Date;
 }

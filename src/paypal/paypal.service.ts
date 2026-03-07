@@ -57,6 +57,18 @@ export class PaypalService {
         await this.reservationsService.create(reservationData);
       this.logger.debug(`Reservation created with ID: ${reservation.id}`);
 
+      // Give the user 30 minutes to complete the PayPal checkout.
+      // If the window expires without a successful capture the cron job will
+      // cancel this reservation and unblock the room automatically.
+      const PAYMENT_WINDOW_MINUTES = 30;
+      const expiresAt = new Date(
+        Date.now() + PAYMENT_WINDOW_MINUTES * 60 * 1000,
+      );
+      await this.reservationsService.setPaymentExpiry(reservation.id, expiresAt);
+      this.logger.debug(
+        `Payment expiry set for reservation ${reservation.id}: ${expiresAt.toISOString()}`,
+      );
+
       // Fetch the reservation with room relation for the order builder
       const reservationWithRoom = await this.findReservation(reservation.id);
       if (!reservationWithRoom) {

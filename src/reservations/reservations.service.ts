@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, Repository } from 'typeorm';
 import { Room } from '../rooms/entities/room.entity';
 import { RoomStatus } from '../rooms/enums/room-enums.enum';
 import { Client, ClientSex } from './entities/client.entity';
@@ -535,12 +535,12 @@ export class ReservationsService {
         { status: ReservationStatus.CONFIRMED },
         { status: ReservationStatus.PENDING },
       ],
-      select: ['checkInDate', 'checkOutDate'],
+      select: ['checkInDate', 'checkOutDate', 'status', 'paymentExpiresAt'],
     });
 
     const occupiedDates = new Set<string>();
 
-    reservations.forEach((reservation) => {
+    reservations.filter((r) => !this.isExpiredPending(r)).forEach((reservation) => {
       const checkIn = new Date(reservation.checkInDate);
       const checkOut = new Date(reservation.checkOutDate);
 
@@ -563,12 +563,12 @@ export class ReservationsService {
         { status: ReservationStatus.CONFIRMED },
         { status: ReservationStatus.PENDING },
       ],
-      select: ['roomId', 'checkInDate', 'checkOutDate'],
+      select: ['roomId', 'checkInDate', 'checkOutDate', 'status', 'paymentExpiresAt'],
     });
 
     const occupiedDatesByRoom: { [roomId: number]: Set<string> } = {};
 
-    reservations.forEach((reservation) => {
+    reservations.filter((r) => !this.isExpiredPending(r)).forEach((reservation) => {
       const checkIn = new Date(reservation.checkInDate);
       const checkOut = new Date(reservation.checkOutDate);
 
@@ -605,12 +605,12 @@ export class ReservationsService {
         { status: ReservationStatus.CONFIRMED, roomId },
         { status: ReservationStatus.PENDING, roomId },
       ],
-      select: ['checkInDate', 'checkOutDate'],
+      select: ['checkInDate', 'checkOutDate', 'status', 'paymentExpiresAt'],
     });
 
     const occupiedDates = new Set<string>();
 
-    reservations.forEach((reservation) => {
+    reservations.filter((r) => !this.isExpiredPending(r)).forEach((reservation) => {
       const checkIn = new Date(reservation.checkInDate);
       const checkOut = new Date(reservation.checkOutDate);
 
@@ -637,18 +637,21 @@ export class ReservationsService {
         { status: ReservationStatus.CONFIRMED, roomId },
         { status: ReservationStatus.PENDING, roomId },
       ],
-      select: ['checkInDate', 'checkOutDate', 'earlyCheckIn', 'lateCheckOut'],
+      select: ['checkInDate', 'checkOutDate', 'earlyCheckIn', 'lateCheckOut', 'status', 'paymentExpiresAt'],
       order: { checkInDate: 'ASC' },
     });
 
-    if (reservations.length === 0) {
+    // Exclude PENDING reservations whose payment window has already expired
+    const activeReservations = reservations.filter((r) => !this.isExpiredPending(r));
+
+    if (activeReservations.length === 0) {
       return [];
     }
 
     // Filtrar por rango de fechas si se proporcionan
-    let filteredReservations = reservations;
+    let filteredReservations = activeReservations;
     if (startDate && endDate) {
-      filteredReservations = reservations.filter((reservation) => {
+      filteredReservations = activeReservations.filter((reservation) => {
         const checkIn = this.parseDateTimeString(reservation.checkInDate);
         const checkOut = this.parseDateTimeString(reservation.checkOutDate);
         const start = new Date(startDate);
@@ -696,6 +699,21 @@ export class ReservationsService {
     }
 
     return result;
+  }
+
+  /**
+   * Returns true when a PENDING reservation's payment window has already expired
+   * and it hasn't been cleaned up by the cron job yet.
+   * Such reservations should be invisible to availability queries.
+   */
+  private isExpiredPending(
+    reservation: Pick<Reservation, 'status' | 'paymentExpiresAt'>,
+  ): boolean {
+    return (
+      reservation.status === ReservationStatus.PENDING &&
+      !!reservation.paymentExpiresAt &&
+      reservation.paymentExpiresAt < new Date()
+    );
   }
 
   /**
@@ -819,15 +837,25 @@ export class ReservationsService {
         { status: ReservationStatus.PENDING, roomId },
         { status: ReservationStatus.CONFIRMED, roomId },
       ],
-      select: ['id', 'checkInDate', 'checkOutDate', 'status'],
+      select: ['id', 'checkInDate', 'checkOutDate', 'status', 'paymentExpiresAt'],
     });
 
+    const now = new Date();
     const newCheckIn = new Date(checkInDate);
     const newCheckOut = new Date(checkOutDate);
 
     for (const reservation of conflictingReservations) {
       // Skip the current reservation being updated
       if (reservation.id === reservationId) {
+        continue;
+      }
+
+      // Skip PENDING reservations whose payment window has already expired
+      if (
+        reservation.status === ReservationStatus.PENDING &&
+        reservation.paymentExpiresAt &&
+        reservation.paymentExpiresAt < now
+      ) {
         continue;
       }
 
@@ -906,5 +934,32 @@ export class ReservationsService {
 
     // Reservation is already in FINISHED status, keep it that way
     return reservation;
+  }
+
+  /**
+   * Sets a deadline by which a PENDING reservation's payment must be completed.
+   * Call this immediately after creating a PayPal / Stripe order.
+   */
+  async setPaymentExpiry(
+    reservationId: number,
+    expiresAt: Date,
+  ): Promise<void> {
+    await this.reservationRepository.update(reservationId, { paymentExpiresAt: expiresAt });
+  }
+
+  /**
+   * Cancels every PENDING reservation whose payment window has expired.
+   * Intended to be called by a periodic cron job.
+   * Returns the number of reservations cancelled.
+   */
+  async cancelExpiredPendingReservations(): Promise<number> {
+    const result = await this.reservationRepository.update(
+      {
+        status: ReservationStatus.PENDING,
+        paymentExpiresAt: LessThan(new Date()),
+      },
+      { status: ReservationStatus.CANCELLED },
+    );
+    return result.affected ?? 0;
   }
 }
