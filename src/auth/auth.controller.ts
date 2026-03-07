@@ -48,7 +48,9 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  @ApiBearerAuth('access-token')
   @Post('logout')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'User logout' })
   @ApiResponse({ status: 200, description: 'Successfully logged out' })

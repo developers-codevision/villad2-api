@@ -12,14 +12,9 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
         private usersService: UsersService,
     ) {
         super({
-            jwtFromRequest: ExtractJwt.fromExtractors([
-                (request: Request) => {
-                    return request?.cookies?.Authentication;
-                },
-                ExtractJwt.fromAuthHeaderAsBearerToken(),
-            ]),
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             ignoreExpiration: false,
-            secretOrKey: configService.get<string>('JWT_ACCESS_SECRET') || 'fallbackSecret', // Add fallback or throw error
+            secretOrKey: configService.get<string>('JWT_ACCESS_SECRET', 'your-default-access-secret'),
         });
     }
 
