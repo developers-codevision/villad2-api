@@ -16,7 +16,6 @@ import { UpdateSettingDto } from './dto/update-setting.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('settings')
-@UseGuards(JwtAuthGuard)
 export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
