@@ -21,6 +21,7 @@ import {
   PaginatedReservationsResponse,
 } from './dto/find-reservations.dto';
 import { HourRange } from './dto/occupied-hours.dto';
+import { SettingsService } from '../settings/settings.service';
 
 function mapSexToClientSex(sex: GuestSex): ClientSex {
   return sex as unknown as ClientSex;
@@ -52,6 +53,7 @@ export class ReservationsService {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
+    private readonly settingsService: SettingsService,
   ) {}
 
   private parseDateTimeString(dateStr: string): Date {
@@ -106,6 +108,9 @@ export class ReservationsService {
     });
     const savedClient = await this.clientRepository.save(client);
 
+    // Get current prices from settings
+    const prices = await this.settingsService.getPrices();
+
     // Calculate total price using adjusted dates
     const checkInTime = new Date(adjustedCheckInDate).getTime();
     const checkOutTime = new Date(adjustedCheckOutDate).getTime();
@@ -120,11 +125,24 @@ export class ReservationsService {
     const basePrice = nights * room.pricePerNight;
     const extraGuestsCharge =
       nights * (dto.extraGuestsCount ?? 0) * room.extraGuestCharge;
+
+    // Use dynamic prices from settings
     const transferCharge =
-      (dto.transferOneWay ? 40 : 0) + (dto.transferRoundTrip ? 30 : 0);
-    const breakfastsCharge = (dto.breakfasts ?? 0) * 8;
+      (dto.transferOneWay ? prices.transferOneWayPrice : 0) +
+      (dto.transferRoundTrip ? prices.transferRoundTripPrice : 0);
+    const breakfastsCharge = (dto.breakfasts ?? 0) * prices.breakfastPrice;
+
+    // Add early check-in and late check-out charges if applicable
+    const additionalCharges =
+      (dto.earlyCheckIn ? prices.earlyCheckInPrice : 0) +
+      (dto.lateCheckOut ? prices.lateCheckOutPrice : 0);
+
     const totalPrice =
-      basePrice + extraGuestsCharge + transferCharge + breakfastsCharge;
+      basePrice +
+      extraGuestsCharge +
+      transferCharge +
+      breakfastsCharge +
+      additionalCharges;
 
     const reservation = this.reservationRepository.create({
       reservationNumber: generateReservationNumber(),
@@ -432,6 +450,9 @@ export class ReservationsService {
         );
       }
 
+      // Get current prices from settings
+      const prices = await this.settingsService.getPrices();
+
       const checkIn = new Date(reservation.checkInDate);
       const checkOut = new Date(reservation.checkOutDate);
       const nights = Math.ceil(
@@ -445,12 +466,24 @@ export class ReservationsService {
       const basePrice = nights * room.pricePerNight;
       const extraGuestsCharge =
         nights * reservation.extraGuestsCount * room.extraGuestCharge;
+
+      // Use dynamic prices from settings
       const transferCharge =
-        (reservation.transferOneWay ? 40 : 0) +
-        (reservation.transferRoundTrip ? 35 : 0);
-      const breakfastsCharge = reservation.breakfasts * 8;
+        (reservation.transferOneWay ? prices.transferOneWayPrice : 0) +
+        (reservation.transferRoundTrip ? prices.transferRoundTripPrice : 0);
+      const breakfastsCharge = reservation.breakfasts * prices.breakfastPrice;
+
+      // Add early check-in and late check-out charges if applicable
+      const additionalCharges =
+        (reservation.earlyCheckIn ? prices.earlyCheckInPrice : 0) +
+        (reservation.lateCheckOut ? prices.lateCheckOutPrice : 0);
+
       reservation.totalPrice =
-        basePrice + extraGuestsCharge + transferCharge + breakfastsCharge;
+        basePrice +
+        extraGuestsCharge +
+        transferCharge +
+        breakfastsCharge +
+        additionalCharges;
     }
 
     if (dto.mainGuest !== undefined) {

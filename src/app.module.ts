@@ -1,4 +1,3 @@
-// src/app.module.ts
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -12,6 +11,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { PaypalModule } from './paypal/paypal.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -41,6 +41,7 @@ import { PaypalModule } from './paypal/paypal.module';
     ReviewsModule,
     PromotionsModule,
     PaypalModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

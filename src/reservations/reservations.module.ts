@@ -7,11 +7,13 @@ import { Client } from './entities/client.entity';
 import { Reservation } from './entities/reservation.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { PaymentsModule } from '../payments/payments.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Reservation, Client, Room, Payment]),
     PaymentsModule,
+    SettingsModule,
   ],
   controllers: [ReservationsController],
   providers: [ReservationsService],
