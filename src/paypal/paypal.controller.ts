@@ -40,6 +40,31 @@ export class PaypalController {
     }
   }
 
+  @Post('cancel-order/:orderId')
+  @ApiOperation({
+    summary: 'Cancel a pending PayPal order and free the reserved room',
+    description:
+      'Call this from the PayPal SDK onCancel / onError callbacks so the room is unblocked immediately instead of waiting for the expiry cron job.',
+  })
+  @ApiResponse({ status: 200, description: 'Order cancelled successfully' })
+  @ApiResponse({ status: 404, description: 'PayPal order not found' })
+  @ApiResponse({ status: 409, description: 'Payment already captured, cannot cancel' })
+  async cancelOrder(@Param('orderId') orderId: string) {
+    try {
+      const result = await this.paypalService.cancelOrder(orderId);
+      return {
+        success: true,
+        data: result,
+        message: 'Order cancelled and room unblocked successfully',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to cancel PayPal order ${orderId}: ${error instanceof Error ? error.message : JSON.stringify(error)}`,
+      );
+      throw error;
+    }
+  }
+
   @Post('capture-payment/:orderId')
   @ApiOperation({ summary: 'Capture PayPal payment' })
   @ApiResponse({ status: 200, description: 'Payment captured successfully' })

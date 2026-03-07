@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -20,6 +21,8 @@ import {
   PayPalCaptureResponse,
 } from './client/interfaces/paypal-api.interface';
 import { CreateReservationDto } from 'src/reservations/dto/create-reservation.dto';
+import { ReservationStatus } from '../reservations/entities/reservation.entity';
+import { PaymentStatus } from '../payments/entities/payment.entity';
 
 @Injectable()
 export class PaypalService {
@@ -164,6 +167,56 @@ export class PaypalService {
 
   async handleWebhook(webhookEvent: unknown): Promise<void> {
     await this.webhookHandler.handleWebhook(webhookEvent as any);
+  }
+
+  /**
+   * Cancels a PENDING reservation immediately when the user closes/abandons
+   * the PayPal popup. Call this from the frontend's onCancel / onError callbacks.
+   *
+   * - If the reservation is already CONFIRMED (payment captured) it is NOT
+   *   cancelled and a ConflictException is thrown instead.
+   * - If the order is not found a NotFoundException is thrown.
+   */
+  async cancelOrder(orderId: string): Promise<{ reservationId: number }> {
+    const paypalPayment = await this.paypalPaymentRepository.findOne({
+      where: { paypalOrderId: orderId },
+      relations: ['reservation'],
+    });
+
+    if (!paypalPayment) {
+      throw new NotFoundException(
+        `PayPal order ${orderId} not found`,
+      );
+    }
+
+    const reservation = paypalPayment.reservation;
+
+    if (!reservation) {
+      throw new NotFoundException(
+        `Reservation linked to PayPal order ${orderId} not found`,
+      );
+    }
+
+    if (reservation.status === ReservationStatus.CONFIRMED) {
+      throw new ConflictException(
+        `Cannot cancel order ${orderId}: payment has already been captured`,
+      );
+    }
+
+    // Cancel the reservation so the room is unblocked immediately
+    if (reservation.status === ReservationStatus.PENDING) {
+      reservation.status = ReservationStatus.CANCELLED;
+      await this.reservationRepository.save(reservation);
+      this.logger.log(
+        `Reservation ${reservation.id} cancelled by user action (PayPal order ${orderId} abandoned)`,
+      );
+    }
+
+    // Mark the payment record as cancelled
+    paypalPayment.status = PaymentStatus.CANCELED;
+    await this.paypalPaymentRepository.save(paypalPayment);
+
+    return { reservationId: reservation.id };
   }
 
   async getPaypalPaymentByReservationId(
