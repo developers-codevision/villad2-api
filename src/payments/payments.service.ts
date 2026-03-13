@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Reservation, ReservationStatus } from '../reservations/entities/reservation.entity';
+import { EmailNotificationService } from '../common/notifications/email-notification.service';
 
 @Injectable()
 export class PaymentsService {
@@ -17,6 +18,7 @@ export class PaymentsService {
     @InjectRepository(Reservation)
     private readonly reservationRepository: Repository<Reservation>,
     private readonly configService: ConfigService,
+    private readonly emailNotificationService: EmailNotificationService,
   ) {
     const stripeSecretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
@@ -114,13 +116,7 @@ export class PaymentsService {
     payment.stripeChargeId = session.payment_intent as string;
 
     if (session.payment_status === 'paid') {
-      // Actualizar el estado de la reservación
-      if (payment.reservation) {
-        payment.reservation.status = ReservationStatus.CONFIRMED;
-        payment.reservation.stripePaymentIntentId = session.id;
-        payment.reservation.paymentStatus = 'paid';
-        await this.reservationRepository.save(payment.reservation);
-      }
+      await this.confirmReservationFromStripe(payment, session.id);
     }
 
     return await this.paymentRepository.save(payment);
@@ -149,15 +145,57 @@ export class PaymentsService {
       payment.status = PaymentStatus.SUCCEEDED;
       payment.stripeChargeId = session.payment_intent as string;
 
-      if (payment.reservation) {
-        payment.reservation.status = ReservationStatus.CONFIRMED;
-        payment.reservation.stripePaymentIntentId = session.id;
-        payment.reservation.paymentStatus = 'paid';
-        await this.reservationRepository.save(payment.reservation);
-      }
+      await this.confirmReservationFromStripe(payment, session.id);
 
       await this.paymentRepository.save(payment);
     }
+  }
+
+  private async confirmReservationFromStripe(
+    payment: Payment,
+    paymentReference: string,
+  ): Promise<void> {
+    if (!payment.reservation) {
+      return;
+    }
+
+    const wasAlreadyConfirmed =
+      payment.reservation.status === ReservationStatus.CONFIRMED &&
+      payment.reservation.paymentStatus === 'paid';
+
+    payment.reservation.status = ReservationStatus.CONFIRMED;
+    payment.reservation.stripePaymentIntentId = paymentReference;
+    payment.reservation.paymentStatus = 'paid';
+    await this.reservationRepository.save(payment.reservation);
+
+    if (!wasAlreadyConfirmed) {
+      await this.sendReservationConfirmationEmail(
+        payment.reservation.id,
+        'stripe',
+        paymentReference,
+      );
+    }
+  }
+
+  private async sendReservationConfirmationEmail(
+    reservationId: number,
+    paymentProvider: 'stripe' | 'paypal',
+    paymentReference: string,
+  ): Promise<void> {
+    const reservation = await this.reservationRepository.findOne({
+      where: { id: reservationId },
+      relations: ['room', 'client'],
+    });
+
+    if (!reservation) {
+      return;
+    }
+
+    await this.emailNotificationService.sendReservationConfirmedEmail({
+      reservation,
+      paymentProvider,
+      paymentReference,
+    });
   }
 
   private async handleCheckoutSessionExpired(session: Stripe.Checkout.Session): Promise<void> {

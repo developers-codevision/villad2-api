@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { PaypalController } from './paypal.controller';
@@ -10,12 +10,14 @@ import { WebhookHandler } from './handlers/webhook-handler';
 import { PaypalPayment } from './entities/paypal-payment.entity';
 import { Reservation } from '../reservations/entities/reservation.entity';
 import { ReservationsModule } from '../reservations/reservations.module';
+import { NotificationsModule } from '../common/notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PaypalPayment, Reservation]),
     ConfigModule,
-    ReservationsModule,
+    forwardRef(() => ReservationsModule),
+    NotificationsModule,
   ],
   controllers: [PaypalController],
   providers: [

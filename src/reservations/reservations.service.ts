@@ -22,6 +22,7 @@ import {
 } from './dto/find-reservations.dto';
 import { HourRange } from './dto/occupied-hours.dto';
 import { SettingsService } from '../settings/settings.service';
+import { EmailNotificationService } from '../common/notifications/email-notification.service';
 
 function mapSexToClientSex(sex: GuestSex): ClientSex {
   return sex as unknown as ClientSex;
@@ -54,6 +55,7 @@ export class ReservationsService {
     @InjectRepository(Payment)
     private readonly paymentRepository: Repository<Payment>,
     private readonly settingsService: SettingsService,
+    private readonly emailNotificationService: EmailNotificationService,
   ) {}
 
   private parseDateTimeString(dateStr: string): Date {
@@ -344,6 +346,7 @@ export class ReservationsService {
 
   async update(id: number, dto: UpdateReservationDto): Promise<Reservation> {
     const reservation = await this.findOne(id);
+    const previousStatus = reservation.status;
 
     let roomChanged = false;
     if (dto.roomId !== undefined) {
@@ -507,7 +510,26 @@ export class ReservationsService {
       await this.clientRepository.save(client);
     }
 
-    return this.reservationRepository.save(reservation);
+    const savedReservation = await this.reservationRepository.save(reservation);
+
+    if (
+      previousStatus !== ReservationStatus.CONFIRMED &&
+      savedReservation.status === ReservationStatus.CONFIRMED
+    ) {
+      const reservationWithRelations = await this.findOne(savedReservation.id);
+      await this.emailNotificationService.sendGuestReservationConfirmedEmail({
+        reservation: reservationWithRelations,
+      });
+    }
+
+    return savedReservation;
+  }
+
+  async updateStatus(
+    id: number,
+    status: ReservationStatusDto,
+  ): Promise<Reservation> {
+    return this.update(id, { status });
   }
 
   async remove(id: number): Promise<void> {

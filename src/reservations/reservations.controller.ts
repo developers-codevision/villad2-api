@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Patch,
   Put,
   Inject,
   forwardRef,
@@ -20,7 +21,10 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { ReservationsService } from './reservations.service';
-import { CreateReservationDto } from './dto/create-reservation.dto';
+import {
+  CreateReservationDto,
+  ReservationStatus as ReservationStatusDto,
+} from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import {
   FindReservationsDto,
@@ -31,6 +35,13 @@ import { CheckInDto, CheckOutDto } from './dto/check-in.dto';
 import { Reservation } from './entities/reservation.entity';
 import { PaymentType } from '../payments/entities/payment.entity';
 import { PaymentsService } from '../payments/payments.service';
+import {
+  CreateReservationWithPaymentDto,
+  ReservationPaymentMethod,
+} from './dto/create-reservation-with-payment.dto';
+import { PaypalService } from '../paypal/paypal.service';
+import { EmailNotificationService } from '../common/notifications/email-notification.service';
+import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
 
 @ApiTags('reservations')
 @Controller('reservations')
@@ -39,6 +50,9 @@ export class ReservationsController {
     private readonly reservationsService: ReservationsService,
     @Inject(forwardRef(() => PaymentsService))
     private readonly paymentsService: PaymentsService,
+    @Inject(forwardRef(() => PaypalService))
+    private readonly paypalService: PaypalService,
+    private readonly emailNotificationService: EmailNotificationService,
   ) {}
 
   @Post()
@@ -57,29 +71,115 @@ export class ReservationsController {
   @ApiOperation({ summary: 'Create reservation with payment checkout' })
   @ApiResponse({
     status: 201,
-    description: 'Reservation created with payment session',
+    description: 'Reservation created and processed according to payment method',
   })
-  async createWithPayment(@Body() dto: CreateReservationDto): Promise<{
+  async createWithPayment(@Body() dto: CreateReservationWithPaymentDto): Promise<{
     reservation: Reservation;
-    paymentSession: {
+    paymentMethod: ReservationPaymentMethod;
+    paymentSession?: {
       sessionId: string;
       url: string;
     };
+    paypalOrder?: {
+      orderId: string;
+    };
   }> {
-    // Crear la reservación primero
-    const reservation = await this.reservationsService.create(dto);
+    
+    console.log("This is the dto", dto )
 
-    // Crear sesión de checkout para el pago
-    const paymentSession = await this.paymentsService.createCheckoutSession({
-      reservationId: reservation.id,
-      amount: reservation.totalPrice,
-      currency: 'usd', // o configurable
-      type: PaymentType.RESERVATION,
+    if (dto.paymentMethod === ReservationPaymentMethod.PAYPAL) {
+      const paypalDto: CreateReservationDto = {
+        ...dto,
+        status: ReservationStatusDto.PENDING,
+      };
+
+      const result = await this.paypalService.createOrderWithReservation(
+        paypalDto,
+      );
+
+      return {
+        reservation: result.reservation,
+        paymentMethod: ReservationPaymentMethod.PAYPAL,
+        paypalOrder: {
+          orderId: result.orderId,
+        },
+      };
+    }
+
+    const currency = dto.currency ?? 'usd';
+
+    if (dto.paymentMethod === ReservationPaymentMethod.STRIPE) {
+      const stripeDto: CreateReservationDto = {
+        ...dto,
+        status: ReservationStatusDto.PENDING,
+      };
+
+      const reservation = await this.reservationsService.create(stripeDto);
+
+      // Stripe reservations share the same expiry behavior as PayPal.
+      const PAYMENT_WINDOW_MINUTES = 30;
+      const expiresAt = new Date(
+        Date.now() + PAYMENT_WINDOW_MINUTES * 60 * 1000,
+      );
+      await this.reservationsService.setPaymentExpiry(reservation.id, expiresAt);
+
+      const paymentSession = await this.paymentsService.createCheckoutSession({
+        reservationId: reservation.id,
+        amount: reservation.totalPrice,
+        currency,
+        type: PaymentType.RESERVATION,
+        stripeCustomerId: dto.stripeCustomerId,
+      });
+
+      return {
+        reservation,
+        paymentMethod: ReservationPaymentMethod.STRIPE,
+        paymentSession,
+      };
+    }
+
+    if (
+      dto.paymentMethod === ReservationPaymentMethod.ZELLE ||
+      dto.paymentMethod === ReservationPaymentMethod.BIZUM
+    ) {
+      const pendingDto: CreateReservationDto = {
+        ...dto,
+        status: ReservationStatusDto.PENDING,
+      };
+      const reservation = await this.reservationsService.create(pendingDto);
+
+      console.log("Reservation creada with pending status for manual payment. ID:", reservation.id);
+
+      const reservationWithRelations = await this.reservationsService.findOne(
+        reservation.id,
+      );
+      await this.emailNotificationService.sendReservationPendingEmail({
+        reservation: reservationWithRelations,
+        paymentProvider: dto.paymentMethod,
+      });
+
+      return {
+        reservation: reservationWithRelations,
+        paymentMethod: dto.paymentMethod,
+      };
+    }
+
+    const manualDto: CreateReservationDto = {
+      ...dto,
+      status: ReservationStatusDto.CONFIRMED,
+    };
+    const reservation = await this.reservationsService.create(manualDto);
+    const reservationWithRelations = await this.reservationsService.findOne(
+      reservation.id,
+    );
+
+    await this.emailNotificationService.sendGuestReservationConfirmedEmail({
+      reservation: reservationWithRelations,
     });
 
     return {
-      reservation,
-      paymentSession,
+      reservation: reservationWithRelations,
+      paymentMethod: ReservationPaymentMethod.MANUAL,
     };
   }
 
@@ -317,6 +417,23 @@ export class ReservationsController {
     @Body() dto: UpdateReservationDto,
   ): Promise<Reservation> {
     return this.reservationsService.update(id, dto);
+  }
+
+  @Patch(':id/status')
+  @ApiOperation({ summary: 'Update reservation status' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reservation status updated',
+    type: Reservation,
+  })
+  @ApiResponse({ status: 404, description: 'Reservation not found' })
+  @ApiParam({ name: 'id', description: 'Reservation ID', example: 1 })
+  @ApiBody({ type: UpdateReservationStatusDto })
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateReservationStatusDto,
+  ): Promise<Reservation> {
+    return this.reservationsService.updateStatus(id, dto.status);
   }
 
   @Delete(':id')

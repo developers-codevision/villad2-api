@@ -1,9 +1,25 @@
 import { IsString, IsOptional, IsEnum } from 'class-validator';
-import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CreateReservationDto } from './create-reservation.dto';
 import { PaymentType } from '../../payments/entities/payment.entity';
 
+export enum ReservationPaymentMethod {
+  PAYPAL = 'paypal',
+  STRIPE = 'stripe',
+  ZELLE = 'zelle',
+  BIZUM = 'bizum',
+  MANUAL = 'manual',
+}
+
 export class CreateReservationWithPaymentDto extends CreateReservationDto {
+  @ApiProperty({
+    description: 'Metodo de pago para la reservacion',
+    enum: ReservationPaymentMethod,
+    example: ReservationPaymentMethod.PAYPAL,
+  })
+  @IsEnum(ReservationPaymentMethod)
+  paymentMethod: ReservationPaymentMethod;
+
   @ApiPropertyOptional({ 
     description: 'ID del cliente en Stripe',
     example: 'cus_1234567890'

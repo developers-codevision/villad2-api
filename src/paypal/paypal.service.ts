@@ -4,6 +4,8 @@ import {
   BadRequestException,
   ConflictException,
   Logger,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -33,6 +35,7 @@ export class PaypalService {
     private readonly paypalPaymentRepository: Repository<PaypalPayment>,
     @InjectRepository(Reservation)
     private readonly reservationRepository: Repository<Reservation>,
+    @Inject(forwardRef(() => ReservationsService))
     private readonly reservationsService: ReservationsService,
     private readonly paypalClient: PaypalClient,
     private readonly orderBuilder: OrderBuilder,

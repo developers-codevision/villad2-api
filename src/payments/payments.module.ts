@@ -6,11 +6,13 @@ import { PaymentRedirectController } from './payment-redirect.controller';
 import { PaymentsService } from './payments.service';
 import { Payment } from './entities/payment.entity';
 import { Reservation } from '../reservations/entities/reservation.entity';
+import { NotificationsModule } from '../common/notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Payment, Reservation]),
     ConfigModule,
+    NotificationsModule,
   ],
   controllers: [PaymentsController, PaymentRedirectController],
   providers: [PaymentsService],

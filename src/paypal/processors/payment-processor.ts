@@ -5,6 +5,7 @@ import { PaypalPayment } from '../entities/paypal-payment.entity';
 import { Reservation, ReservationStatus } from '../../reservations/entities/reservation.entity';
 import { PaymentStatus } from '../../payments/entities/payment.entity';
 import { PayPalCaptureResponse } from '../client/interfaces/paypal-api.interface';
+import { EmailNotificationService } from '../../common/notifications/email-notification.service';
 
 @Injectable()
 export class PaymentProcessor {
@@ -13,6 +14,7 @@ export class PaymentProcessor {
     private readonly paypalPaymentRepository: Repository<PaypalPayment>,
     @InjectRepository(Reservation)
     private readonly reservationRepository: Repository<Reservation>,
+    private readonly emailNotificationService: EmailNotificationService,
   ) {}
 
   async processCapture(
@@ -24,7 +26,7 @@ export class PaymentProcessor {
     this.updatePaymentFromCapture(paypalPayment, captureResponse);
 
     if (captureResponse.status === 'COMPLETED') {
-      await this.confirmReservation(paypalPayment);
+      await this.confirmReservation(paypalPayment, orderId);
     }
 
     return await this.paypalPaymentRepository.save(paypalPayment);
@@ -54,12 +56,46 @@ export class PaymentProcessor {
     paypalPayment.paypalResponse = captureResponse;
   }
 
-  private async confirmReservation(paypalPayment: PaypalPayment): Promise<void> {
+  private async confirmReservation(
+    paypalPayment: PaypalPayment,
+    paymentReference: string,
+  ): Promise<void> {
     if (paypalPayment.reservation) {
+      const wasAlreadyConfirmed =
+        paypalPayment.reservation.status === ReservationStatus.CONFIRMED &&
+        paypalPayment.reservation.paymentStatus === 'paid';
+
       paypalPayment.reservation.status = ReservationStatus.CONFIRMED;
       paypalPayment.reservation.paymentStatus = 'paid';
       await this.reservationRepository.save(paypalPayment.reservation);
+
+      if (!wasAlreadyConfirmed) {
+        await this.sendReservationConfirmationEmail(
+          paypalPayment.reservation.id,
+          paymentReference,
+        );
+      }
     }
+  }
+
+  private async sendReservationConfirmationEmail(
+    reservationId: number,
+    paymentReference: string,
+  ): Promise<void> {
+    const reservation = await this.reservationRepository.findOne({
+      where: { id: reservationId },
+      relations: ['room', 'client'],
+    });
+
+    if (!reservation) {
+      return;
+    }
+
+    await this.emailNotificationService.sendReservationConfirmedEmail({
+      reservation,
+      paymentProvider: 'paypal',
+      paymentReference,
+    });
   }
 
   mapPaypalStatusToPaymentStatus(paypalStatus: string): PaymentStatus {
