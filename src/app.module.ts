@@ -13,6 +13,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { PaypalModule } from './paypal/paypal.module';
 import { SettingsModule } from './settings/settings.module';
+import { ProductFamiliesModule } from './product-families/product-families.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { SettingsModule } from './settings/settings.module';
     PromotionsModule,
     PaypalModule,
     SettingsModule,
+    ProductFamiliesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
