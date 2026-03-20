@@ -14,6 +14,7 @@ import { PromotionsModule } from './promotions/promotions.module';
 import { PaypalModule } from './paypal/paypal.module';
 import { SettingsModule } from './settings/settings.module';
 import { ProductFamiliesModule } from './product-families/product-families.module';
+import { ProductsModule } from './products/products.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ProductFamiliesModule } from './product-families/product-families.modul
     PaypalModule,
     SettingsModule,
     ProductFamiliesModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
