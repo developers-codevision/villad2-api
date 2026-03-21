@@ -15,6 +15,8 @@ import { PaypalModule } from './paypal/paypal.module';
 import { SettingsModule } from './settings/settings.module';
 import { ProductFamiliesModule } from './product-families/product-families.module';
 import { ProductsModule } from './products/products.module';
+import { BillingModule } from './billing/billing.module';
+import { ConceptsModule } from './concepts/concepts.module';
 
 @Module({
   imports: [
@@ -48,6 +50,8 @@ import { ProductsModule } from './products/products.module';
     SettingsModule,
     ProductFamiliesModule,
     ProductsModule,
+    BillingModule,
+    ConceptsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

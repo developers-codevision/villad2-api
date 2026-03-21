@@ -41,6 +41,14 @@ export class Product {
   })
   volume: string;
 
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+  })
+  price: number;
+
   @ManyToOne(() => ProductFamily, { nullable: true })
   @JoinColumn({ name: 'productFamilyId' })
   productFamily?: ProductFamily;

@@ -18,7 +18,7 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(ProductDailyRecord)
     private readonly dailyRecordRepository: Repository<ProductDailyRecord>,
-  ) {}
+  ) { }
 
   // ─── Products CRUD ───────────────────────────────────────────────────────────
 
@@ -175,17 +175,17 @@ export class ProductsService {
       const dailyRecord = existingRecord
         ? existingRecord
         : {
-            id: null,
-            date,
-            productId: product.id,
-            initial: previousFinalByProductId.get(product.id) ?? 0,
-            incoming: 0,
-            consumption: 0,
-            waste: 0,
-            homeConsumption: 0,
-            final: 0,
-            observations: null,
-          };
+          id: null,
+          date,
+          productId: product.id,
+          initial: previousFinalByProductId.get(product.id) ?? 0,
+          incoming: 0,
+          consumption: 0,
+          waste: 0,
+          homeConsumption: 0,
+          final: 0,
+          observations: null,
+        };
 
       grouped.get(familyId)!.products.push({
         id: product.id,
