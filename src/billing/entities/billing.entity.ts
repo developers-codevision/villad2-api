@@ -4,56 +4,29 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
+  OneToMany,
 } from 'typeorm';
 
-import { Room } from '../../rooms/entities/room.entity';
+import { BillingItem } from './billing-item.entity';
 
 @Entity('billings')
 export class Billing {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({
-    type: 'int',
-    unique: true,
+  @Column({ type: 'date', unique: true })
+  date: string; // Fecha de esta hoja de facturación diaria (YYYY-MM-DD)
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 1 })
+  usdToCupRate: number; // Tasa de cambio del día (USD -> CUP)
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 1 })
+  eurToCupRate: number; // Tasa de cambio del día (EUR -> CUP)
+
+  @OneToMany(() => BillingItem, (item: BillingItem) => item.billing, {
+    cascade: true,
   })
-  clientNumber: number; // Número (Para saber cantidad de clientes facturados contablemente)
-
-  @Column()
-  firstName: string; // Nombre
-
-  @Column()
-  lastName: string; // Apellidos
-
-  @Column()
-  nationality: string; // Nacionalidad (que permita seleccionarla)
-
-  @Column({ type: 'date', nullable: true })
-  birthDate: Date; // Fecha de nacimiento (halarla del check in)
-
-  @Column({ type: 'date' })
-  checkInDate: Date; // Fecha de entrada
-
-  @Column({ type: 'date' })
-  checkOutDate: Date; // Fecha de salida
-
-  @ManyToOne(() => Room, { eager: true, nullable: true })
-  @JoinColumn({ name: 'roomId' })
-  room: Room; // Habitación (que permita seleccionarla)
-
-  @Column({ nullable: true })
-  roomId: number;
-
-  @Column({ nullable: true })
-  immigrationNumber: string; // Inmigración (número de devuelve el casero)
-
-  @Column({ unique: true })
-  invoiceNumber: string; // Factura (Número consecutivo registrado en contabilidad)
-
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
-  amountCup: number; // Importe Cup (Importe de la factura confeccionada)
+  items: BillingItem[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

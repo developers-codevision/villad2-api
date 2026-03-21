@@ -3,11 +3,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { BillingService } from './billing.service';
 import { BillingController } from './billing.controller';
 import { Billing } from './entities/billing.entity';
-import { ExtraBilling } from './entities/extra-billing.entity';
-import { ExtraBillingItem } from './entities/extra-billing-item.entity';
+import { BillingItem } from './entities/billing-item.entity';
+import { Concept } from '../concepts/entities/concept.entity';
+import { ProductsModule } from '../products/products.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Billing, ExtraBilling, ExtraBillingItem])],
+  imports: [
+    TypeOrmModule.forFeature([Billing, BillingItem, Concept]),
+    ProductsModule,
+  ],
   controllers: [BillingController],
   providers: [BillingService],
   exports: [BillingService],

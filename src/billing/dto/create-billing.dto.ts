@@ -1,57 +1,40 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsString,
-  IsInt,
   IsNumber,
   IsDateString,
-  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsInt,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class CreateBillingItemDto {
+  @ApiProperty()
+  @IsInt()
+  conceptId: number;
+
+  @ApiProperty()
+  @IsNumber()
+  quantity: number;
+}
 
 export class CreateBillingDto {
-  @ApiProperty({ description: 'Client consecutive number' })
-  @IsInt()
-  clientNumber: number;
-
-  @ApiProperty()
-  @IsString()
-  firstName: string;
-
-  @ApiProperty()
-  @IsString()
-  lastName: string;
-
-  @ApiProperty()
-  @IsString()
-  nationality: string;
-
-  @ApiPropertyOptional({ type: String, format: 'date' })
-  @IsOptional()
+  @ApiProperty({ description: 'Date of the daily billing sheet (YYYY-MM-DD)' })
   @IsDateString()
-  birthDate?: string;
+  date: string;
 
-  @ApiProperty({ type: String, format: 'date' })
-  @IsDateString()
-  checkInDate: string;
-
-  @ApiProperty({ type: String, format: 'date' })
-  @IsDateString()
-  checkOutDate: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsInt()
-  roomId?: number;
-
-  @ApiPropertyOptional({ description: 'Immigration number provided by casero' })
-  @IsOptional()
-  @IsString()
-  immigrationNumber?: string;
-
-  @ApiProperty({ description: 'Accounting invoice consecutive number' })
-  @IsString()
-  invoiceNumber: string;
-
-  @ApiProperty({ description: 'Total amount in CUP' })
+  @ApiProperty({ description: 'USD to CUP exchange rate', default: 1 })
   @IsNumber()
-  amountCup: number;
+  usdToCupRate: number;
+
+  @ApiProperty({ description: 'EUR to CUP exchange rate', default: 1 })
+  @IsNumber()
+  eurToCupRate: number;
+
+  @ApiProperty({ type: [CreateBillingItemDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateBillingItemDto)
+  items: CreateBillingItemDto[];
 }

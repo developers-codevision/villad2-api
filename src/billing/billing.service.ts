@@ -1,39 +1,122 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateBillingDto } from './dto/create-billing.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
 import { Billing } from './entities/billing.entity';
-import { ExtraBilling } from './entities/extra-billing.entity';
-import { ExtraBillingItem } from './entities/extra-billing-item.entity';
-import { CreateExtraBillingDto } from './dto/create-extra-billing.dto';
+import { BillingItem } from './entities/billing-item.entity';
+import { Concept } from '../concepts/entities/concept.entity';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class BillingService {
   constructor(
     @InjectRepository(Billing)
     private readonly billingRepository: Repository<Billing>,
-    @InjectRepository(ExtraBilling)
-    private readonly extraBillingRepo: Repository<ExtraBilling>,
-    @InjectRepository(ExtraBillingItem)
-    private readonly extraBillingItemRepo: Repository<ExtraBillingItem>,
+    @InjectRepository(BillingItem)
+    private readonly billingItemRepo: Repository<BillingItem>,
+    @InjectRepository(Concept)
+    private readonly conceptRepo: Repository<Concept>,
+    private readonly productsService: ProductsService,
   ) {}
 
   async create(createBillingDto: CreateBillingDto): Promise<Billing> {
-    const billing = this.billingRepository.create(createBillingDto);
+    // Check if billing for this date already exists
+    const existing = await this.billingRepository.findOne({ where: { date: createBillingDto.date } });
+    if (existing) {
+      throw new BadRequestException(`A billing sheet for date ${createBillingDto.date} already exists`);
+    }
+
+    const billing = new Billing();
+    billing.date = createBillingDto.date;
+    billing.usdToCupRate = createBillingDto.usdToCupRate;
+    billing.eurToCupRate = createBillingDto.eurToCupRate;
+    billing.items = [];
+
+    for (const itemDto of createBillingDto.items) {
+      if (itemDto.quantity === 0) continue; // Skip items with 0 quantity from the form
+      
+      const concept = await this.conceptRepo.findOne({ where: { id: itemDto.conceptId } });
+      if (!concept) {
+        throw new NotFoundException(`Concept ID ${itemDto.conceptId} not found`);
+      }
+
+      const item = new BillingItem();
+      item.conceptId = concept.id;
+      item.quantity = itemDto.quantity;
+      item.priceUsd = concept.priceUsd; // Freeze price at the current concept price
+      
+      // If concept is linked to a product, update daily inventory consumption
+      if (concept.productId) {
+        await this.productsService.updateDailyConsumption(
+          concept.productId,
+          createBillingDto.date,
+          item.quantity
+        );
+      }
+
+      billing.items.push(item);
+    }
+
     return await this.billingRepository.save(billing);
   }
 
   async findAll(): Promise<Billing[]> {
-    return await this.billingRepository.find();
+    return await this.billingRepository.find({
+      order: { date: 'DESC' },
+    });
   }
 
-  async findOne(id: number): Promise<Billing> {
-    const billing = await this.billingRepository.findOne({ where: { id } });
+  async findOne(id: number): Promise<any> {
+    const billing = await this.billingRepository.findOne({ 
+      where: { id },
+      relations: ['items', 'items.concept'],
+    });
     if (!billing) {
-      throw new NotFoundException(`Billing with ID ${id} not found`);
+      throw new NotFoundException(`Billing sheet with ID ${id} not found`);
     }
-    return billing;
+
+    // Enhance response with calculated values as in the excel image
+    const items = billing.items.map(item => {
+      const totalUsd = Number(item.quantity) * Number(item.priceUsd);
+      const cup = totalUsd * Number(billing.usdToCupRate);
+      return {
+        ...item,
+        totalUsd,
+        cup
+      };
+    });
+
+    const subtotalUsd = items.reduce((sum, item) => sum + item.totalUsd, 0);
+    const subtotalCup = subtotalUsd * Number(billing.usdToCupRate);
+    const tax10Percent = subtotalCup * 0.1;
+    const totalCup = subtotalCup + tax10Percent;
+
+    return {
+      ...billing,
+      items,
+      summary: {
+        subtotalUsd,
+        subtotalCup,
+        tax10Percent,
+        totalCup
+      }
+    };
+  }
+
+  async getTemplate(date: string): Promise<any> {
+    const concepts = await this.conceptRepo.find({ order: { category: 'ASC' } });
+    return {
+      date,
+      usdToCupRate: 1, // default
+      eurToCupRate: 1, 
+      items: concepts.map(c => ({
+        conceptId: c.id,
+        concept: c,
+        quantity: 0,
+        priceUsd: c.priceUsd
+      }))
+    };
   }
 
   async update(
@@ -41,38 +124,17 @@ export class BillingService {
     updateBillingDto: UpdateBillingDto,
   ): Promise<Billing> {
     const billing = await this.findOne(id);
-    const updatedBilling = Object.assign(billing, updateBillingDto);
-    return await this.billingRepository.save(updatedBilling);
+    
+    // In a full implementation, you'd merge nested items gracefully.
+    // For simplicity, we can update simple properties or recreate items.
+    if (updateBillingDto.usdToCupRate !== undefined) billing.usdToCupRate = updateBillingDto.usdToCupRate;
+    if (updateBillingDto.eurToCupRate !== undefined) billing.eurToCupRate = updateBillingDto.eurToCupRate;
+    
+    return await this.billingRepository.save(billing);
   }
 
   async remove(id: number): Promise<void> {
     const billing = await this.findOne(id);
     await this.billingRepository.remove(billing);
-  }
-
-  async createExtraBilling(createExtraDto: CreateExtraBillingDto): Promise<ExtraBilling> {
-    const extraBilling = new ExtraBilling();
-    extraBilling.roomId = createExtraDto.roomId;
-    extraBilling.items = [];
-    
-    let totalAmount = 0;
-    for (const itemDto of createExtraDto.items) {
-      const item = new ExtraBillingItem();
-      item.productId = itemDto.productId;
-      item.quantity = itemDto.quantity;
-      item.price = itemDto.price;
-      item.amount = item.quantity * item.price;
-      // Depending on the flow, we should decrease inventory here.
-      // But for now we just record it to be fully aligned with 'necesito construir...'
-      totalAmount += item.amount;
-      extraBilling.items.push(item);
-    }
-    extraBilling.totalAmount = totalAmount;
-
-    return await this.extraBillingRepo.save(extraBilling);
-  }
-
-  async findAllExtraBillings(): Promise<ExtraBilling[]> {
-    return await this.extraBillingRepo.find({ relations: ['items', 'items.product', 'room'] });
   }
 }

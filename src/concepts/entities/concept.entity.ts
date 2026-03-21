@@ -20,6 +20,9 @@ export class Concept {
   @Column({ nullable: true })
   category: string; // Used to group items together like in the excel file
 
+  @Column({ nullable: true })
+  productId: number; // Link to physical product for inventory discount
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

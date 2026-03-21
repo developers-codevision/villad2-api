@@ -259,6 +259,45 @@ export class ProductsService {
   /**
    * Returns the daily record for a specific product on a specific date.
    */
+  /**
+   * Increments the consumption of a product on a specific date.
+   * Useful when a sale is recorded in the billing module.
+   */
+  async updateDailyConsumption(
+    productId: number,
+    date: string,
+    amount: number,
+  ): Promise<ProductDailyRecord> {
+    const product = await this.findOne(productId); // Ensure it exists
+
+    let record = await this.getDailyRecordForProduct(productId, date);
+    if (!record) {
+      // Seed from previous day if it exists
+      const previousRecords = await this.dailyRecordRepository
+        .createQueryBuilder('r')
+        .where('r.productId = :id', { id: productId })
+        .andWhere('r.date < :date', { date })
+        .orderBy('r.date', 'DESC')
+        .getOne();
+
+      record = this.dailyRecordRepository.create({
+        date,
+        productId,
+        initial: previousRecords ? Number(previousRecords.final) : 0,
+        incoming: 0,
+        consumption: amount,
+        waste: 0,
+        homeConsumption: 0,
+        final: (previousRecords ? Number(previousRecords.final) : 0) - amount,
+      });
+    } else {
+      record.consumption = Number(record.consumption) + amount;
+      record.final = Number(record.initial) + Number(record.incoming) - record.consumption - Number(record.waste) - Number(record.homeConsumption);
+    }
+
+    return await this.dailyRecordRepository.save(record);
+  }
+
   async getDailyRecordForProduct(
     productId: number,
     date: string,

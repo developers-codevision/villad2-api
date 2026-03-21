@@ -4,8 +4,6 @@ import { BillingService } from './billing.service';
 import { CreateBillingDto } from './dto/create-billing.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
 import { Billing } from './entities/billing.entity';
-import { ExtraBilling } from './entities/extra-billing.entity';
-import { CreateExtraBillingDto } from './dto/create-extra-billing.dto';
 
 @ApiTags('billing')
 @Controller('billing')
@@ -13,43 +11,36 @@ export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new accounting billing record' })
-  @ApiResponse({ status: 201, description: 'The record has been successfully created.', type: Billing })
+  @ApiOperation({ summary: 'Create a new daily billing sheet' })
+  @ApiResponse({ status: 201, description: 'The daily billing sheet has been successfully created.', type: Billing })
   create(@Body() createBillingDto: CreateBillingDto): Promise<Billing> {
     return this.billingService.create(createBillingDto);
   }
 
-  @Post('extra')
-  @ApiOperation({ summary: 'Create a new extra billing record' })
-  @ApiResponse({ status: 201, description: 'The extra billing has been carefully recorded.', type: ExtraBilling })
-  createExtraBilling(@Body() createExtraBillingDto: CreateExtraBillingDto): Promise<ExtraBilling> {
-    return this.billingService.createExtraBilling(createExtraBillingDto);
+  @Get('template/:date')
+  @ApiOperation({ summary: 'Get a blank billing template for a specific date' })
+  @ApiResponse({ status: 200, description: 'Return a template initialized with all concepts and 0 quantity' })
+  getTemplate(@Param('date') date: string): Promise<any> {
+    return this.billingService.getTemplate(date);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all accounting billing records' })
-  @ApiResponse({ status: 200, description: 'Return all billing records.', type: [Billing] })
+  @ApiOperation({ summary: 'Get all daily billing sheets' })
+  @ApiResponse({ status: 200, description: 'Return all daily billing sheets.', type: [Billing] })
   findAll(): Promise<Billing[]> {
     return this.billingService.findAll();
   }
 
-  @Get('extra')
-  @ApiOperation({ summary: 'Get all extra billing records' })
-  @ApiResponse({ status: 200, description: 'Return all extra billing records.', type: [ExtraBilling] })
-  findAllExtraBillings(): Promise<ExtraBilling[]> {
-    return this.billingService.findAllExtraBillings();
-  }
-
   @Get(':id')
-  @ApiOperation({ summary: 'Get a specific billing record by id' })
-  @ApiResponse({ status: 200, description: 'Return the billing record.', type: Billing })
-  findOne(@Param('id', ParseIntPipe) id: number): Promise<Billing> {
+  @ApiOperation({ summary: 'Get a specific daily billing sheet by id' })
+  @ApiResponse({ status: 200, description: 'Return the daily billing sheet with its items and summary.' })
+  findOne(@Param('id', ParseIntPipe) id: number): Promise<any> {
     return this.billingService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a billing record' })
-  @ApiResponse({ status: 200, description: 'The record has been successfully updated.', type: Billing })
+  @ApiOperation({ summary: 'Update a daily billing sheet' })
+  @ApiResponse({ status: 200, description: 'The daily billing sheet has been successfully updated.', type: Billing })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateBillingDto: UpdateBillingDto,
@@ -58,7 +49,7 @@ export class BillingController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a billing record' })
+  @ApiOperation({ summary: 'Delete a daily billing sheet' })
   @ApiResponse({ status: 200, description: 'The record has been successfully deleted.' })
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.billingService.remove(id);
