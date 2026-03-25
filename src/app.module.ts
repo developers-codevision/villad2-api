@@ -17,6 +17,7 @@ import { ProductFamiliesModule } from './product-families/product-families.modul
 import { ProductsModule } from './products/products.module';
 import { BillingModule } from './billing/billing.module';
 import { ConceptsModule } from './concepts/concepts.module';
+import { EmployeeModule } from './employee/employee.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { ConceptsModule } from './concepts/concepts.module';
     ProductsModule,
     BillingModule,
     ConceptsModule,
+    EmployeeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
