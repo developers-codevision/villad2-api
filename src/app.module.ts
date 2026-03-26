@@ -17,7 +17,8 @@ import { ProductFamiliesModule } from './product-families/product-families.modul
 import { ProductsModule } from './products/products.module';
 import { BillingModule } from './billing/billing.module';
 import { ConceptsModule } from './concepts/concepts.module';
-import { EmployeeModule } from './employee/employee.module';
+import { StaffModule } from './staff/staff.module';
+import { DailyAttendanceModule } from './daily-attendance/daily-attendance.module';
 
 @Module({
   imports: [
@@ -53,7 +54,8 @@ import { EmployeeModule } from './employee/employee.module';
     ProductsModule,
     BillingModule,
     ConceptsModule,
-    EmployeeModule,
+    StaffModule,
+    DailyAttendanceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
