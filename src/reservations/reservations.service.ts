@@ -156,6 +156,7 @@ export class ReservationsService {
       baseGuestsCount: dto.baseGuestsCount,
       extraGuestsCount: dto.extraGuestsCount ?? 0,
       notes: dto.notes,
+      observations: dto.observations,
       additionalGuests: dto.additionalGuests,
       earlyCheckIn: dto.earlyCheckIn ?? false,
       lateCheckOut: dto.lateCheckOut ?? false,
@@ -387,8 +388,18 @@ export class ReservationsService {
       reservation.notes = dto.notes;
     }
 
+    if (dto.observations !== undefined) {
+      reservation.observations = dto.observations;
+    }
+
     if (dto.additionalGuests !== undefined) {
-      reservation.additionalGuests = dto.additionalGuests;
+      reservation.additionalGuests = dto.additionalGuests
+        .filter(guest => guest.firstName && guest.lastName && guest.sex)
+        .map(guest => ({
+          firstName: guest.firstName!,
+          lastName: guest.lastName!,
+          sex: guest.sex!,
+        }));
     }
 
     if (dto.earlyCheckIn !== undefined) {

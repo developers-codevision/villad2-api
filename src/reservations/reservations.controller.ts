@@ -11,6 +11,7 @@ import {
   Inject,
   forwardRef,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -42,6 +43,10 @@ import {
 import { PaypalService } from '../paypal/paypal.service';
 import { EmailNotificationService } from '../common/notifications/email-notification.service';
 import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../users/enums/user-role.enum';
 
 @ApiTags('reservations')
 @Controller('reservations')
@@ -56,6 +61,8 @@ export class ReservationsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a new reservation' })
   @ApiResponse({
     status: 201,

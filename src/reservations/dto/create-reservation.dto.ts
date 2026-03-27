@@ -38,140 +38,148 @@ export enum GuestType {
 }
 
 export class CreateReservationMainGuestDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Main guest (customer) first name',
     example: 'Juan',
     minLength: 1,
     maxLength: 50,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MinLength(1)
   @MaxLength(50)
-  firstName: string;
+  firstName?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Main guest (customer) last name',
     example: 'Pérez',
     minLength: 1,
     maxLength: 50,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MinLength(1)
   @MaxLength(50)
-  lastName: string;
+  lastName?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
       "Main guest (customer) sex (matches DB enum: 'M' | 'F' | 'otro')",
     enum: GuestSex,
     example: GuestSex.M,
   })
+  @IsOptional()
   @IsEnum(GuestSex)
-  sex: GuestSex;
+  sex?: GuestSex;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Main guest (customer) contact email',
     example: 'guest@example.com',
     maxLength: 100,
   })
+  @IsOptional()
   @IsEmail()
   @MaxLength(100)
-  email: string;
+  email?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Main guest (customer) contact phone number',
     example: '+51987654321',
     maxLength: 20,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(20)
   @IsPhoneNumber(undefined, {
     message: 'Phone number must be a valid international phone number',
   })
-  phone: string;
+  phone?: string;
 }
 
 export class CreateReservationGuestDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Guest first name',
     example: 'Juan',
     minLength: 1,
     maxLength: 50,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MinLength(1)
   @MaxLength(50)
-  firstName: string;
+  firstName?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Guest last name',
     example: 'Pérez',
     minLength: 1,
     maxLength: 50,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MinLength(1)
   @MaxLength(50)
-  lastName: string;
+  lastName?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: "Guest sex (matches DB enum: 'M' | 'F' | 'otro')",
     enum: GuestSex,
     example: GuestSex.M,
   })
+  @IsOptional()
   @IsEnum(GuestSex)
-  sex: GuestSex;
+  sex?: GuestSex;
 }
 
 export class CreateReservationDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Room id (habitacion_id)',
     example: 12,
     minimum: 1,
   })
+  @IsOptional()
   @IsInt()
   @Min(1)
-  roomId: number;
+  roomId?: number;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Check-in datetime (fecha_entrada) in ISO 8601 format (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ssZ). If earlyCheckIn is true, hour will be adjusted to 12:00',
     example: '2026-02-21T14:00:00',
   })
+  @IsOptional()
   @IsDateString()
-  checkInDate: string;
+  checkInDate?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
       'Check-out datetime (fecha_salida) in ISO 8601 format (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ssZ). If lateCheckOut is true, hour will be adjusted to 16:00. Must be greater than checkInDate',
     example: '2026-02-23T11:00:00',
   })
+  @IsOptional()
   @IsDateString()
-  checkOutDate: string;
+  checkOutDate?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
       'Main guest (customer) information. This will be stored in the clients table',
     type: () => CreateReservationMainGuestDto,
   })
+  @IsOptional()
   @ValidateNested()
   @Type(() => CreateReservationMainGuestDto)
-  mainGuest: CreateReservationMainGuestDto;
+  mainGuest?: CreateReservationMainGuestDto;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Base guests count (cantidad_base). Must be greater than 0',
     example: 2,
     minimum: 1,
     maximum: 100,
   })
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(100)
-  baseGuestsCount: number;
+  baseGuestsCount?: number;
 
   @ApiPropertyOptional({
     description: 'Extra guests count (cantidad_extra). Must be 0 or greater',
@@ -202,6 +210,15 @@ export class CreateReservationDto {
   @IsString()
   @MinLength(1)
   notes?: string;
+
+  @ApiPropertyOptional({
+    description: 'Observations (observaciones)',
+    example: 'Special requests or observations',
+  })
+  @IsOptional()
+  @IsString()
+  @MinLength(1)
+  observations?: string;
 
   @ApiPropertyOptional({
     description:

@@ -69,6 +69,9 @@ export class Reservation {
   @Column({ type: 'text', nullable: true })
   notes?: string;
 
+  @Column({ type: 'text', nullable: true })
+  observations?: string;
+
   @Column({ type: 'json', nullable: true })
   additionalGuests?: AdditionalGuest[];
 
