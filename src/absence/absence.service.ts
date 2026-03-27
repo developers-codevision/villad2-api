@@ -1,18 +1,29 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { CreateAbsenceDto } from './dto/create-absence.dto';
 import { UpdateAbsenceDto } from './dto/update-absence.dto';
 import { Absence } from './entities/absence.entity';
+import { Staff } from '../staff/entities/staff.entity';
 
 @Injectable()
 export class AbsenceService {
   constructor(
     @InjectRepository(Absence)
     private readonly absenceRepository: Repository<Absence>,
+    @InjectRepository(Staff)
+    private readonly staffRepository: Repository<Staff>,
   ) {}
 
   async create(createAbsenceDto: CreateAbsenceDto) {
+    const staff = await this.staffRepository.findOne({
+      where: { id: createAbsenceDto.staffId }
+    });
+
+    if (!staff) {
+      throw new NotFoundException(`El trabajador con id ${createAbsenceDto.staffId} no existe`);
+    }
+
     const newAbsence = this.absenceRepository.create(createAbsenceDto);
     return await this.absenceRepository.save(newAbsence);
   }
