@@ -19,6 +19,7 @@ import { BillingModule } from './billing/billing.module';
 import { ConceptsModule } from './concepts/concepts.module';
 import { StaffModule } from './staff/staff.module';
 import { DailyAttendanceModule } from './daily-attendance/daily-attendance.module';
+import { SalaryModule } from './salary/salary.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { DailyAttendanceModule } from './daily-attendance/daily-attendance.modul
     ConceptsModule,
     StaffModule,
     DailyAttendanceModule,
+    SalaryModule,
   ],
   controllers: [AppController],
   providers: [AppService],

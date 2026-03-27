@@ -1,6 +1,7 @@
 
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { DailyAttendance } from '../../daily-attendance/entities/daily-attendance.entity';
+import { Salary } from '../../salary/entities/salary.entity';
 
 @Entity('Staff')
 export class Staff {
@@ -12,4 +13,7 @@ export class Staff {
 
   @OneToMany(() => DailyAttendance, (dailyAttendance) => dailyAttendance.staff)
   dailyAttendances: DailyAttendance[];
+
+  @OneToMany(() => Salary, (salary) => salary.staff)
+  salaries: Salary[];
 }
