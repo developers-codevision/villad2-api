@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DailyAttendanceService } from './daily-attendance.service';
 import { CreateDailyAttendanceDto } from './dto/create-daily-attendance.dto';
 import { UpdateDailyAttendanceDto } from './dto/update-daily-attendance.dto';
@@ -22,9 +22,15 @@ export class DailyAttendanceController {
   }
 
   @Get('staff/:staffId')
-  @ApiOperation({ summary: 'Get dailyAttendance records for a specific staff by their ID' })
-  findByStaff(@Param('staffId') staffId: string) {
-    return this.dailyAttendanceService.findByStaff(+staffId);
+  @ApiOperation({ summary: 'Get dailyAttendance records for a specific staff by their ID (with optional date filters)' })
+  @ApiQuery({ name: 'startDate', required: false, description: 'Fecha de inicio (YYYY-MM-DD)', type: String })
+  @ApiQuery({ name: 'endDate', required: false, description: 'Fecha fin (YYYY-MM-DD)', type: String })
+  findByStaff(
+    @Param('staffId') staffId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.dailyAttendanceService.findByStaff(+staffId, startDate, endDate);
   }
 
   @Get(':id')

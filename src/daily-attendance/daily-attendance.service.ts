@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { CreateDailyAttendanceDto } from './dto/create-daily-attendance.dto';
 import { UpdateDailyAttendanceDto } from './dto/update-daily-attendance.dto';
 import { DailyAttendance } from './entities/daily-attendance.entity';
@@ -35,9 +35,19 @@ export class DailyAttendanceService {
     return dailyAttendance;
   }
 
-  async findByStaff(staffId: number) {
+  async findByStaff(staffId: number, startDate?: string, endDate?: string) {
+    const where: any = { staffId };
+
+    if (startDate && endDate) {
+      where.attendanceDateTime = Between(new Date(startDate), new Date(endDate));
+    } else if (startDate) {
+      where.attendanceDateTime = MoreThanOrEqual(new Date(startDate));
+    } else if (endDate) {
+      where.attendanceDateTime = LessThanOrEqual(new Date(endDate));
+    }
+
     return this.dailyAttendanceRepository.find({
-      where: { staffId },
+      where,
       relations: ['staff'],
       order: { attendanceDateTime: 'DESC' },
     });
