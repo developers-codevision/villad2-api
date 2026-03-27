@@ -20,6 +20,8 @@ import { ConceptsModule } from './concepts/concepts.module';
 import { StaffModule } from './staff/staff.module';
 import { DailyAttendanceModule } from './daily-attendance/daily-attendance.module';
 import { SalaryModule } from './salary/salary.module';
+import { VacationModule } from './vacation/vacation.module';
+import { AbsenceModule } from './absence/absence.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { SalaryModule } from './salary/salary.module';
     StaffModule,
     DailyAttendanceModule,
     SalaryModule,
+    VacationModule,
+    AbsenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
