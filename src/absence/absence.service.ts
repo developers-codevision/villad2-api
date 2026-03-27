@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { CreateAbsenceDto } from './dto/create-absence.dto';
 import { UpdateAbsenceDto } from './dto/update-absence.dto';
 import { Absence } from './entities/absence.entity';
@@ -32,9 +32,19 @@ export class AbsenceService {
     return absence;
   }
 
-  async findByStaff(staffId: number) {
+  async findByStaff(staffId: number, startDate?: string, endDate?: string) {
+    const where: any = { staffId };
+
+    if (startDate && endDate) {
+      where.date = Between(startDate, endDate);
+    } else if (startDate) {
+      where.date = MoreThanOrEqual(startDate);
+    } else if (endDate) {
+      where.date = LessThanOrEqual(endDate);
+    }
+
     return await this.absenceRepository.find({
-      where: { staffId },
+      where,
       relations: ['staff'],
       order: { date: 'DESC' },
     });

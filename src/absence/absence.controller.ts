@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { AbsenceService } from './absence.service';
 import { CreateAbsenceDto } from './dto/create-absence.dto';
 import { UpdateAbsenceDto } from './dto/update-absence.dto';
@@ -22,9 +22,15 @@ export class AbsenceController {
   }
 
   @Get('staff/:staffId')
-  @ApiOperation({ summary: 'Obtener las ausencias de un trabajador por su ID' })
-  findByStaff(@Param('staffId') staffId: string) {
-    return this.absenceService.findByStaff(+staffId);
+  @ApiOperation({ summary: 'Obtener las ausencias de un trabajador por su ID con filtros opcionales' })
+  @ApiQuery({ name: 'startDate', required: false, description: 'Fecha de inicio (YYYY-MM-DD)', type: String })
+  @ApiQuery({ name: 'endDate', required: false, description: 'Fecha fin (YYYY-MM-DD)', type: String })
+  findByStaff(
+    @Param('staffId') staffId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.absenceService.findByStaff(+staffId, startDate, endDate);
   }
 
   @Get(':id')
