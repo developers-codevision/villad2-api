@@ -8,12 +8,13 @@ import { LessThan, Repository } from 'typeorm';
 import { Room } from '../rooms/entities/room.entity';
 import { RoomStatus } from '../rooms/enums/room-enums.enum';
 import { Client, ClientSex } from './entities/client.entity';
-import { Reservation, ReservationStatus } from './entities/reservation.entity';
+import { Reservation, ReservationStatus, ReservationType } from './entities/reservation.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import {
   CreateReservationDto,
   GuestSex,
   ReservationStatus as ReservationStatusDto,
+  ReservationType as ReservationTypeDto,
 } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import {
@@ -68,6 +69,17 @@ export class ReservationsService {
   }
 
   async create(dto: CreateReservationDto): Promise<Reservation> {
+    // Determinar tipo de reserva
+    const reservationType = dto.type ?? ReservationType.ROOM;
+
+    if (reservationType === ReservationType.TERRACE) {
+      return this.createTerraceReservation(dto);
+    }
+
+    return this.createRoomReservation(dto);
+  }
+
+  private async createRoomReservation(dto: CreateReservationDto): Promise<Reservation> {
     const room = await this.roomRepository.findOne({
       where: { id: dto.roomId },
     });
@@ -153,6 +165,7 @@ export class ReservationsService {
       checkInDate: adjustedCheckInDate,
       checkOutDate: adjustedCheckOutDate,
       status: mapStatusToEntity(dto.status) ?? ReservationStatus.PENDING,
+      type: ReservationType.ROOM,
       baseGuestsCount: dto.baseGuestsCount,
       extraGuestsCount: dto.extraGuestsCount ?? 0,
       notes: dto.notes,
@@ -164,6 +177,52 @@ export class ReservationsService {
       transferRoundTrip: dto.transferRoundTrip ?? false,
       breakfasts: dto.breakfasts ?? 0,
       totalPrice,
+    });
+
+    return this.reservationRepository.save(reservation);
+  }
+
+  private async createTerraceReservation(dto: CreateReservationDto): Promise<Reservation> {
+    // Para terraza, checkInDate debe incluir la hora en formato ISO (ej: 2026-03-30T14:00:00)
+    const checkInDate = dto.checkInDate;
+    const hoursCount = dto.hoursCount ?? 4;
+
+    // Calcular checkOutDate con la hora de fin
+    const checkOutDate = this.calculateCheckOutDate(checkInDate, hoursCount);
+
+    // Verificar disponibilidad usando checkInDate y checkOutDate
+    await this.validateNoConflictingTerraceReservations(
+      checkInDate,
+      checkOutDate,
+    );
+
+    // Crear cliente para la reserva de terraza
+    const client = this.clientRepository.create({
+      firstName: dto.mainGuest?.firstName ?? 'Terraza',
+      lastName: dto.mainGuest?.lastName ?? 'Reserva',
+      sex: dto.mainGuest?.sex ? mapSexToClientSex(dto.mainGuest.sex) : ClientSex.OTHER,
+      email: dto.mainGuest?.email,
+      phone: dto.mainGuest?.phone,
+    });
+    const savedClient = await this.clientRepository.save(client);
+
+    // Generar número de reserva para terraza
+    const reservationNumber = this.generateTerraceReservationNumber();
+
+    const reservation = this.reservationRepository.create({
+      reservationNumber,
+      roomId: null, // Las reservas de terraza no tienen habitación asignada
+      clientId: savedClient.id,
+      checkInDate,
+      checkOutDate,
+      status: mapStatusToEntity(dto.status) ?? ReservationStatus.PENDING,
+      type: ReservationType.TERRACE,
+      baseGuestsCount: dto.baseGuestsCount ?? dto.peopleCount ?? 1,
+      extraGuestsCount: 0,
+      hoursCount,
+      notes: dto.notes,
+      observations: dto.observations,
+      totalPrice: dto.totalPrice ?? dto.price ?? 100,
     });
 
     return this.reservationRepository.save(reservation);
@@ -977,7 +1036,9 @@ export class ReservationsService {
     reservationId: number,
     expiresAt: Date,
   ): Promise<void> {
-    await this.reservationRepository.update(reservationId, { paymentExpiresAt: expiresAt });
+    await this.reservationRepository.update(reservationId, {
+      paymentExpiresAt: expiresAt,
+    });
   }
 
   /**
@@ -994,5 +1055,107 @@ export class ReservationsService {
       { status: ReservationStatus.CANCELLED },
     );
     return result.affected ?? 0;
+  }
+
+  /**
+   * Extrae la hora (HH:mm) de un string de fecha ISO
+   */
+  private extractTimeFromDateString(dateStr: string): string {
+    const date = new Date(dateStr);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+
+  /**
+   * Calcula el checkOutDate basado en checkInDate y hoursCount
+   */
+  private calculateCheckOutDate(checkInDate: string, hoursCount: number): string {
+    const startDate = new Date(checkInDate);
+    const endDate = new Date(startDate.getTime() + hoursCount * 60 * 60 * 1000);
+    return this.dateToISOString(endDate);
+  }
+
+  /**
+   * Calcula la hora de fin basada en la hora de inicio y cantidad de horas
+   */
+  private calculateEndTime(startTime: string, hoursCount: number): string {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endHour = hours + hoursCount;
+    const endMinutes = minutes;
+
+    // Formatear hora de fin (HH:mm)
+    const formattedHour = String(endHour).padStart(2, '0');
+    const formattedMinutes = String(endMinutes).padStart(2, '0');
+
+    return `${formattedHour}:${formattedMinutes}`;
+  }
+
+  /**
+   * Genera un número de reserva único para terraza
+   */
+  private generateTerraceReservationNumber(): string {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
+    return `T-${y}${m}${d}-${rand}`;
+  }
+
+  /**
+   * Valida que no haya reservaciones de terraza conflictivas
+   * Una reservación conflictiva existe cuando:
+   * - Misma fecha
+   * - Rangos de hora se solapan
+   * - Tipo es TERRACE
+   */
+  private async validateNoConflictingTerraceReservations(
+    checkInDate: string,
+    checkOutDate: string,
+  ): Promise<void> {
+    const reservationDate = checkInDate.split('T')[0];
+
+    const conflictingReservations = await this.reservationRepository.find({
+      where: [
+        {
+          status: ReservationStatus.PENDING,
+          type: ReservationType.TERRACE,
+          checkInDate: reservationDate,
+        },
+        {
+          status: ReservationStatus.CONFIRMED,
+          type: ReservationType.TERRACE,
+          checkInDate: reservationDate,
+        },
+      ],
+      select: ['id', 'checkInDate', 'checkOutDate', 'status'],
+    });
+
+    const newStart = new Date(checkInDate).getTime();
+    const newEnd = new Date(checkOutDate).getTime();
+
+    for (const reservation of conflictingReservations) {
+      const existingStart = new Date(reservation.checkInDate).getTime();
+      const existingEnd = new Date(reservation.checkOutDate).getTime();
+
+      // Verificar solapamiento de horarios
+      // Solapamiento ocurre si: nuevoInicio < existenteFin AND nuevoFin > existenteInicio
+      if (newStart < existingEnd && newEnd > existingStart) {
+        throw new ConflictException(
+          `La terraza ya tiene una reservación el ${reservationDate} ` +
+            `de ${this.extractTimeFromDateString(reservation.checkInDate)} a ${this.extractTimeFromDateString(reservation.checkOutDate)}. ` +
+            `El horario solicitado se solapa con la reservación existente.`,
+        );
+      }
+    }
+  }
+
+  /**
+   * Convierte hora en formato HH:mm a minutos desde medianoche
+   */
+  private timeToMinutes(timeStr: string): number {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
   }
 }

@@ -7,7 +7,7 @@ import {
   IsEmail,
   IsEnum,
   IsInt,
-  IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsPhoneNumber,
   IsString,
@@ -24,6 +24,11 @@ export enum ReservationStatus {
   CONFIRMED = 'confirmada',
   CANCELLED = 'cancelada',
   FINISHED = 'terminada',
+}
+
+export enum ReservationType {
+  ROOM = 'habitacion',
+  TERRACE = 'terraza',
 }
 
 export enum GuestSex {
@@ -265,6 +270,59 @@ export class CreateReservationDto {
   @IsOptional()
   @IsBoolean()
   transferRoundTrip?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Number of people for terrace reservation',
+    example: 20,
+    minimum: 1,
+    maximum: 500,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(500)
+  peopleCount?: number;
+
+  @ApiPropertyOptional({
+    description: 'Price for terrace reservation (overrides automatic calculation)',
+    example: 100,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price?: number;
+
+  @ApiPropertyOptional({
+    description: 'Total price (can be provided directly for terrace reservations)',
+    example: 100,
+    minimum: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  totalPrice?: number;
+
+  @ApiPropertyOptional({
+    description: 'Reservation type (tipo). Defaults to room (habitacion)',
+    enum: ReservationType,
+    example: ReservationType.ROOM,
+  })
+  @IsOptional()
+  @IsEnum(ReservationType)
+  type?: ReservationType;
+
+  @ApiPropertyOptional({
+    description: 'Number of hours for terrace reservation (suggested: 4)',
+    example: 4,
+    minimum: 1,
+    maximum: 24,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(24)
+  hoursCount?: number;
 
   @ApiPropertyOptional({
     description: 'Number of breakfasts (8 dollars each)',

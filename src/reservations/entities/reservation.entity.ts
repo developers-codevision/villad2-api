@@ -16,6 +16,16 @@ export enum ReservationStatus {
   FINISHED = 'terminada',
 }
 
+export enum ReservationType {
+  ROOM = 'habitacion',
+  TERRACE = 'terraza',
+}
+
+export type SupplyDetail = {
+  name: string;
+  quantity: number;
+};
+
 export type AdditionalGuest = {
   firstName: string;
   lastName: string;
@@ -30,12 +40,12 @@ export class Reservation {
   @Column({ type: 'varchar', length: 20, unique: true })
   reservationNumber: string;
 
-  @Column({ type: 'int' })
-  roomId: number;
+  @Column({ type: 'int', nullable: true })
+  roomId: number | null;
 
   @ManyToOne(() => Room)
   @JoinColumn({ name: 'roomId' })
-  room: Room;
+  room: Room | null;
 
   @Column({ type: 'int' })
   clientId: number;
@@ -60,11 +70,21 @@ export class Reservation {
   })
   status: ReservationStatus;
 
-  @Column({ type: 'int' })
+  @Column({
+    type: 'enum',
+    enum: ReservationType,
+    default: ReservationType.ROOM,
+  })
+  type: ReservationType;
+
+  @Column({ type: 'int', default: 1 })
   baseGuestsCount: number;
 
   @Column({ type: 'int', default: 0 })
   extraGuestsCount: number;
+
+  @Column({ type: 'int', default: 0 })
+  hoursCount: number;
 
   @Column({ type: 'text', nullable: true })
   notes?: string;
