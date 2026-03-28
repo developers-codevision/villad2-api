@@ -4,15 +4,26 @@ import { Repository, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
 import { CreateDailyAttendanceDto } from './dto/create-daily-attendance.dto';
 import { UpdateDailyAttendanceDto } from './dto/update-daily-attendance.dto';
 import { DailyAttendance } from './entities/daily-attendance.entity';
+import { Staff } from '../staff/entities/staff.entity';
 
 @Injectable()
 export class DailyAttendanceService {
   constructor(
     @InjectRepository(DailyAttendance)
     private dailyAttendanceRepository: Repository<DailyAttendance>,
+    @InjectRepository(Staff)
+    private staffRepository: Repository<Staff>,
   ) {}
 
   async create(createDailyAttendanceDto: CreateDailyAttendanceDto) {
+    const staff = await this.staffRepository.findOne({
+      where: { id: createDailyAttendanceDto.staffId }
+    });
+
+    if (!staff) {
+      throw new NotFoundException(`El trabajador con id ${createDailyAttendanceDto.staffId} no existe`);
+    }
+
     const dailyAttendance = this.dailyAttendanceRepository.create(createDailyAttendanceDto);
     return this.dailyAttendanceRepository.save(dailyAttendance);
   }
