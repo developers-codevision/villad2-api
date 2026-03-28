@@ -4,15 +4,26 @@ import { Repository } from 'typeorm';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { Salary } from './entities/salary.entity';
+import { Staff } from '../staff/entities/staff.entity';
 
 @Injectable()
 export class SalaryService {
   constructor(
     @InjectRepository(Salary)
     private readonly salaryRepository: Repository<Salary>,
+    @InjectRepository(Staff)
+    private readonly staffRepository: Repository<Staff>,
   ) {}
 
   async create(createSalaryDto: CreateSalaryDto) {
+    const staff = await this.staffRepository.findOne({
+      where: { id: createSalaryDto.staffId }
+    });
+
+    if (!staff) {
+      throw new NotFoundException(`El trabajador con id ${createSalaryDto.staffId} no existe`);
+    }
+
     const newSalary = this.salaryRepository.create(createSalaryDto);
     return await this.salaryRepository.save(newSalary);
   }

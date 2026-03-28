@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType , OmitType } from '@nestjs/swagger';
 import { CreateSalaryDto } from './create-salary.dto';
 
-export class UpdateSalaryDto extends PartialType(CreateSalaryDto) {}
+export class UpdateSalaryDto extends PartialType(OmitType(CreateSalaryDto, ['staffId'] as const)) {}
