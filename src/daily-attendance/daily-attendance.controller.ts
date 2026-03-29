@@ -5,7 +5,7 @@ import { CreateDailyAttendanceDto } from './dto/create-daily-attendance.dto';
 import { UpdateDailyAttendanceDto } from './dto/update-daily-attendance.dto';
 
 @ApiTags('DailyAttendance')
-@Controller('dailyAttendance')
+@Controller('daily-attendance')
 export class DailyAttendanceController {
   constructor(private readonly dailyAttendanceService: DailyAttendanceService) {}
 

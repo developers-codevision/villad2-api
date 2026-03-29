@@ -4,7 +4,7 @@ import { VacationService } from './vacation.service';
 import { CreateVacationDto } from './dto/create-vacation.dto';
 import { UpdateVacationDto } from './dto/update-vacation.dto';
 
-@ApiTags('Vacaciones (Vacations)')
+@ApiTags('Vacations')
 @Controller('vacation')
 export class VacationController {
   constructor(private readonly vacationService: VacationService) {}

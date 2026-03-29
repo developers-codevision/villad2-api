@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Staff } from '../../staff/entities/staff.entity';
 
-@Entity('Salary')
+@Entity('salaries')
 export class Salary {
   @PrimaryGeneratedColumn()
   id: number;
@@ -9,7 +9,7 @@ export class Salary {
   @Column()
   staffId: number;
 
-  @ManyToOne(() => Staff, (staff) => staff.salaries, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => Staff, (staff) => staff.salaries, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'staffId' })
   staff: Staff;
 

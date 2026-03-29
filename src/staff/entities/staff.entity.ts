@@ -5,7 +5,7 @@ import { Salary } from '../../salary/entities/salary.entity';
 import { Vacation } from '../../vacation/entities/vacation.entity';
 import { Absence } from '../../absence/entities/absence.entity';
 
-@Entity('Staff')
+@Entity('staff')
 export class Staff {
   @PrimaryGeneratedColumn()
   id: number;

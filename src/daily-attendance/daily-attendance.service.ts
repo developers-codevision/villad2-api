@@ -49,12 +49,24 @@ export class DailyAttendanceService {
   async findByStaff(staffId: number, startDate?: string, endDate?: string) {
     const where: any = { staffId };
 
+    const startOfDay = (value: string) => {
+      const date = new Date(value);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    };
+
+    const endOfDay = (value: string) => {
+      const date = new Date(value);
+      date.setHours(23, 59, 59, 999);
+      return date;
+    };
+
     if (startDate && endDate) {
-      where.attendanceDateTime = Between(new Date(startDate), new Date(endDate));
+      where.attendanceDateTime = Between(startOfDay(startDate), endOfDay(endDate));
     } else if (startDate) {
-      where.attendanceDateTime = MoreThanOrEqual(new Date(startDate));
+      where.attendanceDateTime = MoreThanOrEqual(startOfDay(startDate));
     } else if (endDate) {
-      where.attendanceDateTime = LessThanOrEqual(new Date(endDate));
+      where.attendanceDateTime = LessThanOrEqual(endOfDay(endDate));
     }
 
     return this.dailyAttendanceRepository.find({
