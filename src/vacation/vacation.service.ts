@@ -4,15 +4,26 @@ import { Repository } from 'typeorm';
 import { CreateVacationDto } from './dto/create-vacation.dto';
 import { UpdateVacationDto } from './dto/update-vacation.dto';
 import { Vacation } from './entities/vacation.entity';
+import { Staff } from '../staff/entities/staff.entity';
 
 @Injectable()
 export class VacationService {
   constructor(
     @InjectRepository(Vacation)
     private readonly vacationRepository: Repository<Vacation>,
+    @InjectRepository(Staff)
+    private readonly staffRepository: Repository<Staff>,
   ) {}
 
   async create(createVacationDto: CreateVacationDto) {
+    const staff = await this.staffRepository.findOne({
+      where: { id: createVacationDto.staffId }
+    });
+
+    if (!staff) {
+      throw new NotFoundException(`El trabajador con id ${createVacationDto.staffId} no existe`);
+    }
+
     const newVacation = this.vacationRepository.create(createVacationDto);
     return await this.vacationRepository.save(newVacation);
   }
