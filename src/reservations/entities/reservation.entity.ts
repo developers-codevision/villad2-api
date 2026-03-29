@@ -14,6 +14,7 @@ export enum ReservationStatus {
   CONFIRMED = 'confirmada',
   CANCELLED = 'cancelada',
   FINISHED = 'terminada',
+  NO_SHOW = 'no_show',
 }
 
 export enum ReservationType {
@@ -30,6 +31,7 @@ export type AdditionalGuest = {
   firstName: string;
   lastName: string;
   sex: 'M' | 'F' | 'otro';
+  idNumber?: string;
 };
 
 @Entity('reservations')

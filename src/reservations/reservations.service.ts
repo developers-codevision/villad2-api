@@ -119,6 +119,7 @@ export class ReservationsService {
       sex: mapSexToClientSex(dto.mainGuest.sex),
       email: dto.mainGuest.email,
       phone: dto.mainGuest.phone,
+      idNumber: dto.mainGuest.idNumber,
     });
     const savedClient = await this.clientRepository.save(client);
 
@@ -203,6 +204,7 @@ export class ReservationsService {
       sex: dto.mainGuest?.sex ? mapSexToClientSex(dto.mainGuest.sex) : ClientSex.OTHER,
       email: dto.mainGuest?.email,
       phone: dto.mainGuest?.phone,
+      idNumber: dto.mainGuest?.idNumber,
     });
     const savedClient = await this.clientRepository.save(client);
 

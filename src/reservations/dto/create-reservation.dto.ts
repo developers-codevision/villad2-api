@@ -24,6 +24,7 @@ export enum ReservationStatus {
   CONFIRMED = 'confirmada',
   CANCELLED = 'cancelada',
   FINISHED = 'terminada',
+  NO_SHOW = 'no_show',
 }
 
 export enum ReservationType {
@@ -99,6 +100,16 @@ export class CreateReservationMainGuestDto {
     message: 'Phone number must be a valid international phone number',
   })
   phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Main guest ID number (DNI/passport)',
+    example: '12345678',
+    maxLength: 20,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  idNumber?: string;
 }
 
 export class CreateReservationGuestDto {
@@ -134,6 +145,16 @@ export class CreateReservationGuestDto {
   @IsOptional()
   @IsEnum(GuestSex)
   sex?: GuestSex;
+
+  @ApiPropertyOptional({
+    description: 'Guest ID number (DNI/passport)',
+    example: '12345678',
+    maxLength: 20,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  idNumber?: string;
 }
 
 export class CreateReservationDto {
