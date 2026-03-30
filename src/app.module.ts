@@ -36,7 +36,7 @@ import { ConceptsModule } from './concepts/concepts.module';
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
-        migrationsRun: true,
+        migrationsRun: false,
         synchronize: false,
         logging: true,
       }),
