@@ -11,6 +11,8 @@ import {
   Inject,
   forwardRef,
   Query,
+  UseGuards,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -32,16 +34,21 @@ import {
 } from './dto/find-reservations.dto';
 import { HourRange } from './dto/occupied-hours.dto';
 import { CheckInDto, CheckOutDto } from './dto/check-in.dto';
-import { Reservation } from './entities/reservation.entity';
 import { PaymentType } from '../payments/entities/payment.entity';
 import { PaymentsService } from '../payments/payments.service';
 import {
   CreateReservationWithPaymentDto,
   ReservationPaymentMethod,
 } from './dto/create-reservation-with-payment.dto';
+import { ReservationType } from './dto/create-reservation.dto';
+import { Reservation } from './entities/reservation.entity';
 import { PaypalService } from '../paypal/paypal.service';
 import { EmailNotificationService } from '../common/notifications/email-notification.service';
 import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../users/enums/user-role.enum';
 
 @ApiTags('reservations')
 @Controller('reservations')
@@ -56,6 +63,8 @@ export class ReservationsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a new reservation' })
   @ApiResponse({
     status: 201,
@@ -478,5 +487,54 @@ export class ReservationsController {
     @Body() dto: CheckOutDto,
   ): Promise<Reservation> {
     return this.reservationsService.checkOut(id, dto.roomStatus);
+  }
+
+  // ==================== TERRACE RESERVATIONS ====================
+
+  @Post('terrace')
+  @ApiOperation({ summary: 'Create a new terrace reservation' })
+  @ApiResponse({
+    status: 201,
+    description: 'Terrace reservation created successfully',
+    type: Reservation,
+  })
+  @ApiBody({ type: CreateReservationDto })
+  createTerraceReservation(
+    @Body() dto: CreateReservationDto,
+  ): Promise<Reservation> {
+    // Force type to be TERRACE for this endpoint
+    const terraceDto = { ...dto, type: ReservationType.TERRACE };
+    return this.reservationsService.create(terraceDto);
+  }
+
+  @Get('terrace')
+  @ApiOperation({ summary: 'Get all terrace reservations' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of terrace reservations',
+    type: [Reservation],
+  })
+  async findAllTerraceReservations(): Promise<Reservation[]> {
+    const allReservations = await this.reservationsService.findAll();
+    return allReservations.filter(r => r.type === ReservationType.TERRACE);
+  }
+
+  @Get('terrace/:id')
+  @ApiOperation({ summary: 'Get a terrace reservation by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Terrace reservation found',
+    type: Reservation,
+  })
+  @ApiResponse({ status: 404, description: 'Terrace reservation not found' })
+  @ApiParam({ name: 'id', description: 'Terrace Reservation ID', example: 1 })
+  async findOneTerraceReservation(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<Reservation> {
+    const reservation = await this.reservationsService.findOne(id);
+    if (reservation.type !== ReservationType.TERRACE) {
+      throw new NotFoundException(`Terrace reservation with ID ${id} not found`);
+    }
+    return reservation;
   }
 }

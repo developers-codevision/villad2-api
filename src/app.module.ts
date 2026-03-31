@@ -17,6 +17,11 @@ import { ProductFamiliesModule } from './product-families/product-families.modul
 import { ProductsModule } from './products/products.module';
 import { BillingModule } from './billing/billing.module';
 import { ConceptsModule } from './concepts/concepts.module';
+import { StaffModule } from './staff/staff.module';
+import { DailyAttendanceModule } from './daily-attendance/daily-attendance.module';
+import { SalaryModule } from './salary/salary.module';
+import { VacationModule } from './vacation/vacation.module';
+import { AbsenceModule } from './absence/absence.module';
 
 @Module({
   imports: [
@@ -35,7 +40,9 @@ import { ConceptsModule } from './concepts/concepts.module';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true, // Only for development
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        migrationsRun: false,
+        synchronize: false,
         logging: true,
       }),
     }),
@@ -52,6 +59,11 @@ import { ConceptsModule } from './concepts/concepts.module';
     ProductsModule,
     BillingModule,
     ConceptsModule,
+    StaffModule,
+    DailyAttendanceModule,
+    SalaryModule,
+    VacationModule,
+    AbsenceModule,
   ],
   controllers: [AppController],
   providers: [AppService],
