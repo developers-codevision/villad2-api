@@ -35,6 +35,9 @@ export class Client {
   @Column({ type: 'varchar', length: 20 })
   phone: string;
 
+  @Column({ type: 'varchar', length: 20, nullable: true, unique: true })
+  idNumber?: string;
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

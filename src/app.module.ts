@@ -40,7 +40,9 @@ import { AbsenceModule } from './absence/absence.module';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true, // Only for development
+        migrations: [__dirname + '/migrations/*{.ts,.js}'],
+        migrationsRun: false,
+        synchronize: false,
         logging: true,
       }),
     }),
