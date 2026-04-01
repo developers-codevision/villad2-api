@@ -139,11 +139,11 @@ export class SettingsService {
       ]);
 
       return {
-        earlyCheckInPrice: earlyCheckIn.value,
-        lateCheckOutPrice: lateCheckOut.value,
-        transferOneWayPrice: transferOneWay.value,
-        transferRoundTripPrice: transferRoundTrip.value,
-        breakfastPrice: breakfast.value,
+        earlyCheckInPrice: Number(earlyCheckIn.value),
+        lateCheckOutPrice: Number(lateCheckOut.value),
+        transferOneWayPrice: Number(transferOneWay.value),
+        transferRoundTripPrice: Number(transferRoundTrip.value),
+        breakfastPrice: Number(breakfast.value),
       };
     } catch (error) {
       if (error instanceof NotFoundException) {

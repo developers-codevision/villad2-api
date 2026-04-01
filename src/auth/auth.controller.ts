@@ -15,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiBody,
 } from '@nestjs/swagger';
 import { Public } from './decorators/public.decorator';
 import { LoginDto } from './dto/login.dto';
@@ -32,18 +33,49 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User login' })
-  @ApiResponse({ status: 200, description: 'User successfully logged in' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate a user with username and password. Returns access token and refresh token.',
+  })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'User successfully logged in',
+    schema: {
+      example: {
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Request() req, @Body() loginDto: LoginDto) {
     return this.authService.login(req.user);
   }
 
   @Public()
   @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
-  @ApiResponse({ status: 201, description: 'User successfully registered' })
-  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiOperation({
+    summary: 'Register a new user',
+    description: 'Create a new user account with username, password, email, full name, phone and roles.',
+  })
+  @ApiBody({ type: RegisterDto })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully registered',
+    schema: {
+      example: {
+        id: 1,
+        username: 'john_doe',
+        email: 'john@example.com',
+        fullName: 'John Doe',
+        phone: '+1234567890',
+        roles: ['user'],
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - validation error or duplicate user' })
+  @ApiResponse({ status: 409, description: 'Username or email already exists' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
@@ -52,8 +84,20 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'User logout' })
-  @ApiResponse({ status: 200, description: 'Successfully logged out' })
+  @ApiOperation({
+    summary: 'User logout',
+    description: 'Invalidate the current access token and refresh token.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully logged out',
+    schema: {
+      example: {
+        message: 'Successfully logged out',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid or expired token' })
   async logout(@Request() req) {
     await this.authService.logout(req.user.userId);
     return { message: 'Successfully logged out' };
@@ -62,9 +106,22 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Refresh access token' })
-  @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({
+    summary: 'Refresh access token',
+    description: 'Get a new access token using a valid refresh token.',
+  })
+  @ApiBody({ type: RefreshTokenDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Token refreshed successfully',
+    schema: {
+      example: {
+        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+        refresh_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   async refreshTokens(@Body() refreshTokenDTO: RefreshTokenDto) {
     const { refreshToken } = refreshTokenDTO;
     console.log(refreshToken);
@@ -75,9 +132,24 @@ export class AuthController {
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Return current user profile' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Get current user profile',
+    description: 'Retrieve the profile information of the currently authenticated user.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns current user profile',
+    schema: {
+      example: {
+        userId: 1,
+        username: 'john_doe',
+        email: 'john@example.com',
+        roles: ['user'],
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid or expired token' })
   getProfile(@Request() req) {
     return req.user;
   }
