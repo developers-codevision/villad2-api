@@ -22,7 +22,16 @@ export class Salary {
   payroll: Payroll;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  amount: number;
+  netAmount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  vacationsAmount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  grossAmount: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  hours: number;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   comment: string;

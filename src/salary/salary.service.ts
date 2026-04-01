@@ -5,6 +5,7 @@ import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { Salary } from './entities/salary.entity';
 import { Staff } from '../staff/entities/staff.entity';
+import { Payroll } from '../payrolls/entities/payroll.entity';
 
 @Injectable()
 export class SalaryService {
@@ -13,6 +14,8 @@ export class SalaryService {
     private readonly salaryRepository: Repository<Salary>,
     @InjectRepository(Staff)
     private readonly staffRepository: Repository<Staff>,
+    @InjectRepository(Payroll)
+    private readonly payrollRepository: Repository<Payroll>,
   ) {}
 
   async create(createSalaryDto: CreateSalaryDto) {
@@ -24,7 +27,23 @@ export class SalaryService {
       throw new NotFoundException(`El trabajador con id ${createSalaryDto.staffId} no existe`);
     }
 
-    const newSalary = this.salaryRepository.create(createSalaryDto);
+    if (createSalaryDto.payrollId) {
+      const payroll = await this.payrollRepository.findOne({
+        where: { id: createSalaryDto.payrollId }
+      });
+      if (!payroll) {
+        throw new NotFoundException(`La nómina con id ${createSalaryDto.payrollId} no existe`);
+      }
+    }
+    
+    const vacationsAmount = Number((createSalaryDto.netAmount * 0.0909).toFixed(2));
+    const grossAmount = Number((createSalaryDto.netAmount + vacationsAmount).toFixed(2));
+
+    const newSalary = this.salaryRepository.create({
+      ...createSalaryDto,
+      vacationsAmount,
+      grossAmount,
+    });
     return await this.salaryRepository.save(newSalary);
   }
 
@@ -52,7 +71,23 @@ export class SalaryService {
 
   async update(id: number, updateSalaryDto: UpdateSalaryDto) {
     const salary = await this.findOne(id);
+
+    if (updateSalaryDto.payrollId) {
+      const payroll = await this.payrollRepository.findOne({
+        where: { id: updateSalaryDto.payrollId }
+      });
+      if (!payroll) {
+        throw new NotFoundException(`La nómina con id ${updateSalaryDto.payrollId} no existe`);
+      }
+    }
+
     this.salaryRepository.merge(salary, updateSalaryDto);
+
+    if (updateSalaryDto.netAmount !== undefined) {
+      salary.vacationsAmount = Number((salary.netAmount * 0.0909).toFixed(2));
+      salary.grossAmount = Number((salary.netAmount + salary.vacationsAmount).toFixed(2));
+    }
+
     return await this.salaryRepository.save(salary);
   }
 

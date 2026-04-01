@@ -17,10 +17,10 @@ export class Staff {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 100, unique: true, nullable: false })
+  @Column({ type: 'varchar', length: 100, nullable: false })
   staffname: string;
 
-  @Column({ type: 'varchar', length: 20, unique: true, nullable: false })
+  @Column({ type: 'varchar', length: 20, unique: true, nullable: false }) 
   expNumber: string;
 
   @Column({
