@@ -84,7 +84,7 @@ export class SalaryService {
     this.salaryRepository.merge(salary, updateSalaryDto);
 
     if (updateSalaryDto.netAmount !== undefined) {
-      salary.vacationsAmount = Number((salary.netAmount * 0.0909).toFixed(2));
+      salary.vacationsAmount = Number(((salary.netAmount * 909)/10000).toFixed(2));
       salary.grossAmount = Number((salary.netAmount + salary.vacationsAmount).toFixed(2));
     }
 
