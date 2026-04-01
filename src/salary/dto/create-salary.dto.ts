@@ -7,6 +7,11 @@ export class CreateSalaryDto {
   @IsNotEmpty()
   staffId: number;
 
+  @ApiPropertyOptional({ example: 1, description: 'ID de la nómina (Payroll) a la que pertenece', required: false })
+  @IsNumber()
+  @IsOptional()
+  payrollId?: number;
+
   @ApiProperty({ example: 1500.50, description: 'Monto del salario' })
   @IsNumber()
   @Min(0, { message: 'El salario no puede ser negativo' })
