@@ -1,13 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsString,
-  IsNumber,
   IsDateString,
-  IsArray,
-  ValidateNested,
+  IsOptional,
   IsInt,
+  IsNumber,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class CreateBillingItemDto {
   @ApiProperty()
@@ -20,21 +17,8 @@ export class CreateBillingItemDto {
 }
 
 export class CreateBillingDto {
-  @ApiProperty({ description: 'Date of the daily billing sheet (YYYY-MM-DD)' })
+  @ApiProperty({ description: 'Date for the daily billing sheet (YYYY-MM-DD). If not provided, uses today.', required: false })
   @IsDateString()
-  date: string;
-
-  @ApiProperty({ description: 'USD to CUP exchange rate', default: 1 })
-  @IsNumber()
-  usdToCupRate: number;
-
-  @ApiProperty({ description: 'EUR to CUP exchange rate', default: 1 })
-  @IsNumber()
-  eurToCupRate: number;
-
-  @ApiProperty({ type: [CreateBillingItemDto] })
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateBillingItemDto)
-  items: CreateBillingItemDto[];
+  @IsOptional()
+  date?: string;
 }
