@@ -44,17 +44,16 @@ export enum GuestType {
 }
 
 export class CreateReservationMainGuestDto {
-  @ApiPropertyOptional({
-    description: 'Main guest (customer) first name',
+  @ApiProperty({
+    description: 'Main guest (customer) first name - REQUIRED',
     example: 'Juan',
     minLength: 1,
     maxLength: 50,
   })
-  @IsOptional()
   @IsString()
   @MinLength(1)
   @MaxLength(50)
-  firstName?: string;
+  firstName: string;
 
   @ApiPropertyOptional({
     description: 'Main guest (customer) last name',
@@ -158,15 +157,14 @@ export class CreateReservationGuestDto {
 }
 
 export class CreateReservationDto {
-  @ApiPropertyOptional({
-    description: 'Room id (habitacion_id)',
+  @ApiProperty({
+    description: 'Room id (habitacion_id) - REQUIRED',
     example: 12,
     minimum: 1,
   })
-  @IsOptional()
   @IsInt()
   @Min(1)
-  roomId?: number;
+  roomId: number;
 
   @ApiPropertyOptional({
     description: 'Check-in datetime (fecha_entrada) in ISO 8601 format (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ssZ). If earlyCheckIn is true, hour will be adjusted to 12:00',
@@ -185,15 +183,14 @@ export class CreateReservationDto {
   @IsDateString()
   checkOutDate?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     description:
-      'Main guest (customer) information. This will be stored in the clients table',
+      'Main guest (customer) information - REQUIRED. This will be stored in the clients table',
     type: () => CreateReservationMainGuestDto,
   })
-  @IsOptional()
   @ValidateNested()
   @Type(() => CreateReservationMainGuestDto)
-  mainGuest?: CreateReservationMainGuestDto;
+  mainGuest: CreateReservationMainGuestDto;
 
   @ApiPropertyOptional({
     description: 'Base guests count (cantidad_base). Must be greater than 0',

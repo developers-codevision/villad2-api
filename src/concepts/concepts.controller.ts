@@ -42,23 +42,9 @@ export class ConceptsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Soft delete a concept by id' })
+  @ApiOperation({ summary: 'Delete a concept by id' })
   @ApiResponse({ status: 200, description: 'The concept has been successfully deleted.' })
   remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.conceptsService.remove(id);
-  }
-
-  @Post(':id/restore')
-  @ApiOperation({ summary: 'Restore a soft-deleted concept' })
-  @ApiResponse({ status: 200, description: 'The concept has been successfully restored.', type: Concept })
-  async restore(@Param('id', ParseIntPipe) id: number): Promise<Concept> {
-    return this.conceptsService.restore(id);
-  }
-
-  @Patch(':id/auto-consume')
-  @ApiOperation({ summary: 'Toggle auto-consume inventory setting' })
-  @ApiResponse({ status: 200, description: 'Auto-consume setting updated.', type: Concept })
-  async toggleAutoConsume(@Param('id', ParseIntPipe) id: number): Promise<Concept> {
-    return this.conceptsService.toggleAutoConsume(id);
   }
 }

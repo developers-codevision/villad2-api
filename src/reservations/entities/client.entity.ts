@@ -20,20 +20,21 @@ export class Client {
   @Column({ type: 'varchar', length: 50 })
   firstName: string;
 
-  @Column({ type: 'varchar', length: 50 })
-  lastName: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  lastName: string | null;
 
   @Column({
     type: 'enum',
     enum: ClientSex,
+    nullable: true,
   })
-  sex: ClientSex;
+  sex: ClientSex | null;
 
-  @Column({ type: 'varchar', length: 100 })
-  email: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  email: string | null;
 
-  @Column({ type: 'varchar', length: 20 })
-  phone: string;
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  phone: string | null;
 
   @Column({ type: 'varchar', length: 20, nullable: true, unique: true })
   idNumber?: string;

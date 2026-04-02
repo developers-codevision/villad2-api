@@ -13,6 +13,11 @@ export class BillDenominationDto {
 }
 
 export class ConceptConsumptionDto {
+  @ApiProperty({ description: 'ID del billing item (si existe)', example: 1, required: false })
+  @IsInt()
+  @IsOptional()
+  billingItemId?: number;
+
   @ApiProperty({ description: 'ID del concepto facturado', example: 1 })
   @IsInt()
   conceptId: number;
@@ -67,4 +72,8 @@ export class CreateBillingRecordDto {
   @ValidateNested({ each: true })
   @Type(() => ConceptConsumptionDto)
   conceptConsumptions: ConceptConsumptionDto[];
+
+  @ApiProperty({ description: 'Consumir inventario inmediatamente (true) o dejar pendiente (false)', example: true, default: true, required: false })
+  @IsOptional()
+  consumeImmediately?: boolean;
 }

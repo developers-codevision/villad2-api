@@ -5,8 +5,7 @@ import { BillingRecord } from '../entities/billing-record.entity';
 import { BillingPayment } from '../entities/billing-payment.entity';
 import { CreateBillingRecordDto } from '../dto/create-billing-record.dto';
 import { Billing } from '../entities/billing.entity';
-import { Concept } from '../../concepts/entities/concept.entity';
-import { ProductsService } from '../../products/products.service';
+import { InventoryConsumptionService } from './inventory-consumption.service';
 
 @Injectable()
 export class BillingRecordService {
@@ -17,9 +16,7 @@ export class BillingRecordService {
     private readonly billingPaymentRepository: Repository<BillingPayment>,
     @InjectRepository(Billing)
     private readonly billingRepository: Repository<Billing>,
-    @InjectRepository(Concept)
-    private readonly conceptRepo: Repository<Concept>,
-    private readonly productsService: ProductsService,
+    private readonly inventoryConsumptionService: InventoryConsumptionService,
   ) {}
 
   async create(createDto: CreateBillingRecordDto): Promise<BillingRecord> {
@@ -86,18 +83,19 @@ export class BillingRecordService {
     }
 
     // Update inventory (IPV) for each concept consumed
-    for (const consumption of createDto.conceptConsumptions) {
-      const concept = await this.conceptRepo.findOne({
-        where: { id: consumption.conceptId },
-      });
-      if (concept && concept.productId) {
-        await this.productsService.updateDailyConsumption(
-          concept.productId,
-          savedRecord.date,
-          consumption.quantityConsumed,
-        );
-      }
-    }
+    // consumeImmediately es una opcion puntual de la facturacion
+    const consumptionItems = createDto.conceptConsumptions.map((c) => ({
+      billingItemId: c.billingItemId || 0,
+      conceptId: c.conceptId,
+      quantity: c.quantityConsumed,
+    }));
+
+    await this.inventoryConsumptionService.consumeInventoryForRecord(
+      savedRecord.id,
+      consumptionItems,
+      savedRecord.date,
+      createDto.consumeImmediately !== false, // Por defecto consume inmediatamente
+    );
 
     return savedRecord;
   }
