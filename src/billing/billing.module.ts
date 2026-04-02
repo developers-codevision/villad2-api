@@ -2,18 +2,47 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BillingService } from './billing.service';
 import { BillingController } from './billing.controller';
+import { BillingRecordService } from './services/billing-record.service';
+import { BillingRecordController } from './controllers/billing-record.controller';
+import { BillingPaymentService } from './services/billing-payment.service';
+import { TipReportService } from './services/tip-report.service';
+import { InventoryConsumptionService } from './services/inventory-consumption.service';
 import { Billing } from './entities/billing.entity';
 import { BillingItem } from './entities/billing-item.entity';
+import { BillingRecord } from './entities/billing-record.entity';
+import { BillingPayment } from './entities/billing-payment.entity';
+import { TipDistribution } from './entities/tip-distribution.entity';
+import { Tax10Distribution } from './entities/tax10-distribution.entity';
 import { Concept } from '../concepts/entities/concept.entity';
 import { ProductsModule } from '../products/products.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Billing, BillingItem, Concept]),
+    TypeOrmModule.forFeature([
+      Billing,
+      BillingItem,
+      BillingRecord,
+      BillingPayment,
+      TipDistribution,
+      Tax10Distribution,
+      Concept,
+    ]),
     ProductsModule,
   ],
-  controllers: [BillingController],
-  providers: [BillingService],
-  exports: [BillingService],
+  controllers: [BillingController, BillingRecordController],
+  providers: [
+    BillingService,
+    BillingRecordService,
+    BillingPaymentService,
+    TipReportService,
+    InventoryConsumptionService,
+  ],
+  exports: [
+    BillingService,
+    BillingRecordService,
+    BillingPaymentService,
+    TipReportService,
+    InventoryConsumptionService,
+  ],
 })
 export class BillingModule {}

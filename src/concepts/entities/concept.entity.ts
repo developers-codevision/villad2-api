@@ -23,6 +23,12 @@ export class Concept {
   @Column({ nullable: true })
   productId: number; // Link to physical product for inventory discount
 
+  @Column({ type: 'boolean', default: true })
+  autoConsumeInventory: boolean; // Descargar automáticamente al facturar o manual
+
+  @Column({ type: 'boolean', default: false })
+  isActive: boolean; // Soft delete - false = eliminado
+
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 

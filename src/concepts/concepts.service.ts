@@ -42,6 +42,33 @@ export class ConceptsService {
 
   async remove(id: number): Promise<void> {
     const concept = await this.findOne(id);
-    await this.conceptRepository.remove(concept);
+    // Soft delete - set isActive to false
+    concept.isActive = false;
+    await this.conceptRepository.save(concept);
+  }
+
+  async restore(id: number): Promise<Concept> {
+    const concept = await this.conceptRepository.findOne({ where: { id } });
+    if (!concept) {
+      throw new NotFoundException(`Concept with ID ${id} not found`);
+    }
+    concept.isActive = true;
+    return await this.conceptRepository.save(concept);
+  }
+
+  async toggleAutoConsume(id: number): Promise<Concept> {
+    const concept = await this.findOne(id);
+    concept.autoConsumeInventory = !concept.autoConsumeInventory;
+    return await this.conceptRepository.save(concept);
+  }
+
+  async findAllActive(): Promise<Concept[]> {
+    return await this.conceptRepository.find({
+      where: { isActive: true },
+      order: {
+        category: 'ASC',
+        name: 'ASC',
+      },
+    });
   }
 }

@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 
 import { BillingItem } from './billing-item.entity';
+import { BillingRecord } from './billing-record.entity';
 
 @Entity('billings')
 export class Billing {
@@ -27,6 +28,11 @@ export class Billing {
     cascade: true,
   })
   items: BillingItem[];
+
+  @OneToMany(() => BillingRecord, (record: BillingRecord) => record.billing, {
+    cascade: true,
+  })
+  records: BillingRecord[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
