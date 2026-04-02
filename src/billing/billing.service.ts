@@ -59,10 +59,19 @@ export class BillingService {
         billing.items.push(item);
       }
     } else {
-      // No previous billing found, use default rates and empty items
+      // No previous billing found - create first billing with all concepts
       billing.usdToCupRate = 1;
       billing.eurToCupRate = 1;
-      // Items array remains empty - user will add via update
+
+      // Get all concepts and create billing items
+      const concepts = await this.conceptRepo.find();
+      for (const concept of concepts) {
+        const item = new BillingItem();
+        item.conceptId = concept.id;
+        item.quantity = 0;
+        item.priceUsd = 0; // Price will be set via update
+        billing.items.push(item);
+      }
     }
 
     return await this.billingRepository.save(billing);
@@ -127,7 +136,7 @@ export class BillingService {
         conceptId: c.id,
         concept: c,
         quantity: 0,
-        priceUsd: c.priceUsd
+        priceUsd: 0, // El precio se define al crear el BillingItem, no en el concepto
       }))
     };
   }

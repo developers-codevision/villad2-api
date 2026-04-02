@@ -28,7 +28,7 @@ export class InventoryConsumptionService {
 
   /**
    * Consume inventario inmediatamente al facturar
-   * Se ejecuta si concept.autoConsumeInventory = true
+   * Llamado cuando se decide consumir ahora (acción puntual de facturación)
    */
   async consumeInventoryImmediately(
     billingItemId: number,
@@ -117,11 +117,13 @@ export class InventoryConsumptionService {
   /**
    * Consume inventario para un registro de facturación completo
    * Usado al crear un BillingRecord
+   * @param consumeImmediately - Si true, consume inmediatamente. Si false, marca como pendiente
    */
   async consumeInventoryForRecord(
     recordId: number,
     items: ConsumptionItem[],
     date: string,
+    consumeImmediately: boolean = true,
   ): Promise<{
     consumed: number;
     pending: number;
@@ -141,7 +143,7 @@ export class InventoryConsumptionService {
           continue; // No hay producto para consumir
         }
 
-        if (concept.autoConsumeInventory) {
+        if (consumeImmediately) {
           // Consumir inmediatamente
           await this.productsService.updateDailyConsumption(
             concept.productId,
@@ -150,7 +152,7 @@ export class InventoryConsumptionService {
           );
           consumed++;
         } else {
-          // Marcar para consumo diferido
+          // Marcar para consumo diferido (descargar más tarde)
           if (item.billingItemId) {
             await this.markForDeferredConsumption(item.billingItemId);
           }
