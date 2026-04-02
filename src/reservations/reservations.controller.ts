@@ -21,6 +21,7 @@ import {
   ApiResponse,
   ApiTags,
   ApiQuery,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { ReservationsService } from './reservations.service';
 import {
@@ -65,6 +66,7 @@ export class ReservationsController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN)
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a new reservation' })
   @ApiResponse({
     status: 201,

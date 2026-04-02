@@ -159,6 +159,9 @@ export class ReservationsService {
       breakfastsCharge +
       additionalCharges;
 
+    console.log(`Este es el total price ${totalPrice}`)
+    console.log(typeof(totalPrice))
+
     const reservation = this.reservationRepository.create({
       reservationNumber: generateReservationNumber(),
       roomId: dto.roomId,
