@@ -39,28 +39,28 @@ export class Reservation {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar', length: 20, unique: true })
-  reservationNumber: string;
+  @Column({ type: 'varchar', length: 20, unique: true, nullable: true })
+  reservationNumber: string | null;
 
-  @Column({ type: 'int', nullable: true })
-  roomId: number | null;
+  @Column({ type: 'int', nullable: false })
+  roomId: number;
 
   @ManyToOne(() => Room)
   @JoinColumn({ name: 'roomId' })
   room: Room | null;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', nullable: false })
   clientId: number;
 
   @ManyToOne(() => Client)
   @JoinColumn({ name: 'clientId' })
-  client: Client;
+  client: Client | null;
 
-  @Column({ type: 'varchar', length: 19 })
-  checkInDate: string;
+  @Column({ type: 'varchar', length: 19, nullable: true })
+  checkInDate: string | null;
 
-  @Column({ type: 'varchar', length: 19 })
-  checkOutDate: string;
+  @Column({ type: 'varchar', length: 19, nullable: true })
+  checkOutDate: string | null;
 
   @CreateDateColumn({ type: 'timestamp' })
   reservedAt: Date;
@@ -116,8 +116,9 @@ export class Reservation {
     type: 'decimal',
     precision: 10,
     scale: 2,
+    nullable: true,
   })
-  totalPrice: number;
+  totalPrice: number | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   stripePaymentIntentId?: string;
