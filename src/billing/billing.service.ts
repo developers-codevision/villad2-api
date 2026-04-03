@@ -248,4 +248,15 @@ export class BillingService {
     const billing = await this.findOne(id);
     await this.billingRepository.remove(billing);
   }
+
+  async findBillingItem(id: number): Promise<BillingItem> {
+    const item = await this.billingItemRepo.findOne({
+      where: { id },
+      relations: ['concept'],
+    });
+    if (!item) {
+      throw new NotFoundException(`Billing item with ID ${id} not found`);
+    }
+    return item;
+  }
 }
