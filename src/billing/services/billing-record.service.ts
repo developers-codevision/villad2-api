@@ -230,7 +230,7 @@ export class BillingRecordService {
       await this.inventoryConsumptionService.consumeInventoryForRecord(
         savedRecord.id,
         productConsumptions.map((p) => ({
-          billingItemId: createDto.billingItemId || 0,
+          billingItemId: createDto.billingItemId,
           productId: p.productId,
           quantity: p.quantityConsumed,
         })),
