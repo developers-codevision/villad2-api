@@ -40,17 +40,4 @@ export class BillingItem {
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   totalCup: number;
-
-  @Column({ type: 'boolean', default: false })
-  pendingConsumption: boolean;
-
-  @Column({ type: 'varchar', length: 10, nullable: true })
-  roomNumber: string;
-
-  @Column({
-    type: 'enum',
-    enum: ['minibar', 'terraza', 'alojamiento', 'other'],
-    default: 'other',
-  })
-  conceptSource: 'minibar' | 'terraza' | 'alojamiento' | 'other';
 }

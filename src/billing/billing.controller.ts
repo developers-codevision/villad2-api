@@ -211,13 +211,13 @@ export class BillingController {
   }
 
   @Get(':id/pending-consumption')
-  @ApiOperation({ summary: 'Get items with pending inventory consumption' })
+  @ApiOperation({ summary: 'Get records with pending inventory consumption' })
   @ApiParam({ name: 'id', description: 'Billing ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'List of pending items' })
+  @ApiResponse({ status: 200, description: 'List of pending records' })
   async getPendingConsumption(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<any> {
-    return this.inventoryConsumptionService.getPendingConsumptionItems(id);
+    return this.inventoryConsumptionService.getPendingConsumptionRecords(id);
   }
 
   // ==================== TIP & TAX10 ENDPOINTS ====================

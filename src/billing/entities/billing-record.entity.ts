@@ -88,6 +88,22 @@ export class BillingRecord {
   @Column({ type: 'boolean', default: false })
   lateBilling: boolean;
 
+  // Consumo de inventario diferido
+  @Column({ type: 'boolean', default: false })
+  pendingConsumption: boolean;
+
+  // Número de habitación asociado
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  roomNumber: string;
+
+  // Origen del concepto (minibar, terraza, alojamiento, other)
+  @Column({
+    type: 'enum',
+    enum: ['minibar', 'terraza', 'alojamiento', 'other'],
+    default: 'other',
+  })
+  conceptSource: 'minibar' | 'terraza' | 'alojamiento' | 'other';
+
   // Consumo de conceptos facturados
   @Column({ type: 'json' })
   conceptConsumptions: ConceptConsumption[];
