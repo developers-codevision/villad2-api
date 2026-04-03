@@ -8,8 +8,11 @@ export class CreateDailyAttendanceDto {
   @IsNotEmpty()
   staffId: number;
 
-  @ApiProperty({ example: '2026-03-26T08:00:00Z', description: 'DailyAttendance Date and Time' })
-  @Type(()=> Date)
+  @ApiProperty({
+    example: '2026-03-26T08:00:00Z',
+    description: 'DailyAttendance Date and Time',
+  })
+  @Type(() => Date)
   @IsDate()
   @IsNotEmpty()
   attendanceDateTime: Date;

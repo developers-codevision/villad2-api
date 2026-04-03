@@ -82,9 +82,12 @@ export class ReservationsController {
   @ApiOperation({ summary: 'Create reservation with payment checkout' })
   @ApiResponse({
     status: 201,
-    description: 'Reservation created and processed according to payment method',
+    description:
+      'Reservation created and processed according to payment method',
   })
-  async createWithPayment(@Body() dto: CreateReservationWithPaymentDto): Promise<{
+  async createWithPayment(
+    @Body() dto: CreateReservationWithPaymentDto,
+  ): Promise<{
     reservation: Reservation;
     paymentMethod: ReservationPaymentMethod;
     paymentSession?: {
@@ -95,8 +98,7 @@ export class ReservationsController {
       orderId: string;
     };
   }> {
-    
-    console.log("This is the dto", dto )
+    console.log('This is the dto', dto);
 
     if (dto.paymentMethod === ReservationPaymentMethod.PAYPAL) {
       const paypalDto: CreateReservationDto = {
@@ -104,9 +106,8 @@ export class ReservationsController {
         status: ReservationStatusDto.PENDING,
       };
 
-      const result = await this.paypalService.createOrderWithReservation(
-        paypalDto,
-      );
+      const result =
+        await this.paypalService.createOrderWithReservation(paypalDto);
 
       return {
         reservation: result.reservation,
@@ -132,7 +133,10 @@ export class ReservationsController {
       const expiresAt = new Date(
         Date.now() + PAYMENT_WINDOW_MINUTES * 60 * 1000,
       );
-      await this.reservationsService.setPaymentExpiry(reservation.id, expiresAt);
+      await this.reservationsService.setPaymentExpiry(
+        reservation.id,
+        expiresAt,
+      );
 
       const paymentSession = await this.paymentsService.createCheckoutSession({
         reservationId: reservation.id,
@@ -159,7 +163,10 @@ export class ReservationsController {
       };
       const reservation = await this.reservationsService.create(pendingDto);
 
-      console.log("Reservation creada with pending status for manual payment. ID:", reservation.id);
+      console.log(
+        'Reservation creada with pending status for manual payment. ID:',
+        reservation.id,
+      );
 
       const reservationWithRelations = await this.reservationsService.findOne(
         reservation.id,
@@ -481,7 +488,10 @@ export class ReservationsController {
     type: Reservation,
   })
   @ApiResponse({ status: 404, description: 'Reservation not found' })
-  @ApiResponse({ status: 409, description: 'Reservation cannot be checked out' })
+  @ApiResponse({
+    status: 409,
+    description: 'Reservation cannot be checked out',
+  })
   @ApiParam({ name: 'id', description: 'Reservation ID', example: 1 })
   @ApiBody({ type: CheckOutDto, required: false })
   checkOut(
@@ -518,7 +528,7 @@ export class ReservationsController {
   })
   async findAllTerraceReservations(): Promise<Reservation[]> {
     const allReservations = await this.reservationsService.findAll();
-    return allReservations.filter(r => r.type === ReservationType.TERRACE);
+    return allReservations.filter((r) => r.type === ReservationType.TERRACE);
   }
 
   @Get('terrace/:id')
@@ -535,7 +545,9 @@ export class ReservationsController {
   ): Promise<Reservation> {
     const reservation = await this.reservationsService.findOne(id);
     if (reservation.type !== ReservationType.TERRACE) {
-      throw new NotFoundException(`Terrace reservation with ID ${id} not found`);
+      throw new NotFoundException(
+        `Terrace reservation with ID ${id} not found`,
+      );
     }
     return reservation;
   }

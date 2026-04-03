@@ -65,7 +65,9 @@ export class OrderBuilder {
 
   private buildDescription(reservation: Reservation): string {
     if (!reservation) {
-      throw new BadRequestException('Reservation is required to build description');
+      throw new BadRequestException(
+        'Reservation is required to build description',
+      );
     }
     if (!reservation.roomId) {
       throw new BadRequestException(
@@ -85,12 +87,20 @@ export class OrderBuilder {
       throw new BadRequestException('Reservation ID is required');
     }
 
-    if (options.amount === undefined || options.amount === null || options.amount <= 0) {
-      throw new BadRequestException('Amount must be a positive number greater than 0');
+    if (
+      options.amount === undefined ||
+      options.amount === null ||
+      options.amount <= 0
+    ) {
+      throw new BadRequestException(
+        'Amount must be a positive number greater than 0',
+      );
     }
 
     if (!options.currency || options.currency.length !== 3) {
-      throw new BadRequestException('Currency must be a valid 3-letter code (e.g., USD)');
+      throw new BadRequestException(
+        'Currency must be a valid 3-letter code (e.g., USD)',
+      );
     }
 
     if (!options.reservation) {

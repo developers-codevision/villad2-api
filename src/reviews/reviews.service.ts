@@ -50,7 +50,7 @@ export class ReviewsService {
 
   async findOne(id: number): Promise<Review> {
     const review = await this.reviewRepository.findOne({ where: { id } });
-    
+
     if (!review) {
       throw new NotFoundException(`Review with id ${id} not found`);
     }

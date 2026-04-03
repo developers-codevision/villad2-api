@@ -17,11 +17,13 @@ export class SalaryService {
 
   async create(createSalaryDto: CreateSalaryDto) {
     const staff = await this.staffRepository.findOne({
-      where: { id: createSalaryDto.staffId }
+      where: { id: createSalaryDto.staffId },
     });
 
     if (!staff) {
-      throw new NotFoundException(`El trabajador con id ${createSalaryDto.staffId} no existe`);
+      throw new NotFoundException(
+        `El trabajador con id ${createSalaryDto.staffId} no existe`,
+      );
     }
 
     const newSalary = this.salaryRepository.create(createSalaryDto);
@@ -33,7 +35,7 @@ export class SalaryService {
   }
 
   async findOne(id: number) {
-    const salary = await this.salaryRepository.findOne({ 
+    const salary = await this.salaryRepository.findOne({
       where: { id },
       relations: ['staff'],
     });

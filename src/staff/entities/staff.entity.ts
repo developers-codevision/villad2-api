@@ -1,4 +1,3 @@
-
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { DailyAttendance } from '../../daily-attendance/entities/daily-attendance.entity';
 import { Salary } from '../../salary/entities/salary.entity';

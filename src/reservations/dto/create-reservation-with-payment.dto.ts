@@ -20,26 +20,26 @@ export class CreateReservationWithPaymentDto extends CreateReservationDto {
   @IsEnum(ReservationPaymentMethod)
   paymentMethod: ReservationPaymentMethod;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'ID del cliente en Stripe',
-    example: 'cus_1234567890'
+    example: 'cus_1234567890',
   })
   @IsOptional()
   @IsString()
   stripeCustomerId?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Tipo de pago',
     enum: PaymentType,
-    default: PaymentType.RESERVATION 
+    default: PaymentType.RESERVATION,
   })
   @IsOptional()
   @IsEnum(PaymentType)
   paymentType?: PaymentType;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Moneda para el pago',
-    example: 'usd'
+    example: 'usd',
   })
   @IsOptional()
   @IsString()

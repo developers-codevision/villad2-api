@@ -7,10 +7,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BillingRecord } from '../entities/billing-record.entity';
 import { BillingPayment } from '../entities/billing-payment.entity';
-import { CreateBillingRecordDto } from '../dto/create-billing-record.dto';
+import {
+  CreateBillingRecordDto,
+  BillingPaymentDto,
+  Currency,
+  PaymentMethod,
+  BillingItemDto,
+} from '../dto/create-billing-record.dto';
 import { Billing } from '../entities/billing.entity';
 import { InventoryConsumptionService } from './inventory-consumption.service';
 import { Reservation } from '../../reservations/entities/reservation.entity';
+import { Concept } from '../../concepts/entities/concept.entity';
 
 @Injectable()
 export class BillingRecordService {
@@ -23,13 +30,33 @@ export class BillingRecordService {
     private readonly billingRepository: Repository<Billing>,
     @InjectRepository(Reservation)
     private readonly reservationRepository: Repository<Reservation>,
+    @InjectRepository(Concept)
+    private readonly conceptRepository: Repository<Concept>,
     private readonly inventoryConsumptionService: InventoryConsumptionService,
   ) {}
+
+  private convertToUsd(
+    amount: number,
+    currency: Currency,
+    exchangeRate: number,
+    billing: Billing,
+  ): number {
+    if (currency === Currency.USD) {
+      return amount;
+    }
+    if (currency === Currency.EUR) {
+      return amount * exchangeRate;
+    }
+    if (currency === Currency.CUP) {
+      return amount / Number(billing.usdToCupRate);
+    }
+    return amount;
+  }
 
   async create(createDto: CreateBillingRecordDto): Promise<BillingRecord> {
     const billing = await this.billingRepository.findOne({
       where: { id: createDto.billingId },
-      relations: ['items', 'items.concept'],
+      relations: ['items', 'items.concept', 'items.concept.products'],
     });
     if (!billing) {
       throw new NotFoundException(
@@ -37,28 +64,37 @@ export class BillingRecordService {
       );
     }
 
-    let tax10Percent = createDto.tax10Percent;
-    if (!tax10Percent) {
-      tax10Percent = createDto.totalAmount * 0.1;
+    const items = createDto.items || [];
+    const totalAmount = items.reduce(
+      (sum, item) => sum + item.quantity * item.priceUsd,
+      0,
+    );
+    const tax10Percent = totalAmount * 0.1;
+    const tip = createDto.tip || 0;
+    const grandTotal = totalAmount + tax10Percent + tip;
+    const lateBilling = createDto.lateBilling || false;
+    const payments = createDto.payments || [];
+
+    if (!lateBilling && payments.length === 0) {
+      throw new BadRequestException(
+        'payments es requerido cuando lateBilling es false',
+      );
     }
 
-    const tip = createDto.tip || 0;
-    const grandTotal = createDto.totalAmount + tax10Percent + tip;
-    const lateBilling = createDto.lateBilling || false;
+    const hasCashPayment = payments.some(
+      (p) =>
+        p.paymentMethod === PaymentMethod.CASH_USD ||
+        p.paymentMethod === PaymentMethod.CASH_EUR ||
+        p.paymentMethod === PaymentMethod.CASH_CUP,
+    );
 
-    if (!lateBilling) {
-      if (createDto.totalPaid === undefined || createDto.totalPaid === null) {
+    if (!lateBilling && hasCashPayment) {
+      const hasDenominations = payments.some(
+        (p) => p.billDenominations && p.billDenominations.length > 0,
+      );
+      if (!hasDenominations) {
         throw new BadRequestException(
-          'totalPaid es requerido cuando lateBilling es false',
-        );
-      }
-      if (
-        (!createDto.billDenominations ||
-          createDto.billDenominations.length === 0) &&
-        createDto.totalPaid > 0
-      ) {
-        throw new BadRequestException(
-          'billDenominations es requerido cuando totalPaid > 0 y lateBilling es false',
+          'billDenominations es requerido para pagos en efectivo',
         );
       }
     }
@@ -78,16 +114,17 @@ export class BillingRecordService {
       billingId: createDto.billingId,
       reservationId: createDto.reservationId || null,
       date: createDto.date || billing.date,
-      totalAmount: createDto.totalAmount,
+      totalAmount,
       tip,
       tax10Percent,
       grandTotal,
-      productConsumptions: createDto.productConsumptions,
+      productConsumptions: [],
       paymentStatus: 'pending',
       pendingAmount: grandTotal,
       advanceBalance: 0,
       isParked: false,
       lateBilling,
+      pendingConsumption: false,
     });
 
     const savedRecord = await this.billingRecordRepository.save(record);
@@ -102,43 +139,80 @@ export class BillingRecordService {
       }
     }
 
-    if (!lateBilling && createDto.totalPaid > 0) {
+    for (const paymentDto of payments) {
+      const exchangeRate = paymentDto.exchangeRate ?? 1;
+      const amountInUsd =
+        paymentDto.amountInUsd ??
+        this.convertToUsd(
+          paymentDto.amount,
+          paymentDto.currency,
+          exchangeRate,
+          billing,
+        );
+
       const payment = this.billingPaymentRepository.create({
         billingRecordId: savedRecord.id,
-        paymentMethod: 'cash_usd',
-        currency: 'USD',
-        amount: createDto.totalPaid,
-        amountInUsd: createDto.totalPaid,
-        exchangeRate: 1,
-        billDenominations: createDto.billDenominations || null,
-        isAdvance: false,
-        advanceConsumed: false,
+        paymentMethod: paymentDto.paymentMethod,
+        currency: paymentDto.currency,
+        amount: paymentDto.amount,
+        amountInUsd,
+        exchangeRate,
+        billDenominations: paymentDto.billDenominations || null,
       });
       await this.billingPaymentRepository.save(payment);
+    }
 
-      if (createDto.totalPaid >= grandTotal) {
+    const totalPaid = payments.reduce(
+      (sum, p) => sum + Number(p.amountInUsd || p.amount),
+      0,
+    );
+    if (!lateBilling && totalPaid > 0) {
+      if (totalPaid >= Number(grandTotal)) {
         savedRecord.paymentStatus = 'paid';
         savedRecord.pendingAmount = 0;
-        savedRecord.advanceBalance = createDto.totalPaid - grandTotal;
+        savedRecord.advanceBalance = totalPaid - Number(grandTotal);
       } else {
         savedRecord.paymentStatus = 'partial';
-        savedRecord.pendingAmount = grandTotal - createDto.totalPaid;
+        savedRecord.pendingAmount = Number(grandTotal) - totalPaid;
       }
       await this.billingRecordRepository.save(savedRecord);
     }
 
-    const consumptionItems = createDto.productConsumptions.map((c) => ({
-      billingItemId: c.billingItemId || 0,
-      productId: c.productId,
-      quantity: c.quantityConsumed,
-    }));
+    if (createDto.consumeImmediately !== false) {
+      const consumptionItems = [];
 
-    await this.inventoryConsumptionService.consumeInventoryForRecord(
-      savedRecord.id,
-      consumptionItems,
-      savedRecord.date,
-      createDto.consumeImmediately !== false,
-    );
+      for (const item of items) {
+        if (item.productId && item.productQuantity) {
+          consumptionItems.push({
+            billingItemId: 0,
+            productId: item.productId,
+            quantity: item.productQuantity,
+          });
+        } else {
+          const concept = await this.conceptRepository.findOne({
+            where: { id: item.conceptId },
+            relations: ['products', 'products.product'],
+          });
+
+          if (concept?.products) {
+            for (const cp of concept.products) {
+              consumptionItems.push({
+                billingItemId: 0,
+                productId: cp.productId,
+                quantity: Number(cp.quantity) * item.quantity,
+              });
+            }
+          }
+        }
+      }
+
+      await this.inventoryConsumptionService.consumeInventoryForRecord(
+        savedRecord.id,
+        consumptionItems,
+        savedRecord.date,
+        true,
+      );
+    }
 
     return savedRecord;
   }

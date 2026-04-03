@@ -12,13 +12,48 @@ export class ClientsController {
   @Get()
   @ApiOperation({ summary: 'Get all clients with optional filters' })
   @ApiResponse({ status: 200, description: 'List of clients' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page' })
-  @ApiQuery({ name: 'idNumber', required: false, type: String, description: 'Filter by ID number (DNI/passport)' })
-  @ApiQuery({ name: 'firstName', required: false, type: String, description: 'Filter by first name' })
-  @ApiQuery({ name: 'lastName', required: false, type: String, description: 'Filter by last name' })
-  @ApiQuery({ name: 'email', required: false, type: String, description: 'Filter by email' })
-  @ApiQuery({ name: 'phone', required: false, type: String, description: 'Filter by phone' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'idNumber',
+    required: false,
+    type: String,
+    description: 'Filter by ID number (DNI/passport)',
+  })
+  @ApiQuery({
+    name: 'firstName',
+    required: false,
+    type: String,
+    description: 'Filter by first name',
+  })
+  @ApiQuery({
+    name: 'lastName',
+    required: false,
+    type: String,
+    description: 'Filter by last name',
+  })
+  @ApiQuery({
+    name: 'email',
+    required: false,
+    type: String,
+    description: 'Filter by email',
+  })
+  @ApiQuery({
+    name: 'phone',
+    required: false,
+    type: String,
+    description: 'Filter by phone',
+  })
   findAll(@Query() findClientsDto: FindClientsDto) {
     return this.clientsService.findAll(findClientsDto);
   }

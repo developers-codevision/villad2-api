@@ -18,7 +18,7 @@ export class ProductsService {
     private readonly productRepository: Repository<Product>,
     @InjectRepository(ProductDailyRecord)
     private readonly dailyRecordRepository: Repository<ProductDailyRecord>,
-  ) { }
+  ) {}
 
   // ─── Products CRUD ───────────────────────────────────────────────────────────
 
@@ -67,10 +67,16 @@ export class ProductsService {
     return product;
   }
 
-  async update(id: number, updateProductDto: UpdateProductDto): Promise<Product> {
+  async update(
+    id: number,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product> {
     const product = await this.findOne(id);
 
-    if (updateProductDto.name !== undefined && updateProductDto.name !== product.name) {
+    if (
+      updateProductDto.name !== undefined &&
+      updateProductDto.name !== product.name
+    ) {
       const existingByName = await this.productRepository.findOne({
         where: { name: updateProductDto.name },
       });
@@ -82,7 +88,10 @@ export class ProductsService {
       }
     }
 
-    if (updateProductDto.code !== undefined && updateProductDto.code !== product.code) {
+    if (
+      updateProductDto.code !== undefined &&
+      updateProductDto.code !== product.code
+    ) {
       const existingByCode = await this.productRepository.findOne({
         where: { code: updateProductDto.code },
       });
@@ -175,19 +184,19 @@ export class ProductsService {
       const dailyRecord = existingRecord
         ? existingRecord
         : {
-          id: null,
-          date,
-          productId: product.id,
-          initial: previousFinalByProductId.get(product.id) ?? 0,
-          incoming: 0,
-          consumption: 0,
-          waste: 0,
-          homeConsumption: 0,
-          final: 0,
-          observations: null,
-        };
+            id: null,
+            date,
+            productId: product.id,
+            initial: previousFinalByProductId.get(product.id) ?? 0,
+            incoming: 0,
+            consumption: 0,
+            waste: 0,
+            homeConsumption: 0,
+            final: 0,
+            observations: null,
+          };
 
-      grouped.get(familyId)!.products.push({
+      grouped.get(familyId).products.push({
         id: product.id,
         code: product.code,
         name: product.name,
@@ -292,7 +301,12 @@ export class ProductsService {
       });
     } else {
       record.consumption = Number(record.consumption) + amount;
-      record.final = Number(record.initial) + Number(record.incoming) - record.consumption - Number(record.waste) - Number(record.homeConsumption);
+      record.final =
+        Number(record.initial) +
+        Number(record.incoming) -
+        record.consumption -
+        Number(record.waste) -
+        Number(record.homeConsumption);
     }
 
     return await this.dailyRecordRepository.save(record);

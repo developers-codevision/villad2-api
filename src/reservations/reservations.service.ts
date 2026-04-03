@@ -8,7 +8,11 @@ import { LessThan, Repository } from 'typeorm';
 import { Room } from '../rooms/entities/room.entity';
 import { RoomStatus } from '../rooms/enums/room-enums.enum';
 import { Client, ClientSex } from './entities/client.entity';
-import { Reservation, ReservationStatus, ReservationType } from './entities/reservation.entity';
+import {
+  Reservation,
+  ReservationStatus,
+  ReservationType,
+} from './entities/reservation.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import {
   CreateReservationDto,
@@ -79,7 +83,9 @@ export class ReservationsService {
     return this.createRoomReservation(dto);
   }
 
-  private async createRoomReservation(dto: CreateReservationDto): Promise<Reservation> {
+  private async createRoomReservation(
+    dto: CreateReservationDto,
+  ): Promise<Reservation> {
     const room = await this.roomRepository.findOne({
       where: { id: dto.roomId },
     });
@@ -159,8 +165,8 @@ export class ReservationsService {
       breakfastsCharge +
       additionalCharges;
 
-    console.log(`Este es el total price ${totalPrice}`)
-    console.log(typeof(totalPrice))
+    console.log(`Este es el total price ${totalPrice}`);
+    console.log(typeof totalPrice);
 
     const reservation = this.reservationRepository.create({
       reservationNumber: generateReservationNumber(),
@@ -186,7 +192,9 @@ export class ReservationsService {
     return this.reservationRepository.save(reservation);
   }
 
-  private async createTerraceReservation(dto: CreateReservationDto): Promise<Reservation> {
+  private async createTerraceReservation(
+    dto: CreateReservationDto,
+  ): Promise<Reservation> {
     // Para terraza, checkInDate debe incluir la hora en formato ISO (ej: 2026-03-30T14:00:00)
     const checkInDate = dto.checkInDate;
     const hoursCount = dto.hoursCount ?? 4;
@@ -204,7 +212,9 @@ export class ReservationsService {
     const client = this.clientRepository.create({
       firstName: dto.mainGuest?.firstName ?? 'Terraza',
       lastName: dto.mainGuest?.lastName ?? 'Reserva',
-      sex: dto.mainGuest?.sex ? mapSexToClientSex(dto.mainGuest.sex) : ClientSex.OTHER,
+      sex: dto.mainGuest?.sex
+        ? mapSexToClientSex(dto.mainGuest.sex)
+        : ClientSex.OTHER,
       email: dto.mainGuest?.email,
       phone: dto.mainGuest?.phone,
       idNumber: dto.mainGuest?.idNumber,
@@ -458,11 +468,11 @@ export class ReservationsService {
 
     if (dto.additionalGuests !== undefined) {
       reservation.additionalGuests = dto.additionalGuests
-        .filter(guest => guest.firstName && guest.lastName && guest.sex)
-        .map(guest => ({
-          firstName: guest.firstName!,
-          lastName: guest.lastName!,
-          sex: guest.sex!,
+        .filter((guest) => guest.firstName && guest.lastName && guest.sex)
+        .map((guest) => ({
+          firstName: guest.firstName,
+          lastName: guest.lastName,
+          sex: guest.sex,
         }));
     }
 
@@ -637,19 +647,21 @@ export class ReservationsService {
 
     const occupiedDates = new Set<string>();
 
-    reservations.filter((r) => !this.isExpiredPending(r)).forEach((reservation) => {
-      const checkIn = new Date(reservation.checkInDate);
-      const checkOut = new Date(reservation.checkOutDate);
+    reservations
+      .filter((r) => !this.isExpiredPending(r))
+      .forEach((reservation) => {
+        const checkIn = new Date(reservation.checkInDate);
+        const checkOut = new Date(reservation.checkOutDate);
 
-      // Include check-in date but exclude check-out date
-      for (
-        let d = new Date(checkIn);
-        d < checkOut;
-        d.setDate(d.getDate() + 1)
-      ) {
-        occupiedDates.add(d.toISOString().split('T')[0]);
-      }
-    });
+        // Include check-in date but exclude check-out date
+        for (
+          let d = new Date(checkIn);
+          d < checkOut;
+          d.setDate(d.getDate() + 1)
+        ) {
+          occupiedDates.add(d.toISOString().split('T')[0]);
+        }
+      });
 
     return Array.from(occupiedDates).sort();
   }
@@ -660,30 +672,38 @@ export class ReservationsService {
         { status: ReservationStatus.CONFIRMED },
         { status: ReservationStatus.PENDING },
       ],
-      select: ['roomId', 'checkInDate', 'checkOutDate', 'status', 'paymentExpiresAt'],
+      select: [
+        'roomId',
+        'checkInDate',
+        'checkOutDate',
+        'status',
+        'paymentExpiresAt',
+      ],
     });
 
     const occupiedDatesByRoom: { [roomId: number]: Set<string> } = {};
 
-    reservations.filter((r) => !this.isExpiredPending(r)).forEach((reservation) => {
-      const checkIn = new Date(reservation.checkInDate);
-      const checkOut = new Date(reservation.checkOutDate);
+    reservations
+      .filter((r) => !this.isExpiredPending(r))
+      .forEach((reservation) => {
+        const checkIn = new Date(reservation.checkInDate);
+        const checkOut = new Date(reservation.checkOutDate);
 
-      if (!occupiedDatesByRoom[reservation.roomId]) {
-        occupiedDatesByRoom[reservation.roomId] = new Set<string>();
-      }
+        if (!occupiedDatesByRoom[reservation.roomId]) {
+          occupiedDatesByRoom[reservation.roomId] = new Set<string>();
+        }
 
-      // Include check-in date but exclude check-out date
-      for (
-        let d = new Date(checkIn);
-        d < checkOut;
-        d.setDate(d.getDate() + 1)
-      ) {
-        occupiedDatesByRoom[reservation.roomId].add(
-          d.toISOString().split('T')[0],
-        );
-      }
-    });
+        // Include check-in date but exclude check-out date
+        for (
+          let d = new Date(checkIn);
+          d < checkOut;
+          d.setDate(d.getDate() + 1)
+        ) {
+          occupiedDatesByRoom[reservation.roomId].add(
+            d.toISOString().split('T')[0],
+          );
+        }
+      });
 
     // Convert Sets to sorted arrays
     const result: { [roomId: number]: string[] } = {};
@@ -707,19 +727,21 @@ export class ReservationsService {
 
     const occupiedDates = new Set<string>();
 
-    reservations.filter((r) => !this.isExpiredPending(r)).forEach((reservation) => {
-      const checkIn = new Date(reservation.checkInDate);
-      const checkOut = new Date(reservation.checkOutDate);
+    reservations
+      .filter((r) => !this.isExpiredPending(r))
+      .forEach((reservation) => {
+        const checkIn = new Date(reservation.checkInDate);
+        const checkOut = new Date(reservation.checkOutDate);
 
-      // Include check-in date but exclude check-out date
-      for (
-        let d = new Date(checkIn);
-        d < checkOut;
-        d.setDate(d.getDate() + 1)
-      ) {
-        occupiedDates.add(d.toISOString().split('T')[0]);
-      }
-    });
+        // Include check-in date but exclude check-out date
+        for (
+          let d = new Date(checkIn);
+          d < checkOut;
+          d.setDate(d.getDate() + 1)
+        ) {
+          occupiedDates.add(d.toISOString().split('T')[0]);
+        }
+      });
 
     return Array.from(occupiedDates).sort();
   }
@@ -734,12 +756,21 @@ export class ReservationsService {
         { status: ReservationStatus.CONFIRMED, roomId },
         { status: ReservationStatus.PENDING, roomId },
       ],
-      select: ['checkInDate', 'checkOutDate', 'earlyCheckIn', 'lateCheckOut', 'status', 'paymentExpiresAt'],
+      select: [
+        'checkInDate',
+        'checkOutDate',
+        'earlyCheckIn',
+        'lateCheckOut',
+        'status',
+        'paymentExpiresAt',
+      ],
       order: { checkInDate: 'ASC' },
     });
 
     // Exclude PENDING reservations whose payment window has already expired
-    const activeReservations = reservations.filter((r) => !this.isExpiredPending(r));
+    const activeReservations = reservations.filter(
+      (r) => !this.isExpiredPending(r),
+    );
 
     if (activeReservations.length === 0) {
       return [];
@@ -934,7 +965,13 @@ export class ReservationsService {
         { status: ReservationStatus.PENDING, roomId },
         { status: ReservationStatus.CONFIRMED, roomId },
       ],
-      select: ['id', 'checkInDate', 'checkOutDate', 'status', 'paymentExpiresAt'],
+      select: [
+        'id',
+        'checkInDate',
+        'checkOutDate',
+        'status',
+        'paymentExpiresAt',
+      ],
     });
 
     const now = new Date();
@@ -1075,7 +1112,10 @@ export class ReservationsService {
   /**
    * Calcula el checkOutDate basado en checkInDate y hoursCount
    */
-  private calculateCheckOutDate(checkInDate: string, hoursCount: number): string {
+  private calculateCheckOutDate(
+    checkInDate: string,
+    hoursCount: number,
+  ): string {
     const startDate = new Date(checkInDate);
     const endDate = new Date(startDate.getTime() + hoursCount * 60 * 60 * 1000);
     return this.dateToISOString(endDate);

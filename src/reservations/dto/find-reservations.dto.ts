@@ -1,17 +1,34 @@
-import { IsOptional, IsString, IsEnum, IsDateString, IsInt, Min, Max } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsDateString,
+  IsInt,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ReservationStatus } from '../entities/reservation.entity';
 
 export class FindReservationsDto {
-  @ApiPropertyOptional({ description: 'Número de página', default: 1, minimum: 1 })
+  @ApiPropertyOptional({
+    description: 'Número de página',
+    default: 1,
+    minimum: 1,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: 'Elementos por página', default: 10, minimum: 1, maximum: 100 })
+  @ApiPropertyOptional({
+    description: 'Elementos por página',
+    default: 10,
+    minimum: 1,
+    maximum: 100,
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -24,7 +41,11 @@ export class FindReservationsDto {
   @IsString()
   sortBy?: string = 'id';
 
-  @ApiPropertyOptional({ description: 'Dirección de ordenamiento', default: 'DESC', enum: ['ASC', 'DESC'] })
+  @ApiPropertyOptional({
+    description: 'Dirección de ordenamiento',
+    default: 'DESC',
+    enum: ['ASC', 'DESC'],
+  })
   @IsOptional()
   @IsEnum(['ASC', 'DESC'])
   sortOrder?: 'ASC' | 'DESC' = 'DESC';
@@ -50,7 +71,10 @@ export class FindReservationsDto {
   @IsString()
   clientName?: string;
 
-  @ApiPropertyOptional({ description: 'Estado de la reservación', enum: ReservationStatus })
+  @ApiPropertyOptional({
+    description: 'Estado de la reservación',
+    enum: ReservationStatus,
+  })
   @IsOptional()
   @IsEnum(ReservationStatus)
   status?: ReservationStatus;

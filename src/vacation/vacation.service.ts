@@ -17,11 +17,13 @@ export class VacationService {
 
   async create(createVacationDto: CreateVacationDto) {
     const staff = await this.staffRepository.findOne({
-      where: { id: createVacationDto.staffId }
+      where: { id: createVacationDto.staffId },
     });
 
     if (!staff) {
-      throw new NotFoundException(`El trabajador con id ${createVacationDto.staffId} no existe`);
+      throw new NotFoundException(
+        `El trabajador con id ${createVacationDto.staffId} no existe`,
+      );
     }
 
     const newVacation = this.vacationRepository.create(createVacationDto);
@@ -33,7 +35,7 @@ export class VacationService {
   }
 
   async findOne(id: number) {
-    const vacation = await this.vacationRepository.findOne({ 
+    const vacation = await this.vacationRepository.findOne({
       where: { id },
       relations: ['staff'],
     });

@@ -17,14 +17,18 @@ export class DailyAttendanceService {
 
   async create(createDailyAttendanceDto: CreateDailyAttendanceDto) {
     const staff = await this.staffRepository.findOne({
-      where: { id: createDailyAttendanceDto.staffId }
+      where: { id: createDailyAttendanceDto.staffId },
     });
 
     if (!staff) {
-      throw new NotFoundException(`El trabajador con id ${createDailyAttendanceDto.staffId} no existe`);
+      throw new NotFoundException(
+        `El trabajador con id ${createDailyAttendanceDto.staffId} no existe`,
+      );
     }
 
-    const dailyAttendance = this.dailyAttendanceRepository.create(createDailyAttendanceDto);
+    const dailyAttendance = this.dailyAttendanceRepository.create(
+      createDailyAttendanceDto,
+    );
     return this.dailyAttendanceRepository.save(dailyAttendance);
   }
 
@@ -62,7 +66,10 @@ export class DailyAttendanceService {
     };
 
     if (startDate && endDate) {
-      where.attendanceDateTime = Between(startOfDay(startDate), endOfDay(endDate));
+      where.attendanceDateTime = Between(
+        startOfDay(startDate),
+        endOfDay(endDate),
+      );
     } else if (startDate) {
       where.attendanceDateTime = MoreThanOrEqual(startOfDay(startDate));
     } else if (endDate) {
@@ -87,4 +94,3 @@ export class DailyAttendanceService {
     return this.dailyAttendanceRepository.remove(dailyAttendance);
   }
 }
-

@@ -23,10 +23,10 @@ import { LocalStrategy } from './strategies/local.strategy';
         };
       },
       inject: [ConfigService],
-    }), 
+    }),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],
   controllers: [AuthController],
   exports: [AuthService],
 })
-export class AuthModule { }
+export class AuthModule {}

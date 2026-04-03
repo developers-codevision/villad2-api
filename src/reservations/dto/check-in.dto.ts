@@ -6,7 +6,8 @@ export class CheckInDto {}
 
 export class CheckOutDto {
   @ApiPropertyOptional({
-    description: 'Room status after check-out (optional, defaults to VACIA_SUCIA)',
+    description:
+      'Room status after check-out (optional, defaults to VACIA_SUCIA)',
     enum: RoomStatus,
     example: RoomStatus.VACIA_SUCIA,
   })

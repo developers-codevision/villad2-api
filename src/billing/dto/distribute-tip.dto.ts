@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber, IsArray, ValidateNested, IsString, IsInt } from 'class-validator';
+import {
+  IsNumber,
+  IsArray,
+  ValidateNested,
+  IsString,
+  IsInt,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class WorkerInputDto {
@@ -17,7 +23,10 @@ export class WorkerInputDto {
 }
 
 export class DistributeTipDto {
-  @ApiProperty({ description: 'Lista de trabajadores y porcentajes', type: [WorkerInputDto] })
+  @ApiProperty({
+    description: 'Lista de trabajadores y porcentajes',
+    type: [WorkerInputDto],
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WorkerInputDto)
@@ -25,7 +34,10 @@ export class DistributeTipDto {
 }
 
 export class DistributeTax10Dto {
-  @ApiProperty({ description: 'Lista de trabajadores y porcentajes', type: [WorkerInputDto] })
+  @ApiProperty({
+    description: 'Lista de trabajadores y porcentajes',
+    type: [WorkerInputDto],
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => WorkerInputDto)
@@ -33,11 +45,17 @@ export class DistributeTax10Dto {
 }
 
 export class ReportPeriodDto {
-  @ApiProperty({ description: 'Fecha inicio (ISO)', example: '2024-01-01T00:00:00Z' })
+  @ApiProperty({
+    description: 'Fecha inicio (ISO)',
+    example: '2024-01-01T00:00:00Z',
+  })
   @IsString()
   from: string;
 
-  @ApiProperty({ description: 'Fecha fin (ISO)', example: '2024-01-31T23:59:59Z' })
+  @ApiProperty({
+    description: 'Fecha fin (ISO)',
+    example: '2024-01-31T23:59:59Z',
+  })
   @IsString()
   to: string;
 }

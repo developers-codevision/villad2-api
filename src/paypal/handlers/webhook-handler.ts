@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaypalPayment } from '../entities/paypal-payment.entity';
-import { Reservation, ReservationStatus } from '../../reservations/entities/reservation.entity';
+import {
+  Reservation,
+  ReservationStatus,
+} from '../../reservations/entities/reservation.entity';
 import { PaymentStatus } from '../../payments/entities/payment.entity';
 
 export interface PayPalWebhookEvent {
@@ -58,7 +61,9 @@ export class WebhookHandler {
     }
   }
 
-  private async handlePaymentCaptureCompleted(resource: PayPalWebhookEvent['resource']): Promise<void> {
+  private async handlePaymentCaptureCompleted(
+    resource: PayPalWebhookEvent['resource'],
+  ): Promise<void> {
     const paypalPayment = await this.findPaypalPaymentByOrderId(
       resource.supplementary_data?.related_ids?.order_id,
     );
@@ -74,7 +79,9 @@ export class WebhookHandler {
     }
   }
 
-  private async handlePaymentCaptureDenied(resource: PayPalWebhookEvent['resource']): Promise<void> {
+  private async handlePaymentCaptureDenied(
+    resource: PayPalWebhookEvent['resource'],
+  ): Promise<void> {
     const paypalPayment = await this.findPaypalPaymentByOrderId(
       resource.supplementary_data?.related_ids?.order_id,
     );
@@ -88,7 +95,9 @@ export class WebhookHandler {
     }
   }
 
-  private async handlePaymentCapturePending(resource: PayPalWebhookEvent['resource']): Promise<void> {
+  private async handlePaymentCapturePending(
+    resource: PayPalWebhookEvent['resource'],
+  ): Promise<void> {
     const paypalPayment = await this.findPaypalPaymentByOrderId(
       resource.supplementary_data?.related_ids?.order_id,
     );
@@ -100,7 +109,9 @@ export class WebhookHandler {
     }
   }
 
-  private async handlePaymentCaptureRefunded(resource: PayPalWebhookEvent['resource']): Promise<void> {
+  private async handlePaymentCaptureRefunded(
+    resource: PayPalWebhookEvent['resource'],
+  ): Promise<void> {
     const paypalPayment = await this.findPaypalPaymentByOrderId(
       resource.supplementary_data?.related_ids?.order_id,
     );
@@ -112,7 +123,9 @@ export class WebhookHandler {
     }
   }
 
-  private async findPaypalPaymentByOrderId(orderId?: string): Promise<PaypalPayment | null> {
+  private async findPaypalPaymentByOrderId(
+    orderId?: string,
+  ): Promise<PaypalPayment | null> {
     if (!orderId) {
       return null;
     }

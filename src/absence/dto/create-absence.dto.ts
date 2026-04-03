@@ -1,9 +1,19 @@
-import { IsNumber, IsNotEmpty, IsString, MaxLength, IsDate, Matches } from 'class-validator';
+import {
+  IsNumber,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  IsDate,
+  Matches,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class CreateAbsenceDto {
-  @ApiProperty({ example: 1, description: 'ID del trabajador asociado (Staff)' })
+  @ApiProperty({
+    example: 1,
+    description: 'ID del trabajador asociado (Staff)',
+  })
   @IsNumber()
   @IsNotEmpty()
   staffId: number;
@@ -14,11 +24,15 @@ export class CreateAbsenceDto {
   @IsNotEmpty()
   date: Date;
 
-  @ApiProperty({ example: 'Cita médica referenciada', description: 'Razón de la ausencia' })
+  @ApiProperty({
+    example: 'Cita médica referenciada',
+    description: 'Razón de la ausencia',
+  })
   @IsString()
   @IsNotEmpty()
   @Matches(/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$/, {
-    message: 'La razón solo puede contener letras, números y espacios (sin símbolos)',
+    message:
+      'La razón solo puede contener letras, números y espacios (sin símbolos)',
   })
   @MaxLength(255)
   reason: string;

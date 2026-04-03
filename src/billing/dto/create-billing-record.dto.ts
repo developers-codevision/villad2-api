@@ -7,9 +7,126 @@ import {
   IsOptional,
   IsInt,
   IsBoolean,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BillDenominationDto, ProductConsumptionDto } from './shared.dto';
+import { ProductConsumptionDto } from './shared.dto';
+
+export enum PaymentMethod {
+  CASH_USD = 'cash_usd',
+  CASH_EUR = 'cash_eur',
+  CASH_CUP = 'cash_cup',
+  TRANSFER_MOBILE = 'transfer_mobile',
+  BIZUM = 'bizum',
+  ZELLE = 'zelle',
+  TRANSFER_ABROAD = 'transfer_abroad',
+  STRIPE = 'stripe',
+  PAYPAL = 'paypal',
+}
+
+export enum Currency {
+  USD = 'USD',
+  EUR = 'EUR',
+  CUP = 'CUP',
+}
+
+export enum ConceptSource {
+  MINIBAR = 'minibar',
+  TERRAZA = 'terraza',
+  ALOJAMIENTO = 'alojamiento',
+  OTHER = 'other',
+}
+
+export class BillingItemDto {
+  @ApiProperty({ description: 'ID del concepto', example: 1 })
+  @IsInt()
+  conceptId: number;
+
+  @ApiProperty({ description: 'Cantidad', example: 2 })
+  @IsNumber()
+  quantity: number;
+
+  @ApiProperty({ description: 'Precio unitario en USD', example: 5 })
+  @IsNumber()
+  priceUsd: number;
+
+  @ApiProperty({
+    description: 'ID del producto de inventario a descontar (opcional)',
+    example: 1,
+    required: false,
+  })
+  @IsInt()
+  @IsOptional()
+  productId?: number;
+
+  @ApiProperty({
+    description: 'Cantidad del producto a descontar (opcional)',
+    example: 1,
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  productQuantity?: number;
+}
+
+export class BillDenominationDto {
+  @ApiProperty({
+    description: 'Valor del billete/moneda (ej: 10, 20, 50)',
+    example: 10,
+  })
+  @IsNumber()
+  value: number;
+
+  @ApiProperty({
+    description: 'Cantidad de billetes/moneda de esta denominación',
+    example: 5,
+  })
+  @IsNumber()
+  quantity: number;
+}
+
+export class BillingPaymentDto {
+  @ApiProperty({
+    description: 'Método de pago',
+    enum: PaymentMethod,
+    example: 'cash_usd',
+  })
+  @IsEnum(PaymentMethod)
+  paymentMethod: PaymentMethod;
+
+  @ApiProperty({
+    description: 'Moneda del pago',
+    enum: Currency,
+    example: 'USD',
+  })
+  @IsEnum(Currency)
+  currency: Currency;
+
+  @ApiProperty({ description: 'Monto pagado', example: 100 })
+  @IsNumber()
+  amount: number;
+
+  @ApiProperty({ description: 'Monto en USD (calculado)', example: 100 })
+  @IsNumber()
+  @IsOptional()
+  amountInUsd?: number;
+
+  @ApiProperty({ description: 'Tasa de cambio', example: 1, default: 1 })
+  @IsNumber()
+  @IsOptional()
+  exchangeRate?: number;
+
+  @ApiProperty({
+    description: 'Denominaciones de billetes',
+    type: [BillDenominationDto],
+    required: false,
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => BillDenominationDto)
+  @IsOptional()
+  billDenominations?: BillDenominationDto[];
+}
 
 export class CreateBillingRecordDto {
   @ApiProperty({
@@ -46,25 +163,13 @@ export class CreateBillingRecordDto {
   date?: string;
 
   @ApiProperty({
-    description: 'Denominaciones de billetes usadas para pagar',
-    type: [BillDenominationDto],
+    description: 'Items facturados con precios individuales',
+    type: [BillingItemDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => BillDenominationDto)
-  billDenominations: BillDenominationDto[];
-
-  @ApiProperty({ description: 'Total entregado por el cliente', example: 500 })
-  @IsNumber()
-  totalPaid: number;
-
-  @ApiProperty({ description: 'Total a pagar por los productos', example: 240 })
-  @IsNumber()
-  totalAmount: number;
-
-  @ApiProperty({ description: 'Vuelto entregado al cliente', example: 260 })
-  @IsNumber()
-  change: number;
+  @Type(() => BillingItemDto)
+  items: BillingItemDto[];
 
   @ApiProperty({ description: 'Propina', example: 20, default: 0 })
   @IsNumber()
@@ -72,20 +177,15 @@ export class CreateBillingRecordDto {
   tip?: number;
 
   @ApiProperty({
-    description: '10% del costo (impuesto/servicio)',
-    example: 24,
-  })
-  @IsNumber()
-  tax10Percent: number;
-
-  @ApiProperty({
-    description: 'Consumo de productos del inventario',
-    type: [ProductConsumptionDto],
+    description: 'Pagos realizados',
+    type: [BillingPaymentDto],
+    required: false,
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ProductConsumptionDto)
-  productConsumptions: ProductConsumptionDto[];
+  @Type(() => BillingPaymentDto)
+  @IsOptional()
+  payments?: BillingPaymentDto[];
 
   @ApiProperty({
     description:

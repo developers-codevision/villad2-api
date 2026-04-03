@@ -36,7 +36,10 @@ export class PaymentsController {
 
   @Post('create-checkout-session')
   @ApiOperation({ summary: 'Crear una sesión de checkout de Stripe' })
-  @ApiResponse({ status: 201, description: 'Checkout session created successfully' })
+  @ApiResponse({
+    status: 201,
+    description: 'Checkout session created successfully',
+  })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 404, description: 'Reservation not found' })
   async createCheckoutSession(
@@ -50,7 +53,10 @@ export class PaymentsController {
 
   @Post('confirm-checkout-session')
   @ApiOperation({ summary: 'Confirmar una sesión de checkout' })
-  @ApiResponse({ status: 200, description: 'Checkout session confirmed successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Checkout session confirmed successfully',
+  })
   @ApiResponse({ status: 404, description: 'Payment not found' })
   async confirmCheckoutSession(@Body() body: { sessionId: string }) {
     return await this.paymentsService.confirmCheckoutSession(body.sessionId);
@@ -63,7 +69,9 @@ export class PaymentsController {
     @Res() response: Response,
     @Req() request: Request,
   ): Promise<void> {
-    const webhookSecret = this.configService.get<string>('STRIPE_WEBHOOK_SECRET');
+    const webhookSecret = this.configService.get<string>(
+      'STRIPE_WEBHOOK_SECRET',
+    );
 
     if (!webhookSecret) {
       this.logger.error('STRIPE_WEBHOOK_SECRET is not configured');
@@ -110,7 +118,9 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Obtener pagos de una reservación' })
   @ApiParam({ name: 'reservationId', description: 'ID de la reservación' })
   @ApiResponse({ status: 200, description: 'Payments retrieved successfully' })
-  async getPaymentsByReservationId(@Param('reservationId') reservationId: number) {
+  async getPaymentsByReservationId(
+    @Param('reservationId') reservationId: number,
+  ) {
     return await this.paymentsService.getPaymentByReservationId(reservationId);
   }
 

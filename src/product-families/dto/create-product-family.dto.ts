@@ -1,5 +1,12 @@
 import { Transform } from 'class-transformer';
-import { IsInt, IsNotEmpty, IsString, MaxLength, Min, Max } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+  Min,
+  Max,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateProductFamilyDto {
