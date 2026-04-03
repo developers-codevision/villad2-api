@@ -26,7 +26,9 @@ export class BillingRecordService {
       relations: ['items', 'items.concept'],
     });
     if (!billing) {
-      throw new NotFoundException(`Billing with ID ${createDto.billingId} not found`);
+      throw new NotFoundException(
+        `Billing with ID ${createDto.billingId} not found`,
+      );
     }
 
     // Calculate tax 10% if not provided
@@ -122,5 +124,9 @@ export class BillingRecordService {
   async remove(id: number): Promise<void> {
     const record = await this.findOne(id);
     await this.billingRecordRepository.remove(record);
+  }
+
+  async save(record: BillingRecord): Promise<BillingRecord> {
+    return await this.billingRecordRepository.save(record);
   }
 }

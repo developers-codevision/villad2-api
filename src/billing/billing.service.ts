@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateBillingDto } from './dto/create-billing.dto';
@@ -26,12 +30,17 @@ export class BillingService {
 
   async create(createBillingDto: CreateBillingDto): Promise<Billing> {
     // Determine the target date (today if not provided)
-    const targetDate = createBillingDto.date || new Date().toISOString().split('T')[0];
+    const targetDate =
+      createBillingDto.date || new Date().toISOString().split('T')[0];
 
     // Check if billing for this date already exists
-    const existing = await this.billingRepository.findOne({ where: { date: targetDate } });
+    const existing = await this.billingRepository.findOne({
+      where: { date: targetDate },
+    });
     if (existing) {
-      throw new BadRequestException(`A billing sheet for date ${targetDate} already exists`);
+      throw new BadRequestException(
+        `A billing sheet for date ${targetDate} already exists`,
+      );
     }
 
     // Find the previous day's billing
@@ -90,7 +99,7 @@ export class BillingService {
   }
 
   async findOne(id: number): Promise<any> {
-    const billing = await this.billingRepository.findOne({ 
+    const billing = await this.billingRepository.findOne({
       where: { id },
       relations: ['items', 'items.concept'],
     });
@@ -99,13 +108,13 @@ export class BillingService {
     }
 
     // Enhance response with calculated values as in the excel image
-    const items = billing.items.map(item => {
+    const items = billing.items.map((item) => {
       const totalUsd = Number(item.quantity) * Number(item.priceUsd);
       const cup = totalUsd * Number(billing.usdToCupRate);
       return {
         ...item,
         totalUsd,
-        cup
+        cup,
       };
     });
 
@@ -121,23 +130,25 @@ export class BillingService {
         subtotalUsd,
         subtotalCup,
         tax10Percent,
-        totalCup
-      }
+        totalCup,
+      },
     };
   }
 
   async getTemplate(date: string): Promise<any> {
-    const concepts = await this.conceptRepo.find({ order: { category: 'ASC' } });
+    const concepts = await this.conceptRepo.find({
+      order: { category: 'ASC' },
+    });
     return {
       date,
       usdToCupRate: 1, // default
-      eurToCupRate: 1, 
-      items: concepts.map(c => ({
+      eurToCupRate: 1,
+      items: concepts.map((c) => ({
         conceptId: c.id,
         concept: c,
         quantity: 0,
         priceUsd: 0, // El precio se define al crear el BillingItem, no en el concepto
-      }))
+      })),
     };
   }
 
@@ -208,6 +219,29 @@ export class BillingService {
     };
 
     return await this.billingRecordService.create(recordDto);
+  }
+
+  async parkRecord(id: number): Promise<BillingRecord> {
+    const record = await this.billingRecordService.findOne(id);
+    if (!record) {
+      throw new NotFoundException(`Billing record with ID ${id} not found`);
+    }
+
+    record.isParked = true;
+    record.paymentStatus = 'pending';
+    return await this.billingRecordService.save(record);
+  }
+
+  async findRecord(id: number): Promise<BillingRecord> {
+    return await this.billingRecordService.findOne(id);
+  }
+
+  async findAllRecordsByBilling(billingId: number): Promise<BillingRecord[]> {
+    return await this.billingRecordService.findAllByBilling(billingId);
+  }
+
+  async removeRecord(id: number): Promise<void> {
+    return await this.billingRecordService.remove(id);
   }
 
   async remove(id: number): Promise<void> {
