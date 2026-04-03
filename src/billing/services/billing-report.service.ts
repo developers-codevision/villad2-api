@@ -145,28 +145,32 @@ export class BillingReportService {
     >();
 
     for (const item of billingItems) {
-      if (!item.concept?.productId) continue;
+      if (!item.concept?.products || item.concept.products.length === 0)
+        continue;
 
-      const existing = consumptionMap.get(item.concept.productId);
-      const quantity = Number(item.quantity);
+      for (const cp of item.concept.products) {
+        const productId = cp.productId;
+        const existing = consumptionMap.get(productId);
+        const quantity = Number(item.quantity) * Number(cp.quantity);
 
-      if (existing) {
-        existing.totalConsumed += quantity;
-        const dateEntry = existing.byDate.find(
-          (d) => d.date === item.billing.date,
-        );
-        if (dateEntry) {
-          dateEntry.quantity += quantity;
+        if (existing) {
+          existing.totalConsumed += quantity;
+          const dateEntry = existing.byDate.find(
+            (d) => d.date === item.billing.date,
+          );
+          if (dateEntry) {
+            dateEntry.quantity += quantity;
+          } else {
+            existing.byDate.push({ date: item.billing.date, quantity });
+          }
         } else {
-          existing.byDate.push({ date: item.billing.date, quantity });
+          consumptionMap.set(productId, {
+            productId,
+            productName: item.concept.name,
+            totalConsumed: quantity,
+            byDate: [{ date: item.billing.date, quantity }],
+          });
         }
-      } else {
-        consumptionMap.set(item.concept.productId, {
-          productId: item.concept.productId,
-          productName: item.concept.name,
-          totalConsumed: quantity,
-          byDate: [{ date: item.billing.date, quantity }],
-        });
       }
     }
 

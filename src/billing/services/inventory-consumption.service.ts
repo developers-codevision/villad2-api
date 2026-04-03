@@ -2,12 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BillingRecord } from '../entities/billing-record.entity';
-import { Concept } from '../../concepts/entities/concept.entity';
 import { ProductsService } from '../../products/products.service';
 
 export interface ConsumptionItem {
   billingItemId: number;
-  conceptId: number;
+  productId: number;
   quantity: number;
   roomNumber?: string;
   conceptSource?: 'minibar' | 'terraza' | 'alojamiento' | 'other';
@@ -18,8 +17,6 @@ export class InventoryConsumptionService {
   constructor(
     @InjectRepository(BillingRecord)
     private readonly billingRecordRepository: Repository<BillingRecord>,
-    @InjectRepository(Concept)
-    private readonly conceptRepository: Repository<Concept>,
     private readonly productsService: ProductsService,
   ) {}
 
@@ -48,17 +45,13 @@ export class InventoryConsumptionService {
 
     for (const item of items) {
       try {
-        const concept = await this.conceptRepository.findOne({
-          where: { id: item.conceptId },
-        });
-
-        if (!concept || !concept.productId) {
+        if (!item.productId) {
           continue;
         }
 
         if (consumeImmediately) {
           await this.productsService.updateDailyConsumption(
-            concept.productId,
+            item.productId,
             date,
             item.quantity,
           );
@@ -69,7 +62,7 @@ export class InventoryConsumptionService {
       } catch (error) {
         const message =
           error instanceof Error ? error.message : 'Unknown error';
-        errors.push(`Failed to consume item ${item.conceptId}: ${message}`);
+        errors.push(`Failed to consume product ${item.productId}: ${message}`);
       }
     }
 

@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { ConceptProduct } from './concept-product.entity';
 
 @Entity('concepts')
 export class Concept {
@@ -12,13 +14,13 @@ export class Concept {
   id: number;
 
   @Column({ unique: true })
-  name: string; // Concepto
+  name: string;
 
   @Column({ nullable: true })
-  category: string; // Used to group items together like in the excel file
+  category: string;
 
-  @Column({ nullable: true })
-  productId: number; // Link to physical product for inventory discount
+  @OneToMany(() => ConceptProduct, (cp) => cp.concept)
+  products: ConceptProduct[];
 
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;

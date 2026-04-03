@@ -82,7 +82,7 @@ export class BillingRecordService {
       tip,
       tax10Percent,
       grandTotal,
-      conceptConsumptions: createDto.conceptConsumptions,
+      productConsumptions: createDto.productConsumptions,
       paymentStatus: 'pending',
       pendingAmount: grandTotal,
       advanceBalance: 0,
@@ -127,9 +127,9 @@ export class BillingRecordService {
       await this.billingRecordRepository.save(savedRecord);
     }
 
-    const consumptionItems = createDto.conceptConsumptions.map((c) => ({
+    const consumptionItems = createDto.productConsumptions.map((c) => ({
       billingItemId: c.billingItemId || 0,
-      conceptId: c.conceptId,
+      productId: c.productId,
       quantity: c.quantityConsumed,
     }));
 

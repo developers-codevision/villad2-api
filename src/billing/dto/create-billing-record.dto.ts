@@ -9,7 +9,7 @@ import {
   IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BillDenominationDto, ConceptConsumptionDto } from './shared.dto';
+import { BillDenominationDto, ProductConsumptionDto } from './shared.dto';
 
 export class CreateBillingRecordDto {
   @ApiProperty({
@@ -18,6 +18,15 @@ export class CreateBillingRecordDto {
   })
   @IsInt()
   billingId: number;
+
+  @ApiProperty({
+    description: 'ID del billing item para saber precio y demas',
+    example: 1,
+    required: false,
+  })
+  @IsInt()
+  @IsOptional()
+  billingItemId?: number;
 
   @ApiProperty({
     description: 'ID de la reservación asociada (para acumular deuda/anticipo)',
@@ -70,13 +79,13 @@ export class CreateBillingRecordDto {
   tax10Percent: number;
 
   @ApiProperty({
-    description: 'Consumo de conceptos facturados',
-    type: [ConceptConsumptionDto],
+    description: 'Consumo de productos del inventario',
+    type: [ProductConsumptionDto],
   })
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ConceptConsumptionDto)
-  conceptConsumptions: ConceptConsumptionDto[];
+  @Type(() => ProductConsumptionDto)
+  productConsumptions: ProductConsumptionDto[];
 
   @ApiProperty({
     description:
