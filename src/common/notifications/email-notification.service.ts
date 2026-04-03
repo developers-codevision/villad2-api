@@ -84,8 +84,11 @@ export class EmailNotificationService {
     paymentProvider: 'zelle' | 'bizum';
   }): Promise<void> {
     const toEmail = this.configService.get<string>('NOTIFICATION_TO_EMAIL');
-    
-    console.log("Attempting to send pending reservation email. NOTIFICATION_TO_EMAIL:", toEmail);
+
+    console.log(
+      'Attempting to send pending reservation email. NOTIFICATION_TO_EMAIL:',
+      toEmail,
+    );
     if (!toEmail) {
       this.logger.warn(
         'NOTIFICATION_TO_EMAIL is not configured. Pending reservation notification email was skipped.',
@@ -210,8 +213,9 @@ export class EmailNotificationService {
     const user = this.configService.get<string>('SMTP_USER');
     const pass = this.configService.get<string>('SMTP_PASS');
     const secure =
-      (this.configService.get<string>('SMTP_SECURE') ?? 'false').toLowerCase() ===
-      'true';
+      (
+        this.configService.get<string>('SMTP_SECURE') ?? 'false'
+      ).toLowerCase() === 'true';
 
     if (!host || !user || !pass) {
       return null;

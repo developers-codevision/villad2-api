@@ -39,7 +39,9 @@ export class ProductFamiliesService {
       );
     }
 
-    const productFamily = this.productFamilyRepository.create(createProductFamilyDto);
+    const productFamily = this.productFamilyRepository.create(
+      createProductFamilyDto,
+    );
     return this.productFamilyRepository.save(productFamily);
   }
 

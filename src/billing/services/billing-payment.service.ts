@@ -1,7 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BillingPayment, PaymentMethod, Currency } from '../entities/billing-payment.entity';
+import {
+  BillingPayment,
+  PaymentMethod,
+  Currency,
+} from '../entities/billing-payment.entity';
 import { BillingRecord } from '../entities/billing-record.entity';
 
 export interface PaymentInput {
@@ -10,7 +14,6 @@ export interface PaymentInput {
   amount: number;
   exchangeRate?: number;
   billDenominations?: { value: number; quantity: number }[];
-  isAdvance?: boolean;
 }
 
 export interface PaymentResult {
@@ -47,7 +50,9 @@ export class BillingPaymentService {
     });
 
     if (!record) {
-      throw new NotFoundException(`Billing record with ID ${billingRecordId} not found`);
+      throw new NotFoundException(
+        `Billing record with ID ${billingRecordId} not found`,
+      );
     }
 
     const grandTotal = Number(record.grandTotal);
@@ -68,10 +73,10 @@ export class BillingPaymentService {
         currency: paymentInput.currency,
         amount: paymentInput.amount,
         amountInUsd,
-        exchangeRate: paymentInput.exchangeRate || this.getDefaultExchangeRate(paymentInput.currency),
+        exchangeRate:
+          paymentInput.exchangeRate ||
+          this.getDefaultExchangeRate(paymentInput.currency),
         billDenominations: paymentInput.billDenominations || null,
-        isAdvance: paymentInput.isAdvance || false,
-        advanceConsumed: false,
       });
 
       const saved = await this.paymentRepository.save(payment);
@@ -81,7 +86,10 @@ export class BillingPaymentService {
 
     // Usar anticipos si está habilitado
     if (useAdvanceBalance && record.advanceBalance > 0) {
-      const advanceToUse = Math.min(record.advanceBalance, grandTotal - totalPaid);
+      const advanceToUse = Math.min(
+        record.advanceBalance,
+        grandTotal - totalPaid,
+      );
       if (advanceToUse > 0) {
         totalPaid += advanceToUse;
         record.advanceBalance -= advanceToUse;
@@ -157,7 +165,11 @@ export class BillingPaymentService {
    * Convierte cualquier moneda a USD
    * Regla especial: 1 EUR = 1 USD para el hostal
    */
-  private convertToUsd(amount: number, currency: Currency, exchangeRate?: number): number {
+  private convertToUsd(
+    amount: number,
+    currency: Currency,
+    exchangeRate?: number,
+  ): number {
     switch (currency) {
       case 'USD':
         return amount;
@@ -218,9 +230,6 @@ export class BillingPaymentService {
       amount,
       amountInUsd: amount,
       exchangeRate: 1,
-      isAdvance: true,
-      advanceConsumed: true,
-      advanceConsumedByBillingId: toBillingRecordId,
     });
 
     await this.paymentRepository.save(payment);
@@ -233,7 +242,9 @@ export class BillingPaymentService {
   /**
    * Obtiene todos los pagos de un registro
    */
-  async getPaymentsByRecord(billingRecordId: number): Promise<BillingPayment[]> {
+  async getPaymentsByRecord(
+    billingRecordId: number,
+  ): Promise<BillingPayment[]> {
     return await this.paymentRepository.find({
       where: { billingRecordId },
       order: { createdAt: 'DESC' },

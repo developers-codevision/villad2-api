@@ -9,7 +9,13 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -33,7 +39,11 @@ export class ProductsController {
 
   @Get()
   @ApiOperation({ summary: 'Get all products (static data)' })
-  @ApiResponse({ status: 200, description: 'List of products', type: [Product] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of products',
+    type: [Product],
+  })
   findAll() {
     return this.productsService.findAll();
   }

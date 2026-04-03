@@ -17,13 +17,21 @@ export class DailyRecordItemDto {
   @Min(1)
   productId: number;
 
-  @ApiPropertyOptional({ description: 'Initial stock', example: 20, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Initial stock',
+    example: 20,
+    default: 0,
+  })
   @IsOptional()
   @Transform(({ value }) => (value === undefined ? 0 : Number(value)))
   @IsNumber({ maxDecimalPlaces: 2 })
   initial?: number;
 
-  @ApiPropertyOptional({ description: 'Incoming stock', example: 5, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Incoming stock',
+    example: 5,
+    default: 0,
+  })
   @IsOptional()
   @Transform(({ value }) => (value === undefined ? 0 : Number(value)))
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -35,13 +43,21 @@ export class DailyRecordItemDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   consumption?: number;
 
-  @ApiPropertyOptional({ description: 'Wastage (merma)', example: 1, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Wastage (merma)',
+    example: 1,
+    default: 0,
+  })
   @IsOptional()
   @Transform(({ value }) => (value === undefined ? 0 : Number(value)))
   @IsNumber({ maxDecimalPlaces: 2 })
   waste?: number;
 
-  @ApiPropertyOptional({ description: 'Home consumption (C. Casa)', example: 2, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Home consumption (C. Casa)',
+    example: 2,
+    default: 0,
+  })
   @IsOptional()
   @Transform(({ value }) => (value === undefined ? 0 : Number(value)))
   @IsNumber({ maxDecimalPlaces: 2 })

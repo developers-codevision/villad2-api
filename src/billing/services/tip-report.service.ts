@@ -1,7 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { TipDistribution, WorkerDistribution } from '../entities/tip-distribution.entity';
+import {
+  TipDistribution,
+  WorkerDistribution,
+} from '../entities/tip-distribution.entity';
 import { Tax10Distribution } from '../entities/tax10-distribution.entity';
 import { BillingRecord } from '../entities/billing-record.entity';
 
@@ -34,7 +37,9 @@ export class TipReportService {
     });
 
     if (!record) {
-      throw new NotFoundException(`Billing record with ID ${billingRecordId} not found`);
+      throw new NotFoundException(
+        `Billing record with ID ${billingRecordId} not found`,
+      );
     }
 
     const totalTip = Number(record.tip);
@@ -45,7 +50,9 @@ export class TipReportService {
     // Validar porcentajes
     const totalPercentage = workers.reduce((sum, w) => sum + w.percentage, 0);
     if (Math.abs(totalPercentage - 100) > 0.01) {
-      throw new NotFoundException(`Percentages must sum to 100, got ${totalPercentage}`);
+      throw new NotFoundException(
+        `Percentages must sum to 100, got ${totalPercentage}`,
+      );
     }
 
     // Calcular distribución
@@ -78,7 +85,9 @@ export class TipReportService {
     });
 
     if (!record) {
-      throw new NotFoundException(`Billing record with ID ${billingRecordId} not found`);
+      throw new NotFoundException(
+        `Billing record with ID ${billingRecordId} not found`,
+      );
     }
 
     const totalTax10 = Number(record.tax10Percent);
@@ -89,7 +98,9 @@ export class TipReportService {
     // Validar porcentajes
     const totalPercentage = workers.reduce((sum, w) => sum + w.percentage, 0);
     if (Math.abs(totalPercentage - 100) > 0.01) {
-      throw new NotFoundException(`Percentages must sum to 100, got ${totalPercentage}`);
+      throw new NotFoundException(
+        `Percentages must sum to 100, got ${totalPercentage}`,
+      );
     }
 
     // Calcular distribución
@@ -112,7 +123,10 @@ export class TipReportService {
   /**
    * Reporte de propinas por período
    */
-  async getTipReport(from: Date, to: Date): Promise<{
+  async getTipReport(
+    from: Date,
+    to: Date,
+  ): Promise<{
     totalTips: number;
     byWorker: { workerId: number; workerName: string; amount: number }[];
     distributions: TipDistribution[];
@@ -124,7 +138,10 @@ export class TipReportService {
       .getMany();
 
     let totalTips = 0;
-    const byWorkerMap = new Map<number, { workerId: number; workerName: string; amount: number }>();
+    const byWorkerMap = new Map<
+      number,
+      { workerId: number; workerName: string; amount: number }
+    >();
 
     for (const dist of distributions) {
       totalTips += Number(dist.totalTip);
@@ -152,7 +169,10 @@ export class TipReportService {
   /**
    * Reporte del 10% por período
    */
-  async getTax10Report(from: Date, to: Date): Promise<{
+  async getTax10Report(
+    from: Date,
+    to: Date,
+  ): Promise<{
     totalTax10: number;
     byWorker: { workerId: number; workerName: string; amount: number }[];
     distributions: Tax10Distribution[];
@@ -164,7 +184,10 @@ export class TipReportService {
       .getMany();
 
     let totalTax10 = 0;
-    const byWorkerMap = new Map<number, { workerId: number; workerName: string; amount: number }>();
+    const byWorkerMap = new Map<
+      number,
+      { workerId: number; workerName: string; amount: number }
+    >();
 
     for (const dist of distributions) {
       totalTax10 += Number(dist.totalTax10);

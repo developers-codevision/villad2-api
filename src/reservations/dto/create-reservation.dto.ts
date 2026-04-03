@@ -167,7 +167,8 @@ export class CreateReservationDto {
   roomId: number;
 
   @ApiPropertyOptional({
-    description: 'Check-in datetime (fecha_entrada) in ISO 8601 format (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ssZ). If earlyCheckIn is true, hour will be adjusted to 12:00',
+    description:
+      'Check-in datetime (fecha_entrada) in ISO 8601 format (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DDTHH:mm:ssZ). If earlyCheckIn is true, hour will be adjusted to 12:00',
     example: '2026-02-21T14:00:00',
   })
   @IsOptional()
@@ -266,7 +267,8 @@ export class CreateReservationDto {
   earlyCheckIn?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Late check-out request (guest wants to check out after standard time)',
+    description:
+      'Late check-out request (guest wants to check out after standard time)',
     example: false,
   })
   @IsOptional()
@@ -302,7 +304,8 @@ export class CreateReservationDto {
   peopleCount?: number;
 
   @ApiPropertyOptional({
-    description: 'Price for terrace reservation (overrides automatic calculation)',
+    description:
+      'Price for terrace reservation (overrides automatic calculation)',
     example: 100,
     minimum: 0,
   })
@@ -312,7 +315,8 @@ export class CreateReservationDto {
   price?: number;
 
   @ApiPropertyOptional({
-    description: 'Total price (can be provided directly for terrace reservations)',
+    description:
+      'Total price (can be provided directly for terrace reservations)',
     example: 100,
     minimum: 0,
   })

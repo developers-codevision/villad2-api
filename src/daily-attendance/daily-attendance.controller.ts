@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DailyAttendanceService } from './daily-attendance.service';
 import { CreateDailyAttendanceDto } from './dto/create-daily-attendance.dto';
@@ -7,7 +16,9 @@ import { UpdateDailyAttendanceDto } from './dto/update-daily-attendance.dto';
 @ApiTags('DailyAttendance')
 @Controller('daily-attendance')
 export class DailyAttendanceController {
-  constructor(private readonly dailyAttendanceService: DailyAttendanceService) {}
+  constructor(
+    private readonly dailyAttendanceService: DailyAttendanceService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Register a new dailyAttendance record' })
@@ -22,15 +33,32 @@ export class DailyAttendanceController {
   }
 
   @Get('staff/:staffId')
-  @ApiOperation({ summary: 'Get dailyAttendance records for a specific staff by their ID (with optional date filters)' })
-  @ApiQuery({ name: 'startDate', required: false, description: 'Fecha de inicio (YYYY-MM-DD)', type: String })
-  @ApiQuery({ name: 'endDate', required: false, description: 'Fecha fin (YYYY-MM-DD)', type: String })
+  @ApiOperation({
+    summary:
+      'Get dailyAttendance records for a specific staff by their ID (with optional date filters)',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Fecha de inicio (YYYY-MM-DD)',
+    type: String,
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'Fecha fin (YYYY-MM-DD)',
+    type: String,
+  })
   findByStaff(
     @Param('staffId') staffId: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
   ) {
-    return this.dailyAttendanceService.findByStaff(+staffId, startDate, endDate);
+    return this.dailyAttendanceService.findByStaff(
+      +staffId,
+      startDate,
+      endDate,
+    );
   }
 
   @Get(':id')
@@ -54,4 +82,3 @@ export class DailyAttendanceController {
     return this.dailyAttendanceService.remove(+id);
   }
 }
-

@@ -15,7 +15,7 @@ export class CreatePaymentDto {
   @IsString()
   currency: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     description: 'Tipo de pago',
     enum: PaymentType,
     default: PaymentType.RESERVATION,

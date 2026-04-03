@@ -22,14 +22,23 @@ export class ConceptsService {
   ) {}
 
   async create(createConceptDto: CreateConceptDto): Promise<Concept> {
-    // Crear solo el concepto (name y category)
     const concept = this.conceptRepository.create({
       name: createConceptDto.name,
       category: createConceptDto.category,
     });
     const savedConcept = await this.conceptRepository.save(concept);
 
-    // Si se proporciona billingId y price, crear el BillingItem asociado
+    if (createConceptDto.products && createConceptDto.products.length > 0) {
+      for (const p of createConceptDto.products) {
+        const conceptProduct = this.conceptProductRepository.create({
+          conceptId: savedConcept.id,
+          productId: p.productId,
+          quantity: p.quantity,
+        });
+        await this.conceptProductRepository.save(conceptProduct);
+      }
+    }
+
     if (createConceptDto.billingId && createConceptDto.price !== undefined) {
       const billing = await this.billingRepository.findOne({
         where: { id: createConceptDto.billingId },
@@ -53,6 +62,7 @@ export class ConceptsService {
 
   async findAll(): Promise<Concept[]> {
     return await this.conceptRepository.find({
+      relations: ['products', 'products.product'],
       order: {
         category: 'ASC',
         name: 'ASC',
@@ -61,7 +71,10 @@ export class ConceptsService {
   }
 
   async findOne(id: number): Promise<Concept> {
-    const concept = await this.conceptRepository.findOne({ where: { id } });
+    const concept = await this.conceptRepository.findOne({
+      where: { id },
+      relations: ['products', 'products.product'],
+    });
     if (!concept) {
       throw new NotFoundException(`Concept with ID ${id} not found`);
     }
@@ -73,8 +86,28 @@ export class ConceptsService {
     updateConceptDto: UpdateConceptDto,
   ): Promise<Concept> {
     const concept = await this.findOne(id);
-    const updatedConcept = Object.assign(concept, updateConceptDto);
-    return await this.conceptRepository.save(updatedConcept);
+
+    if (updateConceptDto.name !== undefined) {
+      concept.name = updateConceptDto.name;
+    }
+    if (updateConceptDto.category !== undefined) {
+      concept.category = updateConceptDto.category;
+    }
+    await this.conceptRepository.save(concept);
+
+    if (updateConceptDto.products !== undefined) {
+      await this.conceptProductRepository.delete({ conceptId: id });
+      for (const p of updateConceptDto.products) {
+        const conceptProduct = this.conceptProductRepository.create({
+          conceptId: id,
+          productId: p.productId,
+          quantity: p.quantity,
+        });
+        await this.conceptProductRepository.save(conceptProduct);
+      }
+    }
+
+    return this.findOne(id);
   }
 
   async remove(id: number): Promise<void> {

@@ -72,18 +72,6 @@ export class BillingPayment {
   @Column({ type: 'json', nullable: true })
   billDenominations: BillDenomination[] | null;
 
-  // Es anticipo para futuras facturas
-  @Column({ type: 'boolean', default: false })
-  isAdvance: boolean;
-
-  // El anticipo ya fue consumido
-  @Column({ type: 'boolean', default: false })
-  advanceConsumed: boolean;
-
-  // Referencia al billing que consumió el anticipo
-  @Column({ type: 'int', nullable: true })
-  advanceConsumedByBillingId: number | null;
-
   @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 }

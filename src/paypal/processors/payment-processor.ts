@@ -2,7 +2,10 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaypalPayment } from '../entities/paypal-payment.entity';
-import { Reservation, ReservationStatus } from '../../reservations/entities/reservation.entity';
+import {
+  Reservation,
+  ReservationStatus,
+} from '../../reservations/entities/reservation.entity';
 import { PaymentStatus } from '../../payments/entities/payment.entity';
 import { PayPalCaptureResponse } from '../client/interfaces/paypal-api.interface';
 import { EmailNotificationService } from '../../common/notifications/email-notification.service';
@@ -49,7 +52,9 @@ export class PaymentProcessor {
     paypalPayment: PaypalPayment,
     captureResponse: PayPalCaptureResponse,
   ): void {
-    paypalPayment.status = this.mapPaypalStatusToPaymentStatus(captureResponse.status);
+    paypalPayment.status = this.mapPaypalStatusToPaymentStatus(
+      captureResponse.status,
+    );
     paypalPayment.paypalPaymentId =
       captureResponse.purchase_units[0]?.payments?.captures[0]?.id;
     paypalPayment.paypalPayerId = captureResponse.payer?.payer_id;

@@ -32,7 +32,11 @@ export class ReviewsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new review' })
-  @ApiResponse({ status: 201, description: 'Review created successfully', type: Review })
+  @ApiResponse({
+    status: 201,
+    description: 'Review created successfully',
+    type: Review,
+  })
   @ApiBody({ type: CreateReviewDto })
   create(@Body() createReviewDto: CreateReviewDto) {
     return this.reviewsService.create(createReviewDto);
@@ -41,9 +45,24 @@ export class ReviewsController {
   @Get()
   @ApiOperation({ summary: 'Get all reviews with optional filters' })
   @ApiResponse({ status: 200, description: 'List of reviews' })
-  @ApiQuery({ name: 'status', required: false, enum: ReviewStatus, description: 'Filter by review status' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ReviewStatus,
+    description: 'Filter by review status',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
   findAll(@Query() findReviewsDto: FindReviewsDto) {
     return this.reviewsService.findAll(findReviewsDto);
   }
@@ -59,7 +78,11 @@ export class ReviewsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a review' })
-  @ApiResponse({ status: 200, description: 'Review updated successfully', type: Review })
+  @ApiResponse({
+    status: 200,
+    description: 'Review updated successfully',
+    type: Review,
+  })
   @ApiResponse({ status: 404, description: 'Review not found' })
   @ApiParam({ name: 'id', description: 'Review ID' })
   @ApiBody({ type: UpdateReviewDto })
@@ -69,21 +92,50 @@ export class ReviewsController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Change review status' })
-  @ApiResponse({ status: 200, description: 'Review status updated successfully', type: Review })
+  @ApiResponse({
+    status: 200,
+    description: 'Review status updated successfully',
+    type: Review,
+  })
   @ApiResponse({ status: 404, description: 'Review not found' })
   @ApiParam({ name: 'id', description: 'Review ID' })
-  @ApiBody({ schema: { type: 'object', properties: { status: { type: 'string', enum: Object.values(ReviewStatus) } } } })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: Object.values(ReviewStatus) },
+      },
+    },
+  })
   changeStatus(@Param('id') id: string, @Body('status') status: ReviewStatus) {
     return this.reviewsService.changeStatus(+id, status);
   }
 
   @Patch(':id/response')
   @ApiOperation({ summary: 'Update response of a review (add or remove)' })
-  @ApiResponse({ status: 200, description: 'Response updated successfully', type: Review })
+  @ApiResponse({
+    status: 200,
+    description: 'Response updated successfully',
+    type: Review,
+  })
   @ApiResponse({ status: 404, description: 'Review not found' })
   @ApiParam({ name: 'id', description: 'Review ID' })
-  @ApiBody({ schema: { type: 'object', properties: { response: { type: 'string', nullable: true, description: 'Response text (null to remove response)' } } } })
-  updateResponse(@Param('id') id: string, @Body('response') response: string | null) {
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        response: {
+          type: 'string',
+          nullable: true,
+          description: 'Response text (null to remove response)',
+        },
+      },
+    },
+  })
+  updateResponse(
+    @Param('id') id: string,
+    @Body('response') response: string | null,
+  ) {
     return this.reviewsService.updateResponse(+id, response);
   }
 

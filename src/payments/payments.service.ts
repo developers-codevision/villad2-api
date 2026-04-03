@@ -1,11 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { Reservation, ReservationStatus } from '../reservations/entities/reservation.entity';
+import {
+  Reservation,
+  ReservationStatus,
+} from '../reservations/entities/reservation.entity';
 import { EmailNotificationService } from '../common/notifications/email-notification.service';
 
 @Injectable()
@@ -93,7 +100,10 @@ export class PaymentsService {
     };
   }
 
-  async retrieveCheckoutSession(sessionId: string, options?: { expand?: string[] }): Promise<Stripe.Checkout.Session> {
+  async retrieveCheckoutSession(
+    sessionId: string,
+    options?: { expand?: string[] },
+  ): Promise<Stripe.Checkout.Session> {
     return await this.stripe.checkout.sessions.retrieve(sessionId, options);
   }
 
@@ -112,7 +122,9 @@ export class PaymentsService {
     }
 
     // Actualizar el estado del pago
-    payment.status = this.mapStripeSessionStatusToPaymentStatus(session.payment_status);
+    payment.status = this.mapStripeSessionStatusToPaymentStatus(
+      session.payment_status,
+    );
     payment.stripeChargeId = session.payment_intent as string;
 
     if (session.payment_status === 'paid') {
@@ -125,17 +137,19 @@ export class PaymentsService {
   async handleWebhook(event: Stripe.Event): Promise<void> {
     switch (event.type) {
       case 'checkout.session.completed':
-        await this.handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        await this.handleCheckoutSessionCompleted(event.data.object);
         break;
       case 'checkout.session.expired':
-        await this.handleCheckoutSessionExpired(event.data.object as Stripe.Checkout.Session);
+        await this.handleCheckoutSessionExpired(event.data.object);
         break;
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
   }
 
-  private async handleCheckoutSessionCompleted(session: Stripe.Checkout.Session): Promise<void> {
+  private async handleCheckoutSessionCompleted(
+    session: Stripe.Checkout.Session,
+  ): Promise<void> {
     const payment = await this.paymentRepository.findOne({
       where: { stripePaymentIntentId: session.id },
       relations: ['reservation'],
@@ -198,7 +212,9 @@ export class PaymentsService {
     });
   }
 
-  private async handleCheckoutSessionExpired(session: Stripe.Checkout.Session): Promise<void> {
+  private async handleCheckoutSessionExpired(
+    session: Stripe.Checkout.Session,
+  ): Promise<void> {
     const payment = await this.paymentRepository.findOne({
       where: { stripePaymentIntentId: session.id },
     });
@@ -209,7 +225,9 @@ export class PaymentsService {
     }
   }
 
-  private mapStripeSessionStatusToPaymentStatus(paymentStatus: string): PaymentStatus {
+  private mapStripeSessionStatusToPaymentStatus(
+    paymentStatus: string,
+  ): PaymentStatus {
     switch (paymentStatus) {
       case 'paid':
         return PaymentStatus.SUCCEEDED;

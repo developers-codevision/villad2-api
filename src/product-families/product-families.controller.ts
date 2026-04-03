@@ -30,7 +30,11 @@ export class ProductFamiliesController {
 
   @Get()
   @ApiOperation({ summary: 'Get all product families' })
-  @ApiResponse({ status: 200, description: 'List of product families', type: [ProductFamily] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of product families',
+    type: [ProductFamily],
+  })
   findAll() {
     return this.productFamiliesService.findAll();
   }
@@ -38,7 +42,11 @@ export class ProductFamiliesController {
   @Get(':id')
   @ApiOperation({ summary: 'Get one product family by id' })
   @ApiParam({ name: 'id', description: 'Product family id', example: 1 })
-  @ApiResponse({ status: 200, description: 'Product family found', type: ProductFamily })
+  @ApiResponse({
+    status: 200,
+    description: 'Product family found',
+    type: ProductFamily,
+  })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productFamiliesService.findOne(id);
   }
@@ -46,7 +54,11 @@ export class ProductFamiliesController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a product family' })
   @ApiParam({ name: 'id', description: 'Product family id', example: 1 })
-  @ApiResponse({ status: 200, description: 'Product family updated', type: ProductFamily })
+  @ApiResponse({
+    status: 200,
+    description: 'Product family updated',
+    type: ProductFamily,
+  })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductFamilyDto: UpdateProductFamilyDto,

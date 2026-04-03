@@ -70,7 +70,10 @@ export class PaypalService {
       const expiresAt = new Date(
         Date.now() + PAYMENT_WINDOW_MINUTES * 60 * 1000,
       );
-      await this.reservationsService.setPaymentExpiry(reservation.id, expiresAt);
+      await this.reservationsService.setPaymentExpiry(
+        reservation.id,
+        expiresAt,
+      );
       this.logger.debug(
         `Payment expiry set for reservation ${reservation.id}: ${expiresAt.toISOString()}`,
       );
@@ -187,9 +190,7 @@ export class PaypalService {
     });
 
     if (!paypalPayment) {
-      throw new NotFoundException(
-        `PayPal order ${orderId} not found`,
-      );
+      throw new NotFoundException(`PayPal order ${orderId} not found`);
     }
 
     const reservation = paypalPayment.reservation;

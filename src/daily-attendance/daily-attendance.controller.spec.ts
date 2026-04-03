@@ -11,7 +11,9 @@ describe('DailyAttendanceController', () => {
       providers: [DailyAttendanceService],
     }).compile();
 
-    controller = module.get<DailyAttendanceController>(DailyAttendanceController);
+    controller = module.get<DailyAttendanceController>(
+      DailyAttendanceController,
+    );
   });
 
   it('should be defined', () => {

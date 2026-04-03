@@ -21,11 +21,14 @@ export class PaypalController {
   constructor(private readonly paypalService: PaypalService) {}
   @Post('create-order-with-reservation')
   @ApiOperation({ summary: 'Create PayPal order with reservation data' })
-  @ApiResponse({ status: 201, description: 'PayPal order created successfully with reservation' })
+  @ApiResponse({
+    status: 201,
+    description: 'PayPal order created successfully with reservation',
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async createOrderWithReservation(@Body() dto: CreateReservationDto) {
     try {
-      console.log(dto)
+      console.log(dto);
       const result = await this.paypalService.createOrderWithReservation(dto);
       return {
         success: true,
@@ -48,7 +51,10 @@ export class PaypalController {
   })
   @ApiResponse({ status: 200, description: 'Order cancelled successfully' })
   @ApiResponse({ status: 404, description: 'PayPal order not found' })
-  @ApiResponse({ status: 409, description: 'Payment already captured, cannot cancel' })
+  @ApiResponse({
+    status: 409,
+    description: 'Payment already captured, cannot cancel',
+  })
   async cancelOrder(@Param('orderId') orderId: string) {
     try {
       const result = await this.paypalService.cancelOrder(orderId);
@@ -88,7 +94,10 @@ export class PaypalController {
 
   @Get('order/:orderId')
   @ApiOperation({ summary: 'Get PayPal order details' })
-  @ApiResponse({ status: 200, description: 'Order details retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Order details retrieved successfully',
+  })
   @ApiResponse({ status: 400, description: 'Bad request' })
   async getOrderDetails(@Param('orderId') orderId: string) {
     try {
@@ -109,11 +118,12 @@ export class PaypalController {
   @Get('payment/reservation/:reservationId')
   @ApiOperation({ summary: 'Get PayPal payments by reservation ID' })
   @ApiResponse({ status: 200, description: 'Payments retrieved successfully' })
-  async getPaymentsByReservationId(@Param('reservationId') reservationId: number) {
+  async getPaymentsByReservationId(
+    @Param('reservationId') reservationId: number,
+  ) {
     try {
-      const result = await this.paypalService.getPaypalPaymentByReservationId(
-        reservationId,
-      );
+      const result =
+        await this.paypalService.getPaypalPaymentByReservationId(reservationId);
       return {
         success: true,
         data: result,
@@ -164,11 +174,11 @@ export class PaypalController {
     try {
       // TODO: Implement webhook signature verification for production
       // For now, we'll process the webhook directly
-      
+
       await this.paypalService.handleWebhook(webhookEvent);
-      
+
       this.logger.log(`PayPal webhook processed: ${webhookEvent.event_type}`);
-      
+
       return {
         success: true,
         message: 'Webhook processed successfully',

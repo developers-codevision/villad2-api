@@ -44,7 +44,11 @@ export class PromotionsController {
   @UseInterceptors(FileInterceptor('photo', multerPromotionsOptions))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Create a new promotion' })
-  @ApiResponse({ status: 201, description: 'Promotion created successfully', type: Promotion })
+  @ApiResponse({
+    status: 201,
+    description: 'Promotion created successfully',
+    type: Promotion,
+  })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiBody({
     schema: {
@@ -66,9 +70,7 @@ export class PromotionsController {
     @Body() createPromotionDto: CreatePromotionDto,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-        ],
+        validators: [new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 })],
         fileIsRequired: false,
       }),
     )
@@ -84,9 +86,24 @@ export class PromotionsController {
   @Get()
   @ApiOperation({ summary: 'Get all promotions with optional filters' })
   @ApiResponse({ status: 200, description: 'List of promotions' })
-  @ApiQuery({ name: 'status', required: false, enum: PromotionStatus, description: 'Filter by promotion status' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: PromotionStatus,
+    description: 'Filter by promotion status',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
   findAll(@Query() findPromotionsDto: FindPromotionsDto) {
     return this.promotionsService.findAll(findPromotionsDto);
   }
@@ -104,7 +121,11 @@ export class PromotionsController {
   @UseInterceptors(FileInterceptor('photo', multerPromotionsOptions))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Update a promotion' })
-  @ApiResponse({ status: 200, description: 'Promotion updated successfully', type: Promotion })
+  @ApiResponse({
+    status: 200,
+    description: 'Promotion updated successfully',
+    type: Promotion,
+  })
   @ApiResponse({ status: 404, description: 'Promotion not found' })
   @ApiParam({ name: 'id', description: 'Promotion ID' })
   @ApiBody({
@@ -128,9 +149,7 @@ export class PromotionsController {
     @Body() updatePromotionDto: UpdatePromotionDto,
     @UploadedFile(
       new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }),
-        ],
+        validators: [new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 })],
         fileIsRequired: false,
       }),
     )
@@ -145,11 +164,25 @@ export class PromotionsController {
 
   @Patch(':id/status')
   @ApiOperation({ summary: 'Change promotion status' })
-  @ApiResponse({ status: 200, description: 'Promotion status updated successfully', type: Promotion })
+  @ApiResponse({
+    status: 200,
+    description: 'Promotion status updated successfully',
+    type: Promotion,
+  })
   @ApiResponse({ status: 404, description: 'Promotion not found' })
   @ApiParam({ name: 'id', description: 'Promotion ID' })
-  @ApiBody({ schema: { type: 'object', properties: { status: { type: 'string', enum: Object.values(PromotionStatus) } } } })
-  changeStatus(@Param('id') id: string, @Body('status') status: PromotionStatus) {
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', enum: Object.values(PromotionStatus) },
+      },
+    },
+  })
+  changeStatus(
+    @Param('id') id: string,
+    @Body('status') status: PromotionStatus,
+  ) {
     return this.promotionsService.changeStatus(+id, status);
   }
 

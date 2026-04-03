@@ -30,7 +30,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
         typeof exceptionResponse === 'object' &&
         exceptionResponse !== null
       ) {
-        const responseObj = exceptionResponse as { message?: string | string[] };
+        const responseObj = exceptionResponse as {
+          message?: string | string[];
+        };
         message = Array.isArray(responseObj.message)
           ? responseObj.message.join(', ')
           : responseObj.message || exception.message;
