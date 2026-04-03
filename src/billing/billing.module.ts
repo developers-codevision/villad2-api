@@ -14,6 +14,7 @@ import { BillingPayment } from './entities/billing-payment.entity';
 import { TipDistribution } from './entities/tip-distribution.entity';
 import { Tax10Distribution } from './entities/tax10-distribution.entity';
 import { Concept } from '../concepts/entities/concept.entity';
+import { Reservation } from '../reservations/entities/reservation.entity';
 import { ProductsModule } from '../products/products.module';
 
 @Module({
@@ -26,6 +27,7 @@ import { ProductsModule } from '../products/products.module';
       TipDistribution,
       Tax10Distribution,
       Concept,
+      Reservation,
     ]),
     ProductsModule,
   ],

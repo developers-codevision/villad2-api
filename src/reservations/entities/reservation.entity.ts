@@ -133,4 +133,7 @@ export class Reservation {
    */
   @Column({ type: 'timestamp', nullable: true })
   paymentExpiresAt?: Date;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  pendingDebt: number;
 }

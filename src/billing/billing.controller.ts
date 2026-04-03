@@ -27,6 +27,7 @@ import { CreateBillingRecordDto } from './dto/create-billing-record.dto';
 import { ProcessPaymentDto } from './dto/process-payment.dto';
 import { DistributeTipDto, DistributeTax10Dto } from './dto/distribute-tip.dto';
 import { Billing } from './entities/billing.entity';
+import { BillingItem } from './entities/billing-item.entity';
 import { BillingRecord } from './entities/billing-record.entity';
 
 @ApiTags('billing')
@@ -97,6 +98,17 @@ export class BillingController {
     return this.billingService.update(id, updateBillingDto);
   }
 
+  @Get('items/:id')
+  @ApiOperation({ summary: 'Get a billing item by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return the billing item with concept',
+    type: BillingItem,
+  })
+  findBillingItem(@Param('id', ParseIntPipe) id: number): Promise<BillingItem> {
+    return this.billingService.findBillingItem(id);
+  }
+
   @Post(':id/record')
   @ApiOperation({ summary: 'Create a payment record for a billing' })
   @ApiParam({ name: 'id', description: 'Billing ID', example: 1 })
@@ -163,7 +175,7 @@ export class BillingController {
     return this.billingService.findRecord(id);
   }
 
-  @Get('records/billing/:billingId')
+  @Get('records/:billingId')
   @ApiOperation({ summary: 'Get all billing records for a specific billing' })
   @ApiParam({ name: 'billingId', description: 'Billing ID', example: 1 })
   @ApiResponse({

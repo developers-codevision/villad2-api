@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BillingRecord } from '../entities/billing-record.entity';
@@ -6,6 +10,7 @@ import { BillingPayment } from '../entities/billing-payment.entity';
 import { CreateBillingRecordDto } from '../dto/create-billing-record.dto';
 import { Billing } from '../entities/billing.entity';
 import { InventoryConsumptionService } from './inventory-consumption.service';
+import { Reservation } from '../../reservations/entities/reservation.entity';
 
 @Injectable()
 export class BillingRecordService {
@@ -16,11 +21,12 @@ export class BillingRecordService {
     private readonly billingPaymentRepository: Repository<BillingPayment>,
     @InjectRepository(Billing)
     private readonly billingRepository: Repository<Billing>,
+    @InjectRepository(Reservation)
+    private readonly reservationRepository: Repository<Reservation>,
     private readonly inventoryConsumptionService: InventoryConsumptionService,
   ) {}
 
   async create(createDto: CreateBillingRecordDto): Promise<BillingRecord> {
-    // Verify billing exists
     const billing = await this.billingRepository.findOne({
       where: { id: createDto.billingId },
       relations: ['items', 'items.concept'],
@@ -31,7 +37,6 @@ export class BillingRecordService {
       );
     }
 
-    // Calculate tax 10% if not provided
     let tax10Percent = createDto.tax10Percent;
     if (!tax10Percent) {
       tax10Percent = createDto.totalAmount * 0.1;
@@ -39,10 +44,39 @@ export class BillingRecordService {
 
     const tip = createDto.tip || 0;
     const grandTotal = createDto.totalAmount + tax10Percent + tip;
+    const lateBilling = createDto.lateBilling || false;
 
-    // Create the billing record
+    if (!lateBilling) {
+      if (createDto.totalPaid === undefined || createDto.totalPaid === null) {
+        throw new BadRequestException(
+          'totalPaid es requerido cuando lateBilling es false',
+        );
+      }
+      if (
+        (!createDto.billDenominations ||
+          createDto.billDenominations.length === 0) &&
+        createDto.totalPaid > 0
+      ) {
+        throw new BadRequestException(
+          'billDenominations es requerido cuando totalPaid > 0 y lateBilling es false',
+        );
+      }
+    }
+
+    if (createDto.reservationId) {
+      const reservation = await this.reservationRepository.findOne({
+        where: { id: createDto.reservationId },
+      });
+      if (!reservation) {
+        throw new NotFoundException(
+          `Reservation with ID ${createDto.reservationId} not found`,
+        );
+      }
+    }
+
     const record = this.billingRecordRepository.create({
       billingId: createDto.billingId,
+      reservationId: createDto.reservationId || null,
       date: createDto.date || billing.date,
       totalAmount: createDto.totalAmount,
       tip,
@@ -53,15 +87,25 @@ export class BillingRecordService {
       pendingAmount: grandTotal,
       advanceBalance: 0,
       isParked: false,
+      lateBilling,
     });
 
     const savedRecord = await this.billingRecordRepository.save(record);
 
-    // Create payments if provided (simplified - full logic in payment service)
-    if (createDto.totalPaid > 0) {
+    if (lateBilling && createDto.reservationId) {
+      const reservation = await this.reservationRepository.findOne({
+        where: { id: createDto.reservationId },
+      });
+      if (reservation) {
+        reservation.pendingDebt = Number(reservation.pendingDebt) + grandTotal;
+        await this.reservationRepository.save(reservation);
+      }
+    }
+
+    if (!lateBilling && createDto.totalPaid > 0) {
       const payment = this.billingPaymentRepository.create({
         billingRecordId: savedRecord.id,
-        paymentMethod: 'cash_usd', // Default - will be expanded
+        paymentMethod: 'cash_usd',
         currency: 'USD',
         amount: createDto.totalPaid,
         amountInUsd: createDto.totalPaid,
@@ -72,7 +116,6 @@ export class BillingRecordService {
       });
       await this.billingPaymentRepository.save(payment);
 
-      // Update payment status
       if (createDto.totalPaid >= grandTotal) {
         savedRecord.paymentStatus = 'paid';
         savedRecord.pendingAmount = 0;
@@ -84,8 +127,6 @@ export class BillingRecordService {
       await this.billingRecordRepository.save(savedRecord);
     }
 
-    // Update inventory (IPV) for each concept consumed
-    // consumeImmediately es una opcion puntual de la facturacion
     const consumptionItems = createDto.conceptConsumptions.map((c) => ({
       billingItemId: c.billingItemId || 0,
       conceptId: c.conceptId,
@@ -96,7 +137,7 @@ export class BillingRecordService {
       savedRecord.id,
       consumptionItems,
       savedRecord.date,
-      createDto.consumeImmediately !== false, // Por defecto consume inmediatamente
+      createDto.consumeImmediately !== false,
     );
 
     return savedRecord;

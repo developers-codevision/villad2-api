@@ -6,6 +6,7 @@ import {
   IsDateString,
   IsOptional,
   IsInt,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BillDenominationDto, ConceptConsumptionDto } from './shared.dto';
@@ -17,6 +18,15 @@ export class CreateBillingRecordDto {
   })
   @IsInt()
   billingId: number;
+
+  @ApiProperty({
+    description: 'ID de la reservación asociada (para acumular deuda/anticipo)',
+    example: 1,
+    required: false,
+  })
+  @IsInt()
+  @IsOptional()
+  reservationId?: number;
 
   @ApiProperty({
     description: 'Fecha del registro (YYYY-MM-DD)',
@@ -77,4 +87,15 @@ export class CreateBillingRecordDto {
   })
   @IsOptional()
   consumeImmediately?: boolean;
+
+  @ApiProperty({
+    description:
+      'Facturación diferida - si true, no se cobra en el momento y se crea deuda al cliente',
+    example: false,
+    default: false,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  lateBilling?: boolean;
 }
