@@ -3,11 +3,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConceptsService } from './concepts.service';
 import { ConceptsController } from './concepts.controller';
 import { Concept } from './entities/concept.entity';
+import { ConceptProduct } from './entities/concept-product.entity';
 import { BillingItem } from '../billing/entities/billing-item.entity';
 import { Billing } from '../billing/entities/billing.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Concept, BillingItem, Billing])],
+  imports: [
+    TypeOrmModule.forFeature([Concept, ConceptProduct, BillingItem, Billing]),
+  ],
   controllers: [ConceptsController],
   providers: [ConceptsService],
   exports: [ConceptsService],

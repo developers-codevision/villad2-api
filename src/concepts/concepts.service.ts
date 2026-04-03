@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { CreateConceptDto } from './dto/create-concept.dto';
 import { UpdateConceptDto } from './dto/update-concept.dto';
 import { Concept } from './entities/concept.entity';
+import { ConceptProduct } from './entities/concept-product.entity';
 import { BillingItem } from '../billing/entities/billing-item.entity';
 import { Billing } from '../billing/entities/billing.entity';
 
@@ -12,6 +13,8 @@ export class ConceptsService {
   constructor(
     @InjectRepository(Concept)
     private readonly conceptRepository: Repository<Concept>,
+    @InjectRepository(ConceptProduct)
+    private readonly conceptProductRepository: Repository<ConceptProduct>,
     @InjectRepository(BillingItem)
     private readonly billingItemRepository: Repository<BillingItem>,
     @InjectRepository(Billing)
@@ -65,7 +68,10 @@ export class ConceptsService {
     return concept;
   }
 
-  async update(id: number, updateConceptDto: UpdateConceptDto): Promise<Concept> {
+  async update(
+    id: number,
+    updateConceptDto: UpdateConceptDto,
+  ): Promise<Concept> {
     const concept = await this.findOne(id);
     const updatedConcept = Object.assign(concept, updateConceptDto);
     return await this.conceptRepository.save(updatedConcept);

@@ -17,7 +17,7 @@ export class BillDenominationDto {
   quantity: number;
 }
 
-export class ConceptConsumptionDto {
+export class ProductConsumptionDto {
   @ApiProperty({
     description: 'ID del billing item (si existe)',
     example: 1,
@@ -27,15 +27,11 @@ export class ConceptConsumptionDto {
   @IsOptional()
   billingItemId?: number;
 
-  @ApiProperty({ description: 'ID del concepto facturado', example: 1 })
+  @ApiProperty({ description: 'ID del producto del inventario', example: 1 })
   @IsInt()
-  conceptId: number;
+  productId: number;
 
-  @ApiProperty({ description: 'Nombre del concepto', example: 'Cerveza' })
-  @IsString()
-  conceptName: string;
-
-  @ApiProperty({ description: 'Cantidad consumida', example: 3 })
+  @ApiProperty({ description: 'Cantidad consumida', example: 2 })
   @IsNumber()
   quantityConsumed: number;
 }

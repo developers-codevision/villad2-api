@@ -13,9 +13,8 @@ import { TipDistribution } from './tip-distribution.entity';
 import { Tax10Distribution } from './tax10-distribution.entity';
 import { Reservation } from '../../reservations/entities/reservation.entity';
 
-export interface ConceptConsumption {
-  conceptId: number;
-  conceptName: string;
+export interface ProductConsumption {
+  productId: number;
   quantityConsumed: number;
 }
 
@@ -104,9 +103,9 @@ export class BillingRecord {
   })
   conceptSource: 'minibar' | 'terraza' | 'alojamiento' | 'other';
 
-  // Consumo de conceptos facturados
+  // Consumo de productos del inventario
   @Column({ type: 'json' })
-  conceptConsumptions: ConceptConsumption[];
+  productConsumptions: ProductConsumption[];
 
   // Relaciones
   @OneToMany(() => BillingPayment, (payment) => payment.billingRecord, {
