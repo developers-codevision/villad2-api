@@ -1,21 +1,51 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsEnum, IsOptional, IsArray, ValidateNested, IsBoolean } from 'class-validator';
+import {
+  IsNumber,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsBoolean,
+} from 'class-validator';
 import { Type } from 'class-transformer';
-
-export class BillDenominationDto {
-  @ApiProperty({ description: 'Valor del billete', example: 10 })
-  @IsNumber()
-  value: number;
-
-  @ApiProperty({ description: 'Cantidad de billetes', example: 5 })
-  @IsNumber()
-  quantity: number;
-}
+import { BillDenominationDto } from './shared.dto';
 
 export class PaymentInputDto {
-  @ApiProperty({ description: 'Método de pago', enum: ['cash_usd', 'cash_eur', 'cash_cup', 'transfer_mobile', 'bizum', 'zelle', 'transfer_abroad', 'stripe', 'paypal'] })
-  @IsEnum(['cash_usd', 'cash_eur', 'cash_cup', 'transfer_mobile', 'bizum', 'zelle', 'transfer_abroad', 'stripe', 'paypal'])
-  paymentMethod: 'cash_usd' | 'cash_eur' | 'cash_cup' | 'transfer_mobile' | 'bizum' | 'zelle' | 'transfer_abroad' | 'stripe' | 'paypal';
+  @ApiProperty({
+    description: 'Método de pago',
+    enum: [
+      'cash_usd',
+      'cash_eur',
+      'cash_cup',
+      'transfer_mobile',
+      'bizum',
+      'zelle',
+      'transfer_abroad',
+      'stripe',
+      'paypal',
+    ],
+  })
+  @IsEnum([
+    'cash_usd',
+    'cash_eur',
+    'cash_cup',
+    'transfer_mobile',
+    'bizum',
+    'zelle',
+    'transfer_abroad',
+    'stripe',
+    'paypal',
+  ])
+  paymentMethod:
+    | 'cash_usd'
+    | 'cash_eur'
+    | 'cash_cup'
+    | 'transfer_mobile'
+    | 'bizum'
+    | 'zelle'
+    | 'transfer_abroad'
+    | 'stripe'
+    | 'paypal';
 
   @ApiProperty({ description: 'Moneda', enum: ['USD', 'EUR', 'CUP'] })
   @IsEnum(['USD', 'EUR', 'CUP'])
@@ -25,12 +55,20 @@ export class PaymentInputDto {
   @IsNumber()
   amount: number;
 
-  @ApiProperty({ description: 'Tasa de cambio (opcional)', example: 240, required: false })
+  @ApiProperty({
+    description: 'Tasa de cambio (opcional)',
+    example: 240,
+    required: false,
+  })
   @IsNumber()
   @IsOptional()
   exchangeRate?: number;
 
-  @ApiProperty({ description: 'Desglose de billetes para efectivo', type: [BillDenominationDto], required: false })
+  @ApiProperty({
+    description: 'Desglose de billetes para efectivo',
+    type: [BillDenominationDto],
+    required: false,
+  })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => BillDenominationDto)
@@ -50,7 +88,11 @@ export class ProcessPaymentDto {
   @Type(() => PaymentInputDto)
   payments: PaymentInputDto[];
 
-  @ApiProperty({ description: 'Usar anticipos disponibles', example: false, required: false })
+  @ApiProperty({
+    description: 'Usar anticipos disponibles',
+    example: false,
+    required: false,
+  })
   @IsBoolean()
   @IsOptional()
   useAdvanceBalance?: boolean;
@@ -69,14 +111,17 @@ export class PaymentResultDto {
   @ApiProperty({ description: 'Balance de anticipos' })
   advanceBalance: number;
 
-  @ApiProperty({ description: 'Estado del pago', enum: ['pending', 'partial', 'paid', 'overpaid'] })
+  @ApiProperty({
+    description: 'Estado del pago',
+    enum: ['pending', 'partial', 'paid', 'overpaid'],
+  })
   paymentStatus: 'pending' | 'partial' | 'paid' | 'overpaid';
 
   @ApiProperty({ description: 'Vuelto' })
   change: number;
 
   @ApiProperty({ description: 'Pagos registrados' })
-  payments: BillingPayment[];
+  payments: any[];
 }
 
-import { BillingPayment } from '../entities/billing-payment.entity';
+export { BillDenominationDto };
