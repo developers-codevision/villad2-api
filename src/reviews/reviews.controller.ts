@@ -25,7 +25,7 @@ import { FindReviewsDto } from './dto/find-reviews.dto';
 import { ReviewStatus } from './entities/review.entity';
 import { Review } from './entities/review.entity';
 
-@ApiTags('Reviews')
+@ApiTags('Reseñas')
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}

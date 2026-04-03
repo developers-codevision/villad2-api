@@ -235,6 +235,10 @@ export class BillingService {
     return await this.billingRecordService.findOne(id);
   }
 
+  async findAllRecords(): Promise<BillingRecord[]> {
+    return await this.billingRecordService.findAll();
+  }
+
   async findAllRecordsByBilling(billingId: number): Promise<BillingRecord[]> {
     return await this.billingRecordService.findAllByBilling(billingId);
   }
@@ -259,3 +263,4 @@ export class BillingService {
     return item;
   }
 }
+

@@ -19,7 +19,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UpdateUserDto } from './dto/user-update.dto';
 
-@ApiTags('users')
+@ApiTags('Usuarios')
 @Controller('users')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)

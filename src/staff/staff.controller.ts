@@ -12,19 +12,19 @@ import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 
-@ApiTags('Staff')
+@ApiTags('Personal')
 @Controller('staff')
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new staff' })
+  @ApiOperation({ summary: 'Crear un nuevo miembro del personal' })
   create(@Body() createStaffDto: CreateStaffDto) {
     return this.staffService.create(createStaffDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all staffs' })
+  @ApiOperation({ summary: 'Obtener todo el personal' })
   findAll() {
     return this.staffService.findAll();
   }

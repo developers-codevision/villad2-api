@@ -1,7 +1,14 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BillingService } from './billing.service';
-import { BillingController } from './billing.controller';
+import {
+  BillingController,
+  BillingRecordController,
+  BillingPaymentController,
+  BillingInventoryController,
+  BillingTipController,
+  BillingReportController,
+} from './billing.controller';
 import { BillingRecordService } from './services/billing-record.service';
 import { BillingPaymentService } from './services/billing-payment.service';
 import { TipReportService } from './services/tip-report.service';
@@ -31,7 +38,14 @@ import { ProductsModule } from '../products/products.module';
     ]),
     ProductsModule,
   ],
-  controllers: [BillingController],
+  controllers: [
+    BillingController,
+    BillingRecordController,
+    BillingPaymentController,
+    BillingInventoryController,
+    BillingTipController,
+    BillingReportController,
+  ],
   providers: [
     BillingService,
     BillingRecordService,

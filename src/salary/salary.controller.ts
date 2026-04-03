@@ -12,7 +12,7 @@ import { SalaryService } from './salary.service';
 import { CreateSalaryDto } from './dto/create-salary.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 
-@ApiTags('Salaries')
+@ApiTags('Nómina')
 @Controller('salary')
 export class SalaryController {
   constructor(private readonly salaryService: SalaryService) {}

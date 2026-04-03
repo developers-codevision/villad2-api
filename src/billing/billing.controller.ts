@@ -30,7 +30,7 @@ import { Billing } from './entities/billing.entity';
 import { BillingItem } from './entities/billing-item.entity';
 import { BillingRecord } from './entities/billing-record.entity';
 
-@ApiTags('billing')
+@ApiTags('Facturación')
 @Controller('billing')
 export class BillingController {
   constructor(
@@ -42,53 +42,54 @@ export class BillingController {
   ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new daily billing sheet' })
+  @ApiOperation({ summary: 'Crear hoja de facturación diaria' })
   @ApiResponse({
     status: 201,
-    description: 'The daily billing sheet has been successfully created.',
+    description: 'Hoja de facturación diaria creada exitosamente.',
     type: Billing,
   })
   create(@Body() createBillingDto: CreateBillingDto): Promise<Billing> {
     return this.billingService.create(createBillingDto);
   }
 
-  @Get('template/:date')
-  @ApiOperation({ summary: 'Get a blank billing template for a specific date' })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Return a template initialized with all concepts and 0 quantity',
-  })
-  getTemplate(@Param('date') date: string): Promise<any> {
-    return this.billingService.getTemplate(date);
-  }
-
   @Get()
-  @ApiOperation({ summary: 'Get all daily billing sheets' })
+  @ApiOperation({ summary: 'Obtener todas las hojas de facturación' })
   @ApiResponse({
     status: 200,
-    description: 'Return all daily billing sheets.',
+    description: 'Lista de hojas de facturación diaria.',
     type: [Billing],
   })
   findAll(): Promise<Billing[]> {
     return this.billingService.findAll();
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a specific daily billing sheet by id' })
+  @Get('template/:date')
+  @ApiOperation({ summary: 'Obtener plantilla de facturación en blanco' })
   @ApiResponse({
     status: 200,
-    description: 'Return the daily billing sheet with its items and summary.',
+    description: 'Plantilla vacía inicializada con todos los conceptos.',
+  })
+  getTemplate(@Param('date') date: string): Promise<any> {
+    return this.billingService.getTemplate(date);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener hoja de facturación por ID' })
+  @ApiParam({ name: 'id', description: 'ID de la hoja de facturación', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Hoja de facturación con sus items y resumen.',
   })
   findOne(@Param('id', ParseIntPipe) id: number): Promise<any> {
     return this.billingService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a daily billing sheet (rates, items)' })
+  @ApiOperation({ summary: 'Actualizar hoja de facturación' })
+  @ApiParam({ name: 'id', description: 'ID de la hoja de facturación', example: 1 })
   @ApiResponse({
     status: 200,
-    description: 'The daily billing sheet has been successfully updated.',
+    description: 'Hoja de facturación actualizada.',
     type: Billing,
   })
   update(
@@ -98,23 +99,41 @@ export class BillingController {
     return this.billingService.update(id, updateBillingDto);
   }
 
-  @Get('items/:id')
-  @ApiOperation({ summary: 'Get a billing item by ID' })
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar hoja de facturación' })
+  @ApiParam({ name: 'id', description: 'ID de la hoja de facturación', example: 1 })
   @ApiResponse({
     status: 200,
-    description: 'Return the billing item with concept',
+    description: 'Hoja de facturación eliminada.',
+  })
+  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.billingService.remove(id);
+  }
+
+  @Get('items/:id')
+  @ApiOperation({ summary: 'Obtener item de facturación por ID' })
+  @ApiParam({ name: 'id', description: 'ID del item de facturación', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Item de facturación con concepto relacionado.',
     type: BillingItem,
   })
   findBillingItem(@Param('id', ParseIntPipe) id: number): Promise<BillingItem> {
     return this.billingService.findBillingItem(id);
   }
+}
+
+@ApiTags('Registros de Facturación')
+@Controller('billing')
+export class BillingRecordController {
+  constructor(private readonly billingService: BillingService) {}
 
   @Post(':id/record')
-  @ApiOperation({ summary: 'Create a payment record for a billing' })
-  @ApiParam({ name: 'id', description: 'Billing ID', example: 1 })
+  @ApiOperation({ summary: 'Crear registro de facturación individual' })
+  @ApiParam({ name: 'id', description: 'ID de la hoja de facturación', example: 1 })
   @ApiResponse({
     status: 201,
-    description: 'Payment record created',
+    description: 'Registro de facturación creado.',
     type: BillingRecord,
   })
   createRecord(
@@ -124,22 +143,80 @@ export class BillingController {
     return this.billingService.createRecord(id, createRecordDto);
   }
 
-  @Delete(':id')
-  @ApiOperation({ summary: 'Delete a daily billing sheet' })
+  @Get('records/all')
+  @ApiOperation({ summary: 'Obtener todos los registros de facturación' })
   @ApiResponse({
     status: 200,
-    description: 'The record has been successfully deleted.',
+    description: 'Lista de todos los registros de facturación.',
+    type: [BillingRecord],
   })
-  remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.billingService.remove(id);
+  findAllRecords(): Promise<BillingRecord[]> {
+    return this.billingService.findAllRecords();
   }
 
-  // ==================== PAYMENT ENDPOINTS ====================
+  @Get('records/:id')
+  @ApiOperation({ summary: 'Obtener registro de facturación por ID' })
+  @ApiParam({ name: 'id', description: 'ID del registro', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Registro de facturación encontrado.',
+    type: BillingRecord,
+  })
+  async findRecord(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<BillingRecord> {
+    return this.billingService.findRecord(id);
+  }
 
-  @Post(':id/pay')
-  @ApiOperation({ summary: 'Process mixed payments for a billing record' })
-  @ApiParam({ name: 'id', description: 'Billing Record ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'Payment processed successfully' })
+  @Get('records/by-billing/:billingId')
+  @ApiOperation({ summary: 'Obtener todos los registros de una hoja de facturación' })
+  @ApiParam({ name: 'billingId', description: 'ID de la hoja de facturación', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de registros de facturación.',
+    type: [BillingRecord],
+  })
+  async findAllRecordsByBilling(
+    @Param('billingId', ParseIntPipe) billingId: number,
+  ): Promise<BillingRecord[]> {
+    return this.billingService.findAllRecordsByBilling(billingId);
+  }
+
+  @Delete('records/:id')
+  @ApiOperation({ summary: 'Eliminar registro de facturación' })
+  @ApiParam({ name: 'id', description: 'ID del registro', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Registro de facturación eliminado.',
+  })
+  async removeRecord(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    return this.billingService.removeRecord(id);
+  }
+
+  @Post('records/:id/park')
+  @ApiOperation({ summary: 'Parquear registro de facturación (sin pagar)' })
+  @ApiParam({ name: 'id', description: 'ID del registro', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Registro parchado exitosamente.',
+    type: BillingRecord,
+  })
+  async parkBilling(
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<BillingRecord> {
+    return this.billingService.parkRecord(id);
+  }
+}
+
+@ApiTags('Pagos')
+@Controller('billing')
+export class BillingPaymentController {
+  constructor(private readonly billingPaymentService: BillingPaymentService) {}
+
+  @Post('records/:id/pay')
+  @ApiOperation({ summary: 'Procesar pagos mixtos para un registro' })
+  @ApiParam({ name: 'id', description: 'ID del registro de facturación', example: 1 })
+  @ApiResponse({ status: 200, description: 'Pago procesado exitosamente' })
   async processPayment(
     @Param('id', ParseIntPipe) id: number,
     @Body() processPaymentDto: ProcessPaymentDto,
@@ -150,59 +227,18 @@ export class BillingController {
       processPaymentDto.useAdvanceBalance,
     );
   }
+}
 
-  @Post(':id/park')
-  @ApiOperation({ summary: 'Park a billing (unpaid)' })
-  @ApiParam({ name: 'id', description: 'Billing Record ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'Billing parked successfully' })
-  async parkBilling(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<BillingRecord> {
-    return this.billingService.parkRecord(id);
-  }
-
-  @Get('records/:id')
-  @ApiOperation({ summary: 'Get a billing record by ID' })
-  @ApiParam({ name: 'id', description: 'Record ID', example: 1 })
-  @ApiResponse({
-    status: 200,
-    description: 'Billing record found',
-    type: BillingRecord,
-  })
-  async findRecord(
-    @Param('id', ParseIntPipe) id: number,
-  ): Promise<BillingRecord> {
-    return this.billingService.findRecord(id);
-  }
-
-  @Get('records/:billingId')
-  @ApiOperation({ summary: 'Get all billing records for a specific billing' })
-  @ApiParam({ name: 'billingId', description: 'Billing ID', example: 1 })
-  @ApiResponse({
-    status: 200,
-    description: 'List of billing records',
-    type: [BillingRecord],
-  })
-  async findAllRecordsByBilling(
-    @Param('billingId', ParseIntPipe) billingId: number,
-  ): Promise<BillingRecord[]> {
-    return this.billingService.findAllRecordsByBilling(billingId);
-  }
-
-  @Delete('records/:id')
-  @ApiOperation({ summary: 'Delete a billing record' })
-  @ApiParam({ name: 'id', description: 'Record ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'Billing record deleted' })
-  async removeRecord(@Param('id', ParseIntPipe) id: number): Promise<void> {
-    return this.billingService.removeRecord(id);
-  }
-
-  // ==================== INVENTORY CONSUMPTION ENDPOINTS ====================
+@ApiTags('Inventario')
+@Controller('billing')
+export class BillingInventoryController {
+  constructor(private readonly inventoryConsumptionService: InventoryConsumptionService) {}
 
   @Post(':id/consume')
-  @ApiOperation({ summary: 'Execute pending inventory consumption' })
-  @ApiParam({ name: 'id', description: 'Billing ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'Inventory consumed successfully' })
+  @ApiOperation({ summary: 'Ejecutar consumo de inventario pendiente' })
+  @ApiParam({ name: 'id', description: 'ID de la hoja de facturación', example: 1 })
+  @ApiQuery({ name: 'date', description: 'Fecha (YYYY-MM-DD)', example: '2026-04-03' })
+  @ApiResponse({ status: 200, description: 'Inventario consumido exitosamente' })
   async consumeInventory(
     @Param('id', ParseIntPipe) id: number,
     @Query('date') date: string,
@@ -211,21 +247,48 @@ export class BillingController {
   }
 
   @Get(':id/pending-consumption')
-  @ApiOperation({ summary: 'Get records with pending inventory consumption' })
-  @ApiParam({ name: 'id', description: 'Billing ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'List of pending records' })
+  @ApiOperation({ summary: 'Obtener registros con consumo de inventario pendiente' })
+  @ApiParam({ name: 'id', description: 'ID de la hoja de facturación', example: 1 })
+  @ApiResponse({ status: 200, description: 'Lista de registros pendientes' })
   async getPendingConsumption(
     @Param('id', ParseIntPipe) id: number,
   ): Promise<any> {
     return this.inventoryConsumptionService.getPendingConsumptionRecords(id);
   }
 
-  // ==================== TIP & TAX10 ENDPOINTS ====================
+  @Get('reports/inventory')
+  @ApiOperation({ summary: 'Reporte de consumo de inventario por período' })
+  @ApiQuery({
+    name: 'from',
+    description: 'Fecha inicial (YYYY-MM-DD)',
+    example: '2026-01-01',
+  })
+  @ApiQuery({
+    name: 'to',
+    description: 'Fecha final (YYYY-MM-DD)',
+    example: '2026-04-03',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporte de consumo de inventario.',
+  })
+  async getInventoryReport(
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ): Promise<any> {
+    return this.inventoryConsumptionService.getInventoryReport(from, to);
+  }
+}
+
+@ApiTags('Propinas')
+@Controller('billing')
+export class BillingTipController {
+  constructor(private readonly tipReportService: TipReportService) {}
 
   @Post('records/:id/distribute-tips')
-  @ApiOperation({ summary: 'Distribute tips among workers' })
-  @ApiParam({ name: 'id', description: 'Billing Record ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'Tips distributed successfully' })
+  @ApiOperation({ summary: 'Distribuir propinas entre trabajadores' })
+  @ApiParam({ name: 'id', description: 'ID del registro de facturación', example: 1 })
+  @ApiResponse({ status: 200, description: 'Propinas distribuidas exitosamente' })
   async distributeTips(
     @Param('id', ParseIntPipe) id: number,
     @Body() distributeTipDto: DistributeTipDto,
@@ -234,9 +297,9 @@ export class BillingController {
   }
 
   @Post('records/:id/distribute-tax10')
-  @ApiOperation({ summary: 'Distribute 10% tax among workers' })
-  @ApiParam({ name: 'id', description: 'Billing Record ID', example: 1 })
-  @ApiResponse({ status: 200, description: 'Tax 10% distributed successfully' })
+  @ApiOperation({ summary: 'Distribuir impuesto 10% entre trabajadores' })
+  @ApiParam({ name: 'id', description: 'ID del registro de facturación', example: 1 })
+  @ApiResponse({ status: 200, description: 'Impuesto 10% distribuido exitosamente' })
   async distributeTax10(
     @Param('id', ParseIntPipe) id: number,
     @Body() distributeTax10Dto: DistributeTax10Dto,
@@ -247,54 +310,19 @@ export class BillingController {
     );
   }
 
-  @Get('reports/daily/:date')
-  @ApiOperation({ summary: 'Get daily billing report for a specific date' })
-  @ApiParam({
-    name: 'date',
-    description: 'Date (YYYY-MM-DD)',
-    example: '2024-01-15',
-  })
-  @ApiResponse({ status: 200, description: 'Daily report generated' })
-  async getDailyReport(@Param('date') date: string): Promise<any> {
-    return this.billingReportService.getDailyReport(date);
-  }
-
-  @Get('reports/inventory')
-  @ApiOperation({ summary: 'Get inventory consumption report for a period' })
-  @ApiQuery({
-    name: 'from',
-    description: 'Start date (YYYY-MM-DD)',
-    example: '2024-01-01',
-  })
-  @ApiQuery({
-    name: 'to',
-    description: 'End date (YYYY-MM-DD)',
-    example: '2024-01-31',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Inventory consumption report generated',
-  })
-  async getInventoryReport(
-    @Query('from') from: string,
-    @Query('to') to: string,
-  ): Promise<any> {
-    return this.billingReportService.getInventoryConsumptionReport(from, to);
-  }
-
   @Get('reports/tips')
-  @ApiOperation({ summary: 'Get tip report for a period' })
+  @ApiOperation({ summary: 'Reporte de propinas por período' })
   @ApiQuery({
     name: 'from',
-    description: 'Start date (YYYY-MM-DD)',
-    example: '2024-01-01',
+    description: 'Fecha inicial (YYYY-MM-DD)',
+    example: '2026-01-01',
   })
   @ApiQuery({
     name: 'to',
-    description: 'End date (YYYY-MM-DD)',
-    example: '2024-01-31',
+    description: 'Fecha final (YYYY-MM-DD)',
+    example: '2026-04-03',
   })
-  @ApiResponse({ status: 200, description: 'Tip report generated' })
+  @ApiResponse({ status: 200, description: 'Reporte de propinas.' })
   async getTipReport(
     @Query('from') from: string,
     @Query('to') to: string,
@@ -303,22 +331,40 @@ export class BillingController {
   }
 
   @Get('reports/tax10')
-  @ApiOperation({ summary: 'Get tax 10% report for a period' })
+  @ApiOperation({ summary: 'Reporte de impuesto 10% por período' })
   @ApiQuery({
     name: 'from',
-    description: 'Start date (YYYY-MM-DD)',
-    example: '2024-01-01',
+    description: 'Fecha inicial (YYYY-MM-DD)',
+    example: '2026-01-01',
   })
   @ApiQuery({
     name: 'to',
-    description: 'End date (YYYY-MM-DD)',
-    example: '2024-01-31',
+    description: 'Fecha final (YYYY-MM-DD)',
+    example: '2026-04-03',
   })
-  @ApiResponse({ status: 200, description: 'Tax 10% report generated' })
+  @ApiResponse({ status: 200, description: 'Reporte de impuesto 10%.' })
   async getTax10Report(
     @Query('from') from: string,
     @Query('to') to: string,
   ): Promise<any> {
     return this.tipReportService.getTax10Report(new Date(from), new Date(to));
+  }
+}
+
+@ApiTags('Reportes')
+@Controller('billing')
+export class BillingReportController {
+  constructor(private readonly billingReportService: BillingReportService) {}
+
+  @Get('reports/daily/:date')
+  @ApiOperation({ summary: 'Reporte diario de facturación' })
+  @ApiParam({
+    name: 'date',
+    description: 'Fecha (YYYY-MM-DD)',
+    example: '2026-04-03',
+  })
+  @ApiResponse({ status: 200, description: 'Reporte diario generado.' })
+  async getDailyReport(@Param('date') date: string): Promise<any> {
+    return this.billingReportService.getDailyReport(date);
   }
 }

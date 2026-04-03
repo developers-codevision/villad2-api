@@ -13,7 +13,7 @@ import { DailyAttendanceService } from './daily-attendance.service';
 import { CreateDailyAttendanceDto } from './dto/create-daily-attendance.dto';
 import { UpdateDailyAttendanceDto } from './dto/update-daily-attendance.dto';
 
-@ApiTags('DailyAttendance')
+@ApiTags('Asistencia Diaria')
 @Controller('daily-attendance')
 export class DailyAttendanceController {
   constructor(

@@ -13,7 +13,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { PaypalService } from './paypal.service';
 import { CreateReservationDto } from 'src/reservations/dto/create-reservation.dto';
 
-@ApiTags('paypal')
+@ApiTags('Pagos - PayPal')
 @Controller('paypal')
 export class PaypalController {
   private readonly logger = new Logger(PaypalController.name);

@@ -14,7 +14,7 @@ import { CreateProductFamilyDto } from './dto/create-product-family.dto';
 import { UpdateProductFamilyDto } from './dto/update-product-family.dto';
 import { ProductFamily } from './entities/product-family.entity';
 
-@ApiTags('product-families')
+@ApiTags('Inventario - Familias de Productos')
 @Controller('product-families')
 export class ProductFamiliesController {
   constructor(
@@ -22,17 +22,17 @@ export class ProductFamiliesController {
   ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a product family' })
-  @ApiResponse({ status: 201, description: 'Created', type: ProductFamily })
+  @ApiOperation({ summary: 'Crear una familia de productos' })
+  @ApiResponse({ status: 201, description: 'Familia creada', type: ProductFamily })
   create(@Body() createProductFamilyDto: CreateProductFamilyDto) {
     return this.productFamiliesService.create(createProductFamilyDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all product families' })
+  @ApiOperation({ summary: 'Obtener todas las familias de productos' })
   @ApiResponse({
     status: 200,
-    description: 'List of product families',
+    description: 'Lista de familias de productos',
     type: [ProductFamily],
   })
   findAll() {
@@ -40,11 +40,11 @@ export class ProductFamiliesController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get one product family by id' })
-  @ApiParam({ name: 'id', description: 'Product family id', example: 1 })
+  @ApiOperation({ summary: 'Obtener familia de productos por ID' })
+  @ApiParam({ name: 'id', description: 'ID de la familia', example: 1 })
   @ApiResponse({
     status: 200,
-    description: 'Product family found',
+    description: 'Familia encontrada',
     type: ProductFamily,
   })
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -52,11 +52,11 @@ export class ProductFamiliesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a product family' })
-  @ApiParam({ name: 'id', description: 'Product family id', example: 1 })
+  @ApiOperation({ summary: 'Actualizar una familia de productos' })
+  @ApiParam({ name: 'id', description: 'ID de la familia', example: 1 })
   @ApiResponse({
     status: 200,
-    description: 'Product family updated',
+    description: 'Familia actualizada',
     type: ProductFamily,
   })
   update(
@@ -67,9 +67,9 @@ export class ProductFamiliesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a product family' })
-  @ApiParam({ name: 'id', description: 'Product family id', example: 1 })
-  @ApiResponse({ status: 200, description: 'Product family deleted' })
+  @ApiOperation({ summary: 'Eliminar una familia de productos' })
+  @ApiParam({ name: 'id', description: 'ID de la familia', example: 1 })
+  @ApiResponse({ status: 200, description: 'Familia eliminada' })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productFamiliesService.remove(id);
   }

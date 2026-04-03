@@ -3,7 +3,7 @@ import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 
-@ApiTags('payment-redirect')
+@ApiTags('Pagos - Redirección')
 @Controller('payment')
 export class PaymentRedirectController {
   constructor(private readonly configService: ConfigService) {}
