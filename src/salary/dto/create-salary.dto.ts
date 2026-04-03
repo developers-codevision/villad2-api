@@ -5,14 +5,30 @@ export class CreateSalaryDto {
   @ApiProperty({ example: 1, description: 'ID del trabajador asociado (Staff)' })
   @IsNumber()
   @IsNotEmpty()
+  @Min(1, { message: 'El ID del trabajador debe ser un número positivo' })
+  @Max(999999, { message: 'El ID del trabajador excede el límite razonable' })
   staffId: number;
 
-  @ApiProperty({ example: 1500.50, description: 'Monto del salario' })
+  @ApiPropertyOptional({ example: 1, description: 'ID de la nómina (Payroll) a la que pertenece', required: false })
+  @IsNumber()
+  @Min(1, { message: 'El ID de la nómina debe ser un número positivo' })
+  @Max(999999, { message: 'El ID de la nómina excede el límite razonable' })
+  @IsOptional()
+  payrollId?: number;
+
+  @ApiProperty({ example: 1500.50, description: 'Monto neto del salario' })
   @IsNumber()
   @Min(0, { message: 'El salario no puede ser negativo' })
   @Max(9999999.99, { message: 'Salario excede el límite de la base de datos' })
   @IsNotEmpty()
-  amount: number;
+  netAmount: number;
+
+  @ApiPropertyOptional({ example: 160.5, description: 'Horas trabajadas en el mes de la nómina' })
+  @IsNumber()
+  @Min(0, { message: 'Las horas no pueden ser negativas' })
+  @Max(1000000, { message: 'Las horas exceden el límite razonable' })
+  @IsOptional()
+  hours?: number;
 
   @ApiPropertyOptional({ example: 'Turno nocturno', description: 'Comentario o descripción del salario (Opcional)' })
   @IsString()

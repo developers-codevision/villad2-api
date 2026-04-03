@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateStaffDto } from './dto/create-staff.dto';
@@ -13,6 +13,14 @@ export class StaffService {
   ) {}
 
   async create(createStaffDto: CreateStaffDto) {
+    const existing = await this.staffRepository.findOne({
+      where: { expNumber: createStaffDto.expNumber },
+    });
+
+    if (existing) {
+      throw new ConflictException(`Ya existe un trabajador con el expediente ${createStaffDto.expNumber}`);
+    }
+
     const newStaff = this.staffRepository.create(createStaffDto);
     return await this.staffRepository.save(newStaff);
   }

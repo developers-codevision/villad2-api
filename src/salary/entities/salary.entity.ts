@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Staff } from '../../staff/entities/staff.entity';
+import { Payroll } from '../../payrolls/entities/payroll.entity';
 
 @Entity('salaries')
 export class Salary {
@@ -13,8 +14,24 @@ export class Salary {
   @JoinColumn({ name: 'staffId' })
   staff: Staff;
 
+  @Column({ nullable: true })
+  payrollId: number;
+
+  @ManyToOne(() => Payroll, (payroll) => payroll.salaries, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'payrollId' })
+  payroll: Payroll;
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  amount: number;
+  netAmount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  vacationsAmount: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  grossAmount: number;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  hours: number;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   comment: string;
