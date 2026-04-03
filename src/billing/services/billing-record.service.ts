@@ -12,12 +12,28 @@ import {
   BillingPaymentDto,
   Currency,
   PaymentMethod,
-  BillingItemDto,
 } from '../dto/create-billing-record.dto';
 import { Billing } from '../entities/billing.entity';
 import { InventoryConsumptionService } from './inventory-consumption.service';
 import { Reservation } from '../../reservations/entities/reservation.entity';
-import { Concept } from '../../concepts/entities/concept.entity';
+
+const convertToUsd = (
+  amount: number,
+  currency: Currency,
+  exchangeRate: number,
+  billing: Billing,
+): number => {
+  if (currency === Currency.USD) {
+    return amount;
+  }
+  if (currency === Currency.EUR) {
+    return amount * exchangeRate;
+  }
+  if (currency === Currency.CUP) {
+    return amount / Number(billing.usdToCupRate);
+  }
+  return amount;
+};
 
 @Injectable()
 export class BillingRecordService {
@@ -30,28 +46,8 @@ export class BillingRecordService {
     private readonly billingRepository: Repository<Billing>,
     @InjectRepository(Reservation)
     private readonly reservationRepository: Repository<Reservation>,
-    @InjectRepository(Concept)
-    private readonly conceptRepository: Repository<Concept>,
     private readonly inventoryConsumptionService: InventoryConsumptionService,
   ) {}
-
-  private convertToUsd(
-    amount: number,
-    currency: Currency,
-    exchangeRate: number,
-    billing: Billing,
-  ): number {
-    if (currency === Currency.USD) {
-      return amount;
-    }
-    if (currency === Currency.EUR) {
-      return amount * exchangeRate;
-    }
-    if (currency === Currency.CUP) {
-      return amount / Number(billing.usdToCupRate);
-    }
-    return amount;
-  }
 
   async create(createDto: CreateBillingRecordDto): Promise<BillingRecord> {
     const billing = await this.billingRepository.findOne({
@@ -65,10 +61,15 @@ export class BillingRecordService {
     }
 
     const items = createDto.items || [];
-    const totalAmount = items.reduce(
-      (sum, item) => sum + item.quantity * item.priceUsd,
-      0,
-    );
+    const productConsumptions = items.map((item) => ({
+      productId: item.productId,
+      quantityConsumed: item.productQuantity,
+    }));
+
+    const totalAmount = billing.items
+      .filter((item) => item.id === createDto.billingItemId)
+      .reduce((sum, item) => sum + Number(item.totalUsd), 0);
+
     const tax10Percent = totalAmount * 0.1;
     const tip = createDto.tip || 0;
     const grandTotal = totalAmount + tax10Percent + tip;
@@ -88,13 +89,20 @@ export class BillingRecordService {
         p.paymentMethod === PaymentMethod.CASH_CUP,
     );
 
-    if (!lateBilling && hasCashPayment) {
-      const hasDenominations = payments.some(
-        (p) => p.billDenominations && p.billDenominations.length > 0,
-      );
-      if (!hasDenominations) {
+    for (const paymentDto of payments) {
+      const hasDenominations =
+        paymentDto.billDenominations && paymentDto.billDenominations.length > 0;
+      const hasAmount = paymentDto.amount !== undefined;
+
+      if (paymentDto.paymentMethod.startsWith('cash_') && !hasDenominations) {
         throw new BadRequestException(
           'billDenominations es requerido para pagos en efectivo',
+        );
+      }
+
+      if (!paymentDto.paymentMethod.startsWith('cash_') && !hasAmount) {
+        throw new BadRequestException(
+          'amount es requerido para pagos que no son en efectivo',
         );
       }
     }
@@ -113,12 +121,12 @@ export class BillingRecordService {
     const record = this.billingRecordRepository.create({
       billingId: createDto.billingId,
       reservationId: createDto.reservationId || null,
-      date: createDto.date || billing.date,
+      date: billing.date,
       totalAmount,
       tip,
       tax10Percent,
       grandTotal,
-      productConsumptions: [],
+      productConsumptions,
       paymentStatus: 'pending',
       pendingAmount: grandTotal,
       advanceBalance: 0,
@@ -140,32 +148,72 @@ export class BillingRecordService {
     }
 
     for (const paymentDto of payments) {
-      const exchangeRate = paymentDto.exchangeRate ?? 1;
-      const amountInUsd =
-        paymentDto.amountInUsd ??
-        this.convertToUsd(
-          paymentDto.amount,
-          paymentDto.currency,
-          exchangeRate,
-          billing,
+      let amountInUsd: number;
+
+      if (
+        paymentDto.billDenominations &&
+        paymentDto.billDenominations.length > 0
+      ) {
+        const calculatedAmount = paymentDto.billDenominations.reduce(
+          (sum, d) => {
+            const rate =
+              d.currency === Currency.USD
+                ? 1
+                : d.currency === Currency.EUR
+                  ? Number(billing.eurToCupRate) / Number(billing.usdToCupRate)
+                  : 1 / Number(billing.usdToCupRate);
+            return sum + d.value * d.quantity * rate;
+          },
+          0,
         );
+
+        if (
+          paymentDto.amount !== undefined &&
+          Math.abs(paymentDto.amount - calculatedAmount) > 0.01
+        ) {
+          throw new BadRequestException(
+            `El amount (${paymentDto.amount}) no coincide con la suma de las denominaciones (${calculatedAmount})`,
+          );
+        }
+
+        amountInUsd = calculatedAmount;
+      } else if (paymentDto.amount !== undefined) {
+        amountInUsd = paymentDto.amount;
+      } else {
+        throw new BadRequestException(
+          'Se requiere amount o billDenominations para el pago',
+        );
+      }
 
       const payment = this.billingPaymentRepository.create({
         billingRecordId: savedRecord.id,
         paymentMethod: paymentDto.paymentMethod,
-        currency: paymentDto.currency,
-        amount: paymentDto.amount,
+        amount: amountInUsd,
         amountInUsd,
-        exchangeRate,
+        exchangeRate: 1,
         billDenominations: paymentDto.billDenominations || null,
       });
       await this.billingPaymentRepository.save(payment);
     }
 
-    const totalPaid = payments.reduce(
-      (sum, p) => sum + Number(p.amountInUsd || p.amount),
-      0,
-    );
+    const totalPaid = payments.reduce((sum, p) => {
+      if (p.billDenominations && p.billDenominations.length > 0) {
+        return (
+          sum +
+          p.billDenominations.reduce((s, d) => {
+            const rate =
+              d.currency === Currency.USD
+                ? 1
+                : d.currency === Currency.EUR
+                  ? Number(billing.eurToCupRate) / Number(billing.usdToCupRate)
+                  : 1 / Number(billing.usdToCupRate);
+            return s + d.value * d.quantity * rate;
+          }, 0)
+        );
+      }
+      return sum + (p.amount || 0);
+    }, 0);
+
     if (!lateBilling && totalPaid > 0) {
       if (totalPaid >= Number(grandTotal)) {
         savedRecord.paymentStatus = 'paid';
@@ -179,36 +227,13 @@ export class BillingRecordService {
     }
 
     if (createDto.consumeImmediately !== false) {
-      const consumptionItems = [];
-
-      for (const item of items) {
-        if (item.productId && item.productQuantity) {
-          consumptionItems.push({
-            billingItemId: 0,
-            productId: item.productId,
-            quantity: item.productQuantity,
-          });
-        } else {
-          const concept = await this.conceptRepository.findOne({
-            where: { id: item.conceptId },
-            relations: ['products', 'products.product'],
-          });
-
-          if (concept?.products) {
-            for (const cp of concept.products) {
-              consumptionItems.push({
-                billingItemId: 0,
-                productId: cp.productId,
-                quantity: Number(cp.quantity) * item.quantity,
-              });
-            }
-          }
-        }
-      }
-
       await this.inventoryConsumptionService.consumeInventoryForRecord(
         savedRecord.id,
-        consumptionItems,
+        productConsumptions.map((p) => ({
+          billingItemId: createDto.billingItemId || 0,
+          productId: p.productId,
+          quantity: p.quantityConsumed,
+        })),
         savedRecord.date,
         true,
       );

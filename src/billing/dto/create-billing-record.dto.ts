@@ -3,7 +3,6 @@ import {
   IsNumber,
   IsArray,
   ValidateNested,
-  IsDateString,
   IsOptional,
   IsInt,
   IsBoolean,
@@ -38,38 +37,32 @@ export enum ConceptSource {
 }
 
 export class BillingItemDto {
-  @ApiProperty({ description: 'ID del concepto', example: 1 })
-  @IsInt()
-  conceptId: number;
-
-  @ApiProperty({ description: 'Cantidad', example: 2 })
-  @IsNumber()
-  quantity: number;
-
-  @ApiProperty({ description: 'Precio unitario en USD', example: 5 })
-  @IsNumber()
-  priceUsd: number;
-
   @ApiProperty({
-    description: 'ID del producto de inventario a descontar (opcional)',
+    description: 'ID del producto de inventario a descontar',
     example: 1,
-    required: false,
+    required: true,
   })
   @IsInt()
-  @IsOptional()
-  productId?: number;
+  productId: number;
 
   @ApiProperty({
-    description: 'Cantidad del producto a descontar (opcional)',
+    description: 'Cantidad del producto a descontar',
     example: 1,
-    required: false,
+    required: true,
   })
   @IsNumber()
-  @IsOptional()
-  productQuantity?: number;
+  productQuantity: number;
 }
 
 export class BillDenominationDto {
+  @ApiProperty({
+    description: 'Moneda de esta denominación',
+    enum: Currency,
+    example: 'USD',
+  })
+  @IsEnum(Currency)
+  currency: Currency;
+
   @ApiProperty({
     description: 'Valor del billete/moneda (ej: 10, 20, 50)',
     example: 10,
@@ -95,29 +88,16 @@ export class BillingPaymentDto {
   paymentMethod: PaymentMethod;
 
   @ApiProperty({
-    description: 'Moneda del pago',
-    enum: Currency,
-    example: 'USD',
+    description: 'Monto pagado en USD (requerido si no hay billDenominations)',
+    example: 100,
+    required: false,
   })
-  @IsEnum(Currency)
-  currency: Currency;
-
-  @ApiProperty({ description: 'Monto pagado', example: 100 })
-  @IsNumber()
-  amount: number;
-
-  @ApiProperty({ description: 'Monto en USD (calculado)', example: 100 })
   @IsNumber()
   @IsOptional()
-  amountInUsd?: number;
-
-  @ApiProperty({ description: 'Tasa de cambio', example: 1, default: 1 })
-  @IsNumber()
-  @IsOptional()
-  exchangeRate?: number;
+  amount?: number;
 
   @ApiProperty({
-    description: 'Denominaciones de billetes',
+    description: 'Denominaciones de billetes (para pagos en efectivo)',
     type: [BillDenominationDto],
     required: false,
   })
@@ -153,14 +133,6 @@ export class CreateBillingRecordDto {
   @IsInt()
   @IsOptional()
   reservationId?: number;
-
-  @ApiProperty({
-    description: 'Fecha del registro (YYYY-MM-DD)',
-    example: '2024-01-15',
-  })
-  @IsDateString()
-  @IsOptional()
-  date?: string;
 
   @ApiProperty({
     description: 'Items facturados con precios individuales',

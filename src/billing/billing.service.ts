@@ -211,11 +211,10 @@ export class BillingService {
       throw new NotFoundException(`Billing with ID ${billingId} not found`);
     }
 
-    // Set billingId and date from the billing if not provided
+    // Set billingId from the billing if not provided
     const recordDto = {
       ...createRecordDto,
       billingId,
-      date: createRecordDto.date || billing.date,
     };
 
     return await this.billingRecordService.create(recordDto);
