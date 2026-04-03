@@ -34,7 +34,7 @@ import { PromotionStatus } from './entities/promotion.entity';
 import { Promotion } from './entities/promotion.entity';
 import { multerPromotionsOptions } from '../config/multer-promotions.config';
 
-@ApiTags('Promotions')
+@ApiTags('Promociones')
 @Controller('promotions')
 @ApiExtraModels(CreatePromotionDto, UpdatePromotionDto)
 export class PromotionsController {
@@ -43,13 +43,13 @@ export class PromotionsController {
   @Post()
   @UseInterceptors(FileInterceptor('photo', multerPromotionsOptions))
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Create a new promotion' })
+  @ApiOperation({ summary: 'Crear una nueva promoción' })
   @ApiResponse({
     status: 201,
-    description: 'Promotion created successfully',
+    description: 'Promoción creada exitosamente',
     type: Promotion,
   })
-  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 400, description: 'Solicitud incorrecta' })
   @ApiBody({
     schema: {
       allOf: [
@@ -57,10 +57,7 @@ export class PromotionsController {
         {
           type: 'object',
           properties: {
-            photo: {
-              type: 'string',
-              format: 'binary',
-            },
+            photo: { type: 'string', format: 'binary' },
           },
         },
       ],
@@ -84,8 +81,8 @@ export class PromotionsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all promotions with optional filters' })
-  @ApiResponse({ status: 200, description: 'List of promotions' })
+  @ApiOperation({ summary: 'Obtener todas las promociones' })
+  @ApiResponse({ status: 200, description: 'Lista de promociones' })
   @ApiQuery({
     name: 'status',
     required: false,

@@ -17,7 +17,7 @@ import Stripe from 'stripe';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 
-@ApiTags('payments')
+@ApiTags('Pagos')
 @Controller('payments')
 export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);

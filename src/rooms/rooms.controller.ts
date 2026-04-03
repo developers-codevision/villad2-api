@@ -35,11 +35,12 @@ import { RoomStatus, RoomType } from './enums/room-enums.enum';
 import { RoomResponseDto } from './dto/response-room.dto';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from '../config/multer.config';
-@ApiTags('rooms')
+@ApiTags('Habitaciones')
 @Controller('rooms')
 @ApiExtraModels(UpdateRoomDto, CreateRoomDto)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
+
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -51,13 +52,13 @@ export class RoomsController {
     ),
   )
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Create a new room' })
+  @ApiOperation({ summary: 'Crear una nueva habitación' })
   @ApiResponse({
     status: 201,
-    description: 'The room has been successfully created.',
+    description: 'Habitación creada exitosamente.',
     type: RoomResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Bad Request' })
+  @ApiResponse({ status: 400, description: 'Solicitud incorrecta' })
   @ApiBody({
     schema: {
       allOf: [
@@ -65,16 +66,10 @@ export class RoomsController {
         {
           type: 'object',
           properties: {
-            mainPhoto: {
-              type: 'string',
-              format: 'binary',
-            },
+            mainPhoto: { type: 'string', format: 'binary' },
             additionalPhotos: {
               type: 'array',
-              items: {
-                type: 'string',
-                format: 'binary',
-              },
+              items: { type: 'string', format: 'binary' },
             },
           },
         },
@@ -91,24 +86,23 @@ export class RoomsController {
   ) {
     console.log('Files:', files);
     console.log('CreateRoomDto:', createRoomDto);
-
-    console.log(createRoomDto);
     return this.roomsService.create(createRoomDto, {
       mainPhoto: files.mainPhoto,
       additionalPhotos: files.additionalPhotos || [],
     });
   }
+
   @Get()
-  @ApiOperation({ summary: 'Get all rooms' })
+  @ApiOperation({ summary: 'Obtener todas las habitaciones' })
   @ApiResponse({
     status: 200,
-    description: 'Return all rooms',
+    description: 'Lista de habitaciones',
     type: [RoomResponseDto],
   })
   @ApiQuery({
     name: 'type',
     required: false,
-    description: 'Filter rooms by type',
+    description: 'Filtrar habitaciones por tipo',
     enum: RoomType,
     example: RoomType.STANDARD,
   })
@@ -118,15 +112,16 @@ export class RoomsController {
     }
     return this.roomsService.findAll();
   }
+
   @Get(':id')
-  @ApiOperation({ summary: 'Get a room by ID' })
+  @ApiOperation({ summary: 'Obtener habitación por ID' })
   @ApiResponse({
     status: 200,
-    description: 'Return the room',
+    description: 'Habitación encontrada',
     type: RoomResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'Room not found' })
-  @ApiParam({ name: 'id', description: 'Room ID', example: 1 })
+  @ApiResponse({ status: 404, description: 'Habitación no encontrada' })
+  @ApiParam({ name: 'id', description: 'ID de la habitación', example: 1 })
   async findOne(@Param('id', ParseIntPipe) id: number): Promise<Room> {
     return this.roomsService.findOne(id);
   }
@@ -142,6 +137,13 @@ export class RoomsController {
     ),
   )
   @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Actualizar una habitación' })
+  @ApiParam({ name: 'id', description: 'ID de la habitación', example: 1 })
+  @ApiResponse({
+    status: 200,
+    description: 'Habitación actualizada',
+    type: RoomResponseDto,
+  })
   @ApiBody({
     schema: {
       allOf: [
@@ -149,16 +151,10 @@ export class RoomsController {
         {
           type: 'object',
           properties: {
-            mainPhoto: {
-              type: 'string',
-              format: 'binary',
-            },
+            mainPhoto: { type: 'string', format: 'binary' },
             additionalPhotos: {
               type: 'array',
-              items: {
-                type: 'string',
-                format: 'binary',
-              },
+              items: { type: 'string', format: 'binary' },
             },
           },
         },
@@ -181,11 +177,22 @@ export class RoomsController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar una habitación' })
+  @ApiParam({ name: 'id', description: 'ID de la habitación', example: 1 })
+  @ApiResponse({ status: 200, description: 'Habitación eliminada' })
   async remove(@Param('id', ParseIntPipe) id: number): Promise<void> {
     return this.roomsService.remove(id);
   }
 
   @Put(':id/status/:status')
+  @ApiOperation({ summary: 'Actualizar estado de habitación' })
+  @ApiParam({ name: 'id', description: 'ID de la habitación', example: 1 })
+  @ApiParam({
+    name: 'status',
+    description: 'Nuevo estado de la habitación',
+    enum: RoomStatus,
+  })
+  @ApiResponse({ status: 200, description: 'Estado actualizado' })
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
     @Param('status') status: RoomStatus,

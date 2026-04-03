@@ -51,7 +51,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/enums/user-role.enum';
 
-@ApiTags('reservations')
+@ApiTags('Reservas')
 @Controller('reservations')
 export class ReservationsController {
   constructor(

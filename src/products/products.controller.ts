@@ -23,25 +23,25 @@ import { SaveDailyIpvDto } from './dto/save-daily-ipv.dto';
 import { Product } from './entities/product.entity';
 import { ProductDailyRecord } from './entities/product-daily-record.entity';
 
-@ApiTags('products')
+@ApiTags('Inventario - Productos')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  // ─── Products CRUD ───────────────────────────────────────────────────────────
+  // ─── Productos (Datos estáticos) ─────────────────────────────────────────────
 
   @Post()
-  @ApiOperation({ summary: 'Create a product (static data only)' })
-  @ApiResponse({ status: 201, description: 'Created', type: Product })
+  @ApiOperation({ summary: 'Crear un producto' })
+  @ApiResponse({ status: 201, description: 'Producto creado', type: Product })
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all products (static data)' })
+  @ApiOperation({ summary: 'Obtener todos los productos' })
   @ApiResponse({
     status: 200,
-    description: 'List of products',
+    description: 'Lista de productos',
     type: [Product],
   })
   findAll() {
@@ -49,17 +49,17 @@ export class ProductsController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get one product by id' })
-  @ApiParam({ name: 'id', description: 'Product id', example: 1 })
-  @ApiResponse({ status: 200, description: 'Product found', type: Product })
+  @ApiOperation({ summary: 'Obtener producto por ID' })
+  @ApiParam({ name: 'id', description: 'ID del producto', example: 1 })
+  @ApiResponse({ status: 200, description: 'Producto encontrado', type: Product })
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a product (static data)' })
-  @ApiParam({ name: 'id', description: 'Product id', example: 1 })
-  @ApiResponse({ status: 200, description: 'Product updated', type: Product })
+  @ApiOperation({ summary: 'Actualizar un producto' })
+  @ApiParam({ name: 'id', description: 'ID del producto', example: 1 })
+  @ApiResponse({ status: 200, description: 'Producto actualizado', type: Product })
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateProductDto: UpdateProductDto,
@@ -68,45 +68,43 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a product' })
-  @ApiParam({ name: 'id', description: 'Product id', example: 1 })
-  @ApiResponse({ status: 200, description: 'Product deleted' })
+  @ApiOperation({ summary: 'Eliminar un producto' })
+  @ApiParam({ name: 'id', description: 'ID del producto', example: 1 })
+  @ApiResponse({ status: 200, description: 'Producto eliminado' })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.productsService.remove(id);
   }
 
-  // ─── IPV (Daily Records) ─────────────────────────────────────────────────────
+  // ─── IPV (Inventario Permanente de Valores) ───────────────────────────────────
 
   @Get('ipv/daily')
   @ApiOperation({
-    summary: 'Get IPV for a specific date, grouped by product family',
+    summary: 'Obtener IPV para una fecha específica',
     description:
-      'Returns all products with their daily inventory record for the given date. ' +
-      'If a product has no record for that date, `initial` is seeded from the ' +
-      '`final` of the previous recorded day. Records are NOT created until saveIpv() is called.',
+      'Retorna todos los productos con su registro de inventario diario para la fecha dada. ' +
+      'Si un producto no tiene registro para esa fecha, `initial` se calcula desde el `final` del día anterior.',
   })
   @ApiQuery({
     name: 'date',
-    description: 'Date in YYYY-MM-DD format',
+    description: 'Fecha en formato YYYY-MM-DD',
     example: '2026-03-19',
     required: true,
   })
-  @ApiResponse({ status: 200, description: 'IPV grouped by family' })
+  @ApiResponse({ status: 200, description: 'IPV agrupado por familia de productos' })
   getIpvForDate(@Query('date') date: string) {
     return this.productsService.getIpvForDate(date);
   }
 
   @Post('ipv/save')
   @ApiOperation({
-    summary: 'Save (upsert) the IPV for a specific date',
+    summary: 'Guardar IPV para una fecha específica',
     description:
-      'Saves the daily inventory state for all products on the given date. ' +
-      'Existing records are updated; new ones are created. ' +
-      'This is the "guardar" button action from the frontend.',
+      'Guarda el estado del inventario diario para todos los productos en la fecha dada. ' +
+      'Registros existentes se actualizan; nuevos se crean.',
   })
   @ApiResponse({
     status: 201,
-    description: 'Saved daily records',
+    description: 'Registros diarios guardados',
     type: [ProductDailyRecord],
   })
   saveIpv(@Body() saveDto: SaveDailyIpvDto) {

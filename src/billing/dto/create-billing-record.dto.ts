@@ -119,11 +119,26 @@ export class CreateBillingRecordDto {
   @ApiProperty({
     description: 'ID del billing item para saber precio y demas',
     example: 1,
-    required: false,
+    required: true,
   })
   @IsInt()
-  @IsOptional()
-  billingItemId?: number;
+  billingItemId: number;
+
+  @ApiProperty({
+    description: 'Cantidad entera del billing item a facturar',
+    example: 5,
+    required: true,
+  })
+  @IsInt()
+  quantity: number;
+
+  @ApiProperty({
+    description: 'Precio unitario con el que se factura',
+    example: 25.50,
+    required: true,
+  })
+  @IsNumber()
+  unitPrice: number;
 
   @ApiProperty({
     description: 'ID de la reservación asociada (para acumular deuda/anticipo)',

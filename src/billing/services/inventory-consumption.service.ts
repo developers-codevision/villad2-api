@@ -122,4 +122,21 @@ export class InventoryConsumptionService {
       errors,
     };
   }
+
+  /**
+   * Reporte de consumo de inventario por período
+   */
+  async getInventoryReport(
+    from: string,
+    to: string,
+  ): Promise<any> {
+    const records = await this.billingRecordRepository
+      .createQueryBuilder('record')
+      .where('record.createdAt >= :from', { from })
+      .andWhere('record.createdAt <= :to', { to })
+      .leftJoinAndSelect('record.productConsumptions', 'consumption')
+      .getMany();
+
+    return records;
+  }
 }

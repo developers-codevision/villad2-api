@@ -66,9 +66,7 @@ export class BillingRecordService {
       quantityConsumed: item.productQuantity,
     }));
 
-    const totalAmount = billing.items
-      .filter((item) => item.id === createDto.billingItemId)
-      .reduce((sum, item) => sum + Number(item.totalUsd), 0);
+    const totalAmount = createDto.quantity * createDto.unitPrice;
 
     const tax10Percent = totalAmount * 0.1;
     const tip = createDto.tip || 0;
@@ -230,7 +228,7 @@ export class BillingRecordService {
       await this.inventoryConsumptionService.consumeInventoryForRecord(
         savedRecord.id,
         productConsumptions.map((p) => ({
-          billingItemId: createDto.billingItemId || 0,
+          billingItemId: createDto.billingItemId,
           productId: p.productId,
           quantity: p.quantityConsumed,
         })),
@@ -240,6 +238,13 @@ export class BillingRecordService {
     }
 
     return savedRecord;
+  }
+
+  async findAll(): Promise<BillingRecord[]> {
+    return await this.billingRecordRepository.find({
+      relations: ['payments', 'tipDistributions', 'tax10Distributions'],
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async findAllByBilling(billingId: number): Promise<BillingRecord[]> {

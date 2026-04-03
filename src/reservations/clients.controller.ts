@@ -4,64 +4,29 @@ import { ClientsService } from './clients.service';
 import { FindClientsDto } from './dto/find-clients.dto';
 import { Client } from './entities/client.entity';
 
-@ApiTags('clients')
+@ApiTags('Reservas - Clientes')
 @Controller('clients')
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all clients with optional filters' })
-  @ApiResponse({ status: 200, description: 'List of clients' })
-  @ApiQuery({
-    name: 'page',
-    required: false,
-    type: Number,
-    description: 'Page number',
-  })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    type: Number,
-    description: 'Items per page',
-  })
-  @ApiQuery({
-    name: 'idNumber',
-    required: false,
-    type: String,
-    description: 'Filter by ID number (DNI/passport)',
-  })
-  @ApiQuery({
-    name: 'firstName',
-    required: false,
-    type: String,
-    description: 'Filter by first name',
-  })
-  @ApiQuery({
-    name: 'lastName',
-    required: false,
-    type: String,
-    description: 'Filter by last name',
-  })
-  @ApiQuery({
-    name: 'email',
-    required: false,
-    type: String,
-    description: 'Filter by email',
-  })
-  @ApiQuery({
-    name: 'phone',
-    required: false,
-    type: String,
-    description: 'Filter by phone',
-  })
+  @ApiOperation({ summary: 'Obtener todos los clientes con filtros opcionales' })
+  @ApiResponse({ status: 200, description: 'Lista de clientes' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Número de página' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Elementos por página' })
+  @ApiQuery({ name: 'idNumber', required: false, type: String, description: 'Filtrar por número de identificación' })
+  @ApiQuery({ name: 'firstName', required: false, type: String, description: 'Filtrar por nombre' })
+  @ApiQuery({ name: 'lastName', required: false, type: String, description: 'Filtrar por apellido' })
+  @ApiQuery({ name: 'email', required: false, type: String, description: 'Filtrar por correo electrónico' })
+  @ApiQuery({ name: 'phone', required: false, type: String, description: 'Filtrar por teléfono' })
   findAll(@Query() findClientsDto: FindClientsDto) {
     return this.clientsService.findAll(findClientsDto);
   }
 
   @Get(':idNumber')
-  @ApiOperation({ summary: 'Get a client by ID number (CI/passport)' })
-  @ApiResponse({ status: 200, description: 'Client found', type: Client })
-  @ApiResponse({ status: 404, description: 'Client not found' })
+  @ApiOperation({ summary: 'Obtener cliente por número de identificación' })
+  @ApiResponse({ status: 200, description: 'Cliente encontrado', type: Client })
+  @ApiResponse({ status: 404, description: 'Cliente no encontrado' })
   findOne(@Param('idNumber') idNumber: string) {
     return this.clientsService.findOne(idNumber);
   }
