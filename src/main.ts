@@ -7,9 +7,13 @@ import { join } from 'path';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import * as express from 'express';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Cookie parser middleware
+  app.use(cookieParser());
 
   // Configure raw body parser for Stripe webhook endpoint BEFORE other middleware
   app.use('/payments/webhook', express.raw({ type: 'application/json' }));

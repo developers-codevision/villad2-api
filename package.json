@@ -23,7 +23,8 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d ./src/data-source.ts",
     "migration:show": "typeorm-ts-node-commonjs migration:show -d ./src/data-source.ts",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d ./src/data-source.ts",
-    "migration:create": "typeorm-ts-node-commonjs migration:create"
+    "migration:create": "typeorm-ts-node-commonjs migration:create",
+    "seed": "npx ts-node src/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.13",
@@ -43,6 +44,7 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.3",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^16.4.7",
     "mariadb": "^3.4.5",
     "multer": "^2.0.2",
@@ -66,6 +68,7 @@
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.7",
     "@types/bcrypt": "^6.0.0",
+    "@types/cookie-parser": "^1.4.8",
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/multer": "^2.0.0",
