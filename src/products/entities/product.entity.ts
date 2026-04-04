@@ -8,67 +8,54 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductFamily } from '../../product-families/entities/product-family.entity';
 import { ProductDailyRecord } from './product-daily-record.entity';
 
 @Entity('products')
 export class Product {
+  @ApiProperty({ description: 'ID único del producto', example: 1 })
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({
-    type: 'int',
-    unique: true,
-  })
+  @ApiProperty({ description: 'Código único del producto', example: 3 })
+  @Column({ type: 'int', unique: true })
   code: number;
 
-  @Column({
-    type: 'varchar',
-    length: 100,
-    unique: true,
-  })
+  @ApiProperty({ description: 'Nombre del producto', example: 'Ron Havana Club 7 Años' })
+  @Column({ type: 'varchar', length: 100, unique: true })
   name: string;
 
-  @Column({
-    type: 'varchar',
-    length: 20,
-  })
+  @ApiProperty({ description: 'Unidad de medida', example: 'botella' })
+  @Column({ type: 'varchar', length: 20 })
   unitMeasure: string;
 
-  @Column({
-    type: 'varchar',
-    length: 50,
-  })
+  @ApiProperty({ description: 'Volumen del producto', example: '750ml' })
+  @Column({ type: 'varchar', length: 50 })
   volume: string;
 
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    default: 0,
-  })
+  @ApiProperty({ description: 'Precio del producto en USD', example: 25.00 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   price: number;
 
+  @ApiPropertyOptional({ description: 'Familia de productos a la que pertenece' })
   @ManyToOne(() => ProductFamily, { nullable: true })
   @JoinColumn({ name: 'productFamilyId' })
   productFamily?: ProductFamily;
 
-  @Column({
-    type: 'int',
-    nullable: true,
-  })
+  @ApiPropertyOptional({ description: 'ID de la familia de productos', example: 1 })
+  @Column({ type: 'int', nullable: true })
   productFamilyId?: number;
 
+  @ApiProperty({ description: 'Registros diarios de inventario' })
   @OneToMany(() => ProductDailyRecord, (record) => record.product)
   dailyRecords: ProductDailyRecord[];
 
-  @CreateDateColumn({
-    type: 'timestamp',
-  })
+  @ApiProperty({ description: 'Fecha de creación del registro' })
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({
-    type: 'timestamp',
-  })
+  @ApiProperty({ description: 'Fecha de última actualización' })
+  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }

@@ -1,21 +1,12 @@
-import {
-  IsEnum,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, Min, Max } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ReviewStatus } from '../entities/review.entity';
 
 export class UpdateReviewDto {
   @ApiPropertyOptional({
-    description: 'Name of the reviewer',
+    description: 'Nombre del autor de la reseña',
     maxLength: 255,
-    example: 'John Doe',
+    example: 'Juan Pérez',
   })
   @IsOptional()
   @IsNotEmpty()
@@ -24,9 +15,9 @@ export class UpdateReviewDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Country of the reviewer',
+    description: 'País del autor de la reseña',
     maxLength: 255,
-    example: 'United States',
+    example: 'España',
   })
   @IsOptional()
   @IsNotEmpty()
@@ -35,9 +26,9 @@ export class UpdateReviewDto {
   country?: string;
 
   @ApiPropertyOptional({
-    description: 'Review title',
+    description: 'Título de la reseña',
     maxLength: 255,
-    example: 'Excellent Stay',
+    example: 'Excelente estancia',
   })
   @IsOptional()
   @IsNotEmpty()
@@ -46,8 +37,8 @@ export class UpdateReviewDto {
   title?: string;
 
   @ApiPropertyOptional({
-    description: 'Review content',
-    example: 'Great experience! The service was excellent.',
+    description: 'Contenido de la reseña',
+    example: 'Gran experiencia!',
   })
   @IsOptional()
   @IsNotEmpty()
@@ -55,7 +46,7 @@ export class UpdateReviewDto {
   content?: string;
 
   @ApiPropertyOptional({
-    description: 'Star rating (1-5)',
+    description: 'Calificación en estrellas (1-5)',
     example: 5,
     minimum: 1,
     maximum: 5,
@@ -67,15 +58,15 @@ export class UpdateReviewDto {
   stars?: number;
 
   @ApiPropertyOptional({
-    description: 'Response to the review',
-    example: 'Thank you for your feedback!',
+    description: 'Respuesta a la reseña',
+    example: 'Gracias por su retroalimentación!',
   })
   @IsOptional()
   @IsString()
   response?: string;
 
   @ApiPropertyOptional({
-    description: 'Review status',
+    description: 'Estado de la reseña',
     enum: ReviewStatus,
   })
   @IsOptional()

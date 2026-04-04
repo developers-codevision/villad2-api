@@ -1,10 +1,18 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNumber, IsInt, IsOptional, IsString } from 'class-validator';
 
-export class BillDenominationDto {
+export class CurrencyDto {
   @ApiProperty({
-    description: 'Valor del billete/moneda (ej: 10, 20, 50)',
-    example: 10,
+    description: 'Moneda de esta denominación',
+    enum: ['USD', 'EUR', 'CUP'],
+    example: 'USD',
+  })
+  @IsString()
+  currency: string;
+
+  @ApiProperty({
+    description: 'Valor del billete/moneda',
+    example: 20,
   })
   @IsNumber()
   value: number;
@@ -18,7 +26,7 @@ export class BillDenominationDto {
 }
 
 export class ProductConsumptionDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'ID del billing item (si existe)',
     example: 1,
     required: false,
@@ -27,11 +35,17 @@ export class ProductConsumptionDto {
   @IsOptional()
   billingItemId?: number;
 
-  @ApiProperty({ description: 'ID del producto del inventario', example: 1 })
+  @ApiProperty({
+    description: 'ID del producto del inventario',
+    example: 1,
+  })
   @IsInt()
   productId: number;
 
-  @ApiProperty({ description: 'Cantidad consumida', example: 2 })
+  @ApiProperty({
+    description: 'Cantidad consumida del producto',
+    example: 2,
+  })
   @IsNumber()
   quantityConsumed: number;
 }

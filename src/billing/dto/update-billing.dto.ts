@@ -1,37 +1,51 @@
-import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsNumber,
-  IsOptional,
-  IsInt,
-  IsArray,
-  ValidateNested,
-} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNumber, IsOptional, IsInt, IsArray, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BillDenominationDto } from './shared.dto';
 
 export class UpdateBillingItemDto {
-  @ApiProperty({ description: 'Concept ID to update' })
+  @ApiProperty({
+    description: 'ID del concepto a actualizar',
+    example: 1,
+  })
   @IsInt()
   conceptId: number;
 
-  @ApiProperty({ description: 'New quantity for this concept' })
+  @ApiProperty({
+    description: 'Nueva cantidad para este concepto',
+    example: 15,
+  })
   @IsNumber()
-  quantity: number;
+  @IsOptional()
+  quantity?: number;
+
+  @ApiProperty({
+    description: 'Nuevo precio unitario en USD',
+    example: 5.00,
+  })
+  @IsNumber()
+  @IsOptional()
+  priceUsd?: number;
 }
 
 export class UpdateBillingDto {
-  @ApiProperty({ description: 'USD to CUP exchange rate', required: false })
+  @ApiPropertyOptional({
+    description: 'Tasa de cambio USD a CUP',
+    example: 150.00,
+  })
   @IsNumber()
   @IsOptional()
   usdToCupRate?: number;
 
-  @ApiProperty({ description: 'EUR to CUP exchange rate', required: false })
+  @ApiPropertyOptional({
+    description: 'Tasa de cambio EUR a CUP',
+    example: 160.00,
+  })
   @IsNumber()
   @IsOptional()
   eurToCupRate?: number;
 
-  @ApiProperty({
-    description: 'Items to update (conceptId + quantity)',
+  @ApiPropertyOptional({
+    description: 'Items a actualizar (conceptId + quantity)',
     type: [UpdateBillingItemDto],
     required: false,
   })

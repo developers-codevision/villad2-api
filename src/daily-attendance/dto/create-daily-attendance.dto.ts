@@ -3,14 +3,17 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
 export class CreateDailyAttendanceDto {
-  @ApiProperty({ example: 1, description: 'Associated Worker ID' })
+  @ApiProperty({
+    description: 'ID del trabajador',
+    example: 1,
+  })
   @IsNumber()
   @IsNotEmpty()
   staffId: number;
 
   @ApiProperty({
+    description: 'Fecha y hora de la asistencia',
     example: '2026-03-26T08:00:00Z',
-    description: 'DailyAttendance Date and Time',
   })
   @Type(() => Date)
   @IsDate()
