@@ -5,100 +5,72 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RoomType, RoomStatus } from '../enums/room-enums.enum';
 
 @Entity('rooms')
 export class Room {
+  @ApiProperty({ description: 'ID único de la habitación', example: 1 })
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({
-    unique: true,
-    length: 10,
-  })
+  @ApiProperty({ description: 'Número de habitación', example: 'P-101' })
+  @Column({ unique: true, length: 10 })
   number: string;
 
-  @Column({
-    length: 100,
-  })
+  @ApiProperty({ description: 'Nombre de la habitación', example: 'Habitación Familiar Premium' })
+  @Column({ length: 100 })
   name: string;
 
-  @Column({
-    type: 'text',
-  })
+  @ApiProperty({ description: 'Descripción detallada de la habitación' })
+  @Column({ type: 'text' })
   description: string;
 
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-  })
+  @ApiProperty({ description: 'Precio por noche en USD', example: 150.00 })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   pricePerNight: number;
 
-  @Column({
-    type: 'int',
-  })
+  @ApiProperty({ description: 'Capacidad base (huéspedes incluidos)', example: 2 })
+  @Column({ type: 'int' })
   baseCapacity: number;
 
-  @Column({
-    type: 'int',
-  })
+  @ApiProperty({ description: 'Capacidad extra (huéspedes adicionales)', example: 1 })
+  @Column({ type: 'int' })
   extraCapacity: number;
 
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-  })
+  @ApiProperty({ description: 'Cargo por huésped extra', example: 25.00 })
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
   extraGuestCharge: number;
 
-  @Column({
-    type: 'enum',
-    enum: RoomType,
-    default: RoomType.STANDARD,
-  })
+  @ApiProperty({ description: 'Tipo de habitación', enum: RoomType, example: RoomType.STANDARD })
+  @Column({ type: 'enum', enum: RoomType, default: RoomType.STANDARD })
   roomType: RoomType;
 
-  // Para MariaDB, es mejor usar JSON en lugar de simple-json
-  @Column({
-    type: 'json',
-    nullable: true,
-  })
+  @ApiPropertyOptional({ description: 'Lista de comodidades de la habitación', example: ['TV', 'Minibar'] })
+  @Column({ type: 'json', nullable: true })
   roomAmenities: string[];
 
-  @Column({
-    type: 'json',
-    nullable: true,
-  })
+  @ApiPropertyOptional({ description: 'Lista de amenidades del baño', example: ['Ducha', 'Secador'] })
+  @Column({ type: 'json', nullable: true })
   bathroomAmenities: string[];
 
-  @Column({
-    type: 'enum',
-    enum: RoomStatus,
-    default: RoomStatus.VACIA_LIMPIA,
-  })
+  @ApiProperty({ description: 'Estado actual de la habitación', enum: RoomStatus, example: RoomStatus.VACIA_LIMPIA })
+  @Column({ type: 'enum', enum: RoomStatus, default: RoomStatus.VACIA_LIMPIA })
   status: RoomStatus;
 
-  @Column({
-    type: 'json',
-    nullable: true,
-  })
+  @ApiPropertyOptional({ description: 'Fotos principales de la habitación' })
+  @Column({ type: 'json', nullable: true })
   mainPhoto: string[];
 
-  @Column({
-    type: 'json',
-    nullable: true,
-  })
+  @ApiPropertyOptional({ description: 'Fotos adicionales de la habitación' })
+  @Column({ type: 'json', nullable: true })
   additionalPhotos: string[];
 
-  @CreateDateColumn({
-    type: 'timestamp',
-  })
+  @ApiProperty({ description: 'Fecha de creación del registro' })
+  @CreateDateColumn({ type: 'timestamp' })
   createdAt: Date;
 
-  @UpdateDateColumn({
-    type: 'timestamp',
-  })
+  @ApiProperty({ description: 'Fecha de última actualización' })
+  @UpdateDateColumn({ type: 'timestamp' })
   updatedAt: Date;
 }

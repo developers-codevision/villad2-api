@@ -1,19 +1,11 @@
 import { Transform } from 'class-transformer';
-import {
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min, Max } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateProductFamilyDto {
   @ApiPropertyOptional({
-    description: 'Family name',
-    example: 'Bebidas',
+    description: 'Nombre de la familia de productos',
+    example: 'Bebidas Alcohólicas',
     maxLength: 100,
   })
   @IsOptional()
@@ -23,7 +15,7 @@ export class UpdateProductFamilyDto {
   name?: string;
 
   @ApiPropertyOptional({
-    description: 'Family code prefix',
+    description: 'Código prefijado para la familia',
     example: 1000,
   })
   @IsOptional()

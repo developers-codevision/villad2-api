@@ -1,30 +1,33 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsNumber,
-  IsArray,
-  ValidateNested,
-  IsString,
-  IsInt,
-} from 'class-validator';
+import { IsNumber, IsArray, ValidateNested, IsString, IsInt } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class WorkerInputDto {
-  @ApiProperty({ description: 'ID del trabajador', example: 1 })
+  @ApiProperty({
+    description: 'ID del trabajador',
+    example: 1,
+  })
   @IsInt()
   workerId: number;
 
-  @ApiProperty({ description: 'Nombre del trabajador', example: 'Juan Pérez' })
+  @ApiProperty({
+    description: 'Nombre del trabajador',
+    example: 'Juan Pérez',
+  })
   @IsString()
   workerName: string;
 
-  @ApiProperty({ description: 'Porcentaje de distribución', example: 50 })
+  @ApiProperty({
+    description: 'Porcentaje de distribución de propinas',
+    example: 50,
+  })
   @IsNumber()
   percentage: number;
 }
 
 export class DistributeTipDto {
   @ApiProperty({
-    description: 'Lista de trabajadores y porcentajes',
+    description: 'Lista de trabajadores y sus porcentajes de distribución de propinas',
     type: [WorkerInputDto],
   })
   @IsArray()
@@ -35,7 +38,7 @@ export class DistributeTipDto {
 
 export class DistributeTax10Dto {
   @ApiProperty({
-    description: 'Lista de trabajadores y porcentajes',
+    description: 'Lista de trabajadores y sus porcentajes del impuesto 10%',
     type: [WorkerInputDto],
   })
   @IsArray()
@@ -46,15 +49,15 @@ export class DistributeTax10Dto {
 
 export class ReportPeriodDto {
   @ApiProperty({
-    description: 'Fecha inicio (ISO)',
-    example: '2024-01-01T00:00:00Z',
+    description: 'Fecha de inicio del período',
+    example: '2026-01-01',
   })
   @IsString()
   from: string;
 
   @ApiProperty({
-    description: 'Fecha fin (ISO)',
-    example: '2024-01-31T23:59:59Z',
+    description: 'Fecha de fin del período',
+    example: '2026-04-03',
   })
   @IsString()
   to: string;

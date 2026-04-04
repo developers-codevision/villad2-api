@@ -185,8 +185,15 @@ export class BillingService {
           );
         }
 
-        // Update quantity
-        billingItem.quantity = itemDto.quantity;
+        // Update quantity if provided
+        if (itemDto.quantity !== undefined) {
+          billingItem.quantity = itemDto.quantity;
+        }
+
+        // Update price if provided
+        if (itemDto.priceUsd !== undefined) {
+          billingItem.priceUsd = itemDto.priceUsd;
+        }
 
         // Recalculate totals
         billingItem.totalUsd =

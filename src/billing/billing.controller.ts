@@ -46,7 +46,6 @@ export class BillingController {
   @ApiResponse({
     status: 201,
     description: 'Hoja de facturación diaria creada exitosamente.',
-    type: Billing,
   })
   create(@Body() createBillingDto: CreateBillingDto): Promise<Billing> {
     return this.billingService.create(createBillingDto);
@@ -57,7 +56,6 @@ export class BillingController {
   @ApiResponse({
     status: 200,
     description: 'Lista de hojas de facturación diaria.',
-    type: [Billing],
   })
   findAll(): Promise<Billing[]> {
     return this.billingService.findAll();
@@ -90,7 +88,6 @@ export class BillingController {
   @ApiResponse({
     status: 200,
     description: 'Hoja de facturación actualizada.',
-    type: Billing,
   })
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -116,7 +113,6 @@ export class BillingController {
   @ApiResponse({
     status: 200,
     description: 'Item de facturación con concepto relacionado.',
-    type: BillingItem,
   })
   findBillingItem(@Param('id', ParseIntPipe) id: number): Promise<BillingItem> {
     return this.billingService.findBillingItem(id);
@@ -134,7 +130,6 @@ export class BillingRecordController {
   @ApiResponse({
     status: 201,
     description: 'Registro de facturación creado.',
-    type: BillingRecord,
   })
   createRecord(
     @Param('id', ParseIntPipe) id: number,
@@ -148,7 +143,6 @@ export class BillingRecordController {
   @ApiResponse({
     status: 200,
     description: 'Lista de todos los registros de facturación.',
-    type: [BillingRecord],
   })
   findAllRecords(): Promise<BillingRecord[]> {
     return this.billingService.findAllRecords();
@@ -160,7 +154,6 @@ export class BillingRecordController {
   @ApiResponse({
     status: 200,
     description: 'Registro de facturación encontrado.',
-    type: BillingRecord,
   })
   async findRecord(
     @Param('id', ParseIntPipe) id: number,
@@ -174,7 +167,6 @@ export class BillingRecordController {
   @ApiResponse({
     status: 200,
     description: 'Lista de registros de facturación.',
-    type: [BillingRecord],
   })
   async findAllRecordsByBilling(
     @Param('billingId', ParseIntPipe) billingId: number,
@@ -199,7 +191,6 @@ export class BillingRecordController {
   @ApiResponse({
     status: 200,
     description: 'Registro parchado exitosamente.',
-    type: BillingRecord,
   })
   async parkBilling(
     @Param('id', ParseIntPipe) id: number,

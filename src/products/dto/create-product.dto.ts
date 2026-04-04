@@ -1,16 +1,9 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({
-    description: 'Product code',
+    description: 'Código único del producto',
     example: 3,
     minimum: 1,
   })
@@ -19,8 +12,8 @@ export class CreateProductDto {
   code: number;
 
   @ApiProperty({
-    description: 'Product name',
-    example: 'Rones',
+    description: 'Nombre del producto',
+    example: 'Ron Havana Club 7 Años',
     maxLength: 100,
   })
   @IsString()
@@ -29,8 +22,8 @@ export class CreateProductDto {
   name: string;
 
   @ApiProperty({
-    description: 'Unit measure',
-    example: 'UM',
+    description: 'Unidad de medida (ej: pieza, kg, litro, caja)',
+    example: 'botella',
     maxLength: 20,
   })
   @IsString()
@@ -39,8 +32,8 @@ export class CreateProductDto {
   unitMeasure: string;
 
   @ApiProperty({
-    description: 'Product volume',
-    example: 'VOL.',
+    description: 'Volumen o contenido (ej: 750ml, 1L)',
+    example: '750ml',
     maxLength: 50,
   })
   @IsString()
@@ -49,7 +42,7 @@ export class CreateProductDto {
   volume: string;
 
   @ApiPropertyOptional({
-    description: 'Product family id',
+    description: 'ID de la familia de productos a la que pertenece',
     example: 1,
   })
   @IsOptional()

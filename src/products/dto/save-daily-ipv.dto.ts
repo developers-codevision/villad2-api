@@ -1,24 +1,18 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import {
-  IsDateString,
-  IsInt,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Min,
-  ValidateNested,
-} from 'class-validator';
+import { IsDateString, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 
 export class DailyRecordItemDto {
-  @ApiProperty({ description: 'Product id', example: 1 })
+  @ApiProperty({
+    description: 'ID del producto',
+    example: 1,
+  })
   @IsInt()
   @Min(1)
   productId: number;
 
   @ApiPropertyOptional({
-    description: 'Initial stock',
+    description: 'Stock inicial del día',
     example: 20,
     default: 0,
   })
@@ -28,7 +22,7 @@ export class DailyRecordItemDto {
   initial?: number;
 
   @ApiPropertyOptional({
-    description: 'Incoming stock',
+    description: 'Entradas/Inventario recibido',
     example: 5,
     default: 0,
   })
@@ -37,14 +31,18 @@ export class DailyRecordItemDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   incoming?: number;
 
-  @ApiPropertyOptional({ description: 'Consumption', example: 8, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Consumo/Ventas del día',
+    example: 8,
+    default: 0,
+  })
   @IsOptional()
   @Transform(({ value }) => (value === undefined ? 0 : Number(value)))
   @IsNumber({ maxDecimalPlaces: 2 })
   consumption?: number;
 
   @ApiPropertyOptional({
-    description: 'Wastage (merma)',
+    description: 'Merma/Desperdicio',
     example: 1,
     default: 0,
   })
@@ -54,7 +52,7 @@ export class DailyRecordItemDto {
   waste?: number;
 
   @ApiPropertyOptional({
-    description: 'Home consumption (C. Casa)',
+    description: 'Consumo de casa',
     example: 2,
     default: 0,
   })
@@ -63,14 +61,18 @@ export class DailyRecordItemDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   homeConsumption?: number;
 
-  @ApiPropertyOptional({ description: 'Final stock', example: 14, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Stock final después de cerrar',
+    example: 14,
+    default: 0,
+  })
   @IsOptional()
   @Transform(({ value }) => (value === undefined ? 0 : Number(value)))
   @IsNumber({ maxDecimalPlaces: 2 })
   final?: number;
 
   @ApiPropertyOptional({
-    description: 'Additional observations',
+    description: 'Observaciones adicionales',
     example: 'Inventario actualizado al cierre.',
   })
   @IsOptional()
@@ -81,14 +83,14 @@ export class DailyRecordItemDto {
 
 export class SaveDailyIpvDto {
   @ApiProperty({
-    description: 'Date for this IPV record (YYYY-MM-DD)',
+    description: 'Fecha del registro de IPV (YYYY-MM-DD)',
     example: '2026-03-19',
   })
   @IsDateString()
   date: string;
 
   @ApiProperty({
-    description: 'Array of product daily records to save',
+    description: 'Lista de registros diarios de productos',
     type: [DailyRecordItemDto],
   })
   @ValidateNested({ each: true })

@@ -14,6 +14,7 @@ import {
   PaymentMethod,
 } from '../dto/create-billing-record.dto';
 import { Billing } from '../entities/billing.entity';
+import { BillingItem } from '../entities/billing-item.entity';
 import { InventoryConsumptionService } from './inventory-consumption.service';
 import { Reservation } from '../../reservations/entities/reservation.entity';
 
@@ -44,6 +45,8 @@ export class BillingRecordService {
     private readonly billingPaymentRepository: Repository<BillingPayment>,
     @InjectRepository(Billing)
     private readonly billingRepository: Repository<Billing>,
+    @InjectRepository(BillingItem)
+    private readonly billingItemRepository: Repository<BillingItem>,
     @InjectRepository(Reservation)
     private readonly reservationRepository: Repository<Reservation>,
     private readonly inventoryConsumptionService: InventoryConsumptionService,
@@ -235,6 +238,24 @@ export class BillingRecordService {
         savedRecord.date,
         true,
       );
+    }
+
+    // Actualizar billingItem con la cantidad y totales
+    if (createDto.billingItemId) {
+      const billingItem = await this.billingItemRepository.findOne({
+        where: { id: createDto.billingItemId },
+      });
+      if (billingItem) {
+        const newQuantity = Number(billingItem.quantity || 0) + createDto.quantity;
+        const newTotalUsd = Number(billingItem.totalUsd || 0) + totalAmount;
+        const newTotalCup = Number(billingItem.totalCup || 0) + (totalAmount * Number(billing.usdToCupRate));
+
+        billingItem.quantity = newQuantity;
+        billingItem.totalUsd = newTotalUsd;
+        billingItem.totalCup = newTotalCup;
+
+        await this.billingItemRepository.save(billingItem);
+      }
     }
 
     return savedRecord;

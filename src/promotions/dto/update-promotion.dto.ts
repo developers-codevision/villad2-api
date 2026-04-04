@@ -1,21 +1,13 @@
-import {
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsInt,
-  IsArray,
-  MaxLength,
-} from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, IsInt, IsArray, MaxLength } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { PromotionStatus } from '../entities/promotion.entity';
 
 export class UpdatePromotionDto {
   @ApiPropertyOptional({
-    description: 'Promotion title',
+    description: 'Título de la promoción',
     maxLength: 255,
-    example: 'Summer Special Package',
+    example: 'Paquete Verano Especial',
   })
   @IsOptional()
   @IsNotEmpty()
@@ -24,7 +16,7 @@ export class UpdatePromotionDto {
   title?: string;
 
   @ApiPropertyOptional({
-    description: 'Maximum number of people',
+    description: 'Número máximo de personas',
     example: 10,
   })
   @IsOptional()
@@ -33,7 +25,7 @@ export class UpdatePromotionDto {
   maxPeople?: number;
 
   @ApiPropertyOptional({
-    description: 'Minimum number of people',
+    description: 'Número mínimo de personas',
     example: 2,
   })
   @IsOptional()
@@ -42,9 +34,9 @@ export class UpdatePromotionDto {
   minPeople?: number;
 
   @ApiPropertyOptional({
-    description: 'Duration time (in hours or days)',
+    description: 'Duración de la promoción',
     maxLength: 100,
-    example: '7 days',
+    example: '7 días',
   })
   @IsOptional()
   @IsNotEmpty()
@@ -53,8 +45,8 @@ export class UpdatePromotionDto {
   time?: string;
 
   @ApiPropertyOptional({
-    description: 'Services included in promotion',
-    example: ['breakfast', 'spa', 'guided-tours'],
+    description: 'Servicios incluidos en la promoción',
+    example: ['desayuno', 'spa', 'tours guiada'],
   })
   @IsOptional()
   @IsArray()
@@ -62,13 +54,11 @@ export class UpdatePromotionDto {
   @Transform(({ value }) => {
     if (typeof value === 'string') {
       try {
-        // Try to parse as JSON array first
         const parsed = JSON.parse(value) as unknown;
         if (Array.isArray(parsed)) {
           return parsed as string[];
         }
       } catch {
-        // If not valid JSON, treat as comma-separated string
         return value.split(',').map((service) => service.trim());
       }
     }
@@ -77,8 +67,8 @@ export class UpdatePromotionDto {
   services?: string[];
 
   @ApiPropertyOptional({
-    description: 'Promotion description',
-    example: 'Enjoy our summer special with all meals included',
+    description: 'Descripción de la promoción',
+    example: 'Disfruta de nuestro verano especial',
   })
   @IsOptional()
   @IsNotEmpty()
@@ -86,7 +76,7 @@ export class UpdatePromotionDto {
   description?: string;
 
   @ApiPropertyOptional({
-    description: 'Check-in time',
+    description: 'Hora de check-in',
     maxLength: 10,
     example: '15:00',
   })
@@ -97,7 +87,7 @@ export class UpdatePromotionDto {
   checkInTime?: string;
 
   @ApiPropertyOptional({
-    description: 'Check-out time',
+    description: 'Hora de check-out',
     maxLength: 10,
     example: '11:00',
   })
@@ -108,7 +98,7 @@ export class UpdatePromotionDto {
   checkOutTime?: string;
 
   @ApiPropertyOptional({
-    description: 'Promotion photo path',
+    description: 'Ruta de la foto de la promoción',
     example: 'media/promotions/promo1.jpg',
   })
   @IsOptional()
@@ -116,7 +106,7 @@ export class UpdatePromotionDto {
   photo?: string;
 
   @ApiPropertyOptional({
-    description: 'Promotion status',
+    description: 'Estado de la promoción',
     enum: PromotionStatus,
   })
   @IsOptional()

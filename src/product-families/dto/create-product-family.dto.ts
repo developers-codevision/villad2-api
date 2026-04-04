@@ -1,18 +1,11 @@
 import { Transform } from 'class-transformer';
-import {
-  IsInt,
-  IsNotEmpty,
-  IsString,
-  MaxLength,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsInt, IsNotEmpty, IsString, MaxLength, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateProductFamilyDto {
   @ApiProperty({
-    description: 'Family name',
-    example: 'Bebidas',
+    description: 'Nombre de la familia de productos',
+    example: 'Bebidas Alcohólicas',
     maxLength: 100,
   })
   @IsString()
@@ -21,7 +14,7 @@ export class CreateProductFamilyDto {
   name: string;
 
   @ApiProperty({
-    description: 'Family code prefix',
+    description: 'Código prefijado para la familia',
     example: 1000,
   })
   @IsInt()

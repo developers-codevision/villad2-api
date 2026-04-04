@@ -60,7 +60,7 @@ function toStringArray(value: unknown): string[] | undefined {
 
 export class CreateRoomDto {
   @ApiProperty({
-    description: 'Room number/identifier',
+    description: 'Número/identificador de la habitación',
     example: 'P-101',
     minLength: 1,
     maxLength: 10,
@@ -73,8 +73,9 @@ export class CreateRoomDto {
     message: 'El número solo puede contener letras, números y guiones',
   })
   number: string;
+
   @ApiProperty({
-    description: 'Room name/title',
+    description: 'Nombre/título de la habitación',
     example: 'Habitación Familiar Premium',
     minLength: 3,
     maxLength: 100,
@@ -84,9 +85,10 @@ export class CreateRoomDto {
   @MinLength(3, { message: 'El nombre debe tener al menos 3 caracteres' })
   @MaxLength(100, { message: 'El nombre no puede exceder 100 caracteres' })
   name: string;
+
   @ApiProperty({
-    description: 'Detailed room description',
-    example: 'Amplia habitación con vista al mar...',
+    description: 'Descripción detallada de la habitación',
+    example: 'Amplia habitación con vista al mar, cama king size y balcón privado.',
     minLength: 10,
     maxLength: 2000,
   })
@@ -99,9 +101,10 @@ export class CreateRoomDto {
     message: 'La descripción no puede exceder 2000 caracteres',
   })
   description: string;
+
   @ApiProperty({
-    description: 'Price per night',
-    example: 150.5,
+    description: 'Precio por noche en USD',
+    example: 150.50,
     minimum: 0,
     maximum: 10000,
   })
@@ -111,8 +114,9 @@ export class CreateRoomDto {
   @Max(10000, { message: 'El precio máximo es 10000' })
   @Type(() => Number)
   pricePerNight: number;
+
   @ApiProperty({
-    description: 'Base capacity of the room (included guests)',
+    description: 'Capacidad base de la habitación (huéspedes incluidos)',
     example: 2,
     minimum: 1,
     maximum: 20,
@@ -123,8 +127,9 @@ export class CreateRoomDto {
   @Max(20, { message: 'La capacidad base máxima es 20' })
   @Type(() => Number)
   baseCapacity: number;
+
   @ApiProperty({
-    description: 'Extra capacity of the room (additional guests allowed)',
+    description: 'Capacidad extra (huéspedes adicionales permitidos)',
     example: 1,
     minimum: 0,
     maximum: 20,
@@ -134,9 +139,10 @@ export class CreateRoomDto {
   @Max(20, { message: 'La capacidad extra máxima es 20' })
   @Type(() => Number)
   extraCapacity: number;
+
   @ApiProperty({
-    description: 'Charge per extra guest (per night)',
-    example: 25.5,
+    description: 'Cargo por huésped extra (por noche)',
+    example: 25.50,
     minimum: 0,
     maximum: 1000,
   })
@@ -146,8 +152,9 @@ export class CreateRoomDto {
   @Max(1000, { message: 'El recargo extra máximo es 1000' })
   @Type(() => Number)
   extraGuestCharge: number;
+
   @ApiProperty({
-    description: 'Type of the room',
+    description: 'Tipo de habitación',
     enum: RoomType,
     example: RoomType.STANDARD,
   })
@@ -155,8 +162,9 @@ export class CreateRoomDto {
     message: 'Tipo de habitación no válido',
   })
   roomType: RoomType;
+
   @ApiProperty({
-    description: 'List of room amenities',
+    description: 'Lista de comodidades de la habitación',
     example: ['TV', 'Minibar', 'Aire acondicionado'],
     type: 'array',
   })
@@ -167,8 +175,9 @@ export class CreateRoomDto {
   @IsNotEmpty({ each: true, message: 'Las comodidades no pueden estar vacías' })
   @Transform(({ value }) => toStringArray(value))
   roomAmenities: string[];
+
   @ApiProperty({
-    description: 'List of bathroom amenities',
+    description: 'Lista de amenidades del baño',
     example: ['Ducha', 'Secador de pelo', 'Artículos de aseo'],
     type: 'array',
     required: false,
@@ -176,12 +185,13 @@ export class CreateRoomDto {
   @IsArray()
   @IsOptional()
   @ArrayMinSize(1, { message: 'Debe incluir al menos una comodidad de baño' })
-  @ArrayMaxSize(15, { message: 'Máximo 15 comodidades de baño permitidas' })
-  @IsString({ each: true, message: 'Cada comodidad de baño debe ser texto' })
+  @ArrayMaxSize(15, { message: 'Máximo 15 amenidades de baño permitidas' })
+  @IsString({ each: true, message: 'Cada amenidad de baño debe ser texto' })
   @Transform(({ value }) => toStringArray(value))
   bathroomAmenities?: string[];
+
   @ApiProperty({
-    description: 'Current status of the room',
+    description: 'Estado actual de la habitación',
     enum: RoomStatus,
     example: RoomStatus.VACIA_LIMPIA,
     required: false,
@@ -190,8 +200,9 @@ export class CreateRoomDto {
   @IsEnum(RoomStatus, { message: 'Estado no válido' })
   @IsOptional()
   status?: RoomStatus;
+
   @ApiProperty({
-    description: 'Floor number where the room is located',
+    description: 'Número de piso donde está ubicada la habitación',
     example: 1,
     minimum: 0,
     maximum: 50,
@@ -203,9 +214,9 @@ export class CreateRoomDto {
   @Max(50, { message: 'El piso máximo es 50' })
   @Type(() => Number)
   floor?: number;
-  // Boolean flags
+
   @ApiProperty({
-    description: 'Indicates if the room has a jacuzzi',
+    description: 'Indica si la habitación tiene jacuzzi',
     example: false,
     required: false,
   })
@@ -213,8 +224,9 @@ export class CreateRoomDto {
   @IsOptional()
   @Type(() => Boolean)
   hasJacuzzi?: boolean;
+
   @ApiProperty({
-    description: 'Indicates if the room has a TV',
+    description: 'Indica si la habitación tiene TV',
     example: true,
     required: false,
   })
@@ -222,8 +234,9 @@ export class CreateRoomDto {
   @IsOptional()
   @Type(() => Boolean)
   hasTv?: boolean;
+
   @ApiProperty({
-    description: 'Indicates if the room has air conditioning',
+    description: 'Indica si la habitación tiene aire acondicionado',
     example: true,
     required: false,
   })
@@ -231,8 +244,9 @@ export class CreateRoomDto {
   @IsOptional()
   @Type(() => Boolean)
   hasAirConditioning?: boolean;
+
   @ApiProperty({
-    description: 'Indicates if the room has heating',
+    description: 'Indica si la habitación tiene calefacción',
     example: true,
     required: false,
   })
@@ -240,8 +254,9 @@ export class CreateRoomDto {
   @IsOptional()
   @Type(() => Boolean)
   hasHeating?: boolean;
+
   @ApiProperty({
-    description: 'Indicates if the room is pet friendly',
+    description: 'Indica si la habitación acepta mascotas',
     example: false,
     required: false,
   })
@@ -250,12 +265,22 @@ export class CreateRoomDto {
   @Type(() => Boolean)
   isPetFriendly?: boolean;
 
+  @ApiProperty({
+    description: 'Fotos principales de la habitación (rutas de archivos)',
+    type: 'array',
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @Transform(({ value }) => toStringArray(value))
   @IsString({ each: true })
   mainPhoto?: string[];
 
+  @ApiProperty({
+    description: 'Fotos adicionales de la habitación (rutas de archivos)',
+    type: 'array',
+    required: false,
+  })
   @IsArray()
   @IsOptional()
   @Transform(({ value }) => toStringArray(value))
@@ -266,7 +291,7 @@ export class CreateRoomDto {
 export class UpdateRoomDto extends PartialType(CreateRoomDto) {
   @ApiProperty({
     description:
-      'List of existing photo paths to keep (any photo not in this list may be removed)',
+      'Lista de rutas de fotos existentes a mantener (cualquier foto no incluida puede ser eliminada)',
     type: 'array',
     required: false,
     example: ['media/rooms/room-1/main.jpg', 'media/rooms/room-1/a1.jpg'],
