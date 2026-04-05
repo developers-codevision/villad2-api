@@ -15,7 +15,7 @@ RUN pnpm config set network-timeout 1000000
 COPY package.json pnpm-lock.yaml ./
 
 # Instalar TODAS las dependencias (incluyendo devDependencies)
-RUN pnpm install
+RUN pnpm install --frozen-lockfile || pnpm install
 
 # Copiar el resto del código
 COPY . .

@@ -30,6 +30,7 @@ function createMockRecord(overrides: Record<string, any> = {}) {
     paymentStatus: 'pending' as const,
     pendingAmount: 0,
     advanceBalance: 0,
+    change: 0,
     isParked: false,
     lateBilling: false,
     pendingConsumption: false,
