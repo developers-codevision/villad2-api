@@ -36,10 +36,19 @@ export class BillingRecordService {
 
   async create(createDto: CreateBillingRecordDto): Promise<BillingRecord> {
     const billing = await this.getBilling(createDto.billingId);
+
+    if (createDto.houseAccount) {
+      return await this.handleHouseAccount(createDto, billing);
+    }
+
     this.validatePayments(createDto);
     await this.validateReservation(createDto.reservationId);
 
-    const totals = this.calculateTotals(createDto);
+    const concept = billing.items.find(i => i.id === createDto.billingItemId)?.concept;
+    const category = concept?.category?.toLowerCase() || '';
+    const hasTax10 = category === 'bar';
+
+    const totals = this.calculateTotals(createDto, hasTax10);
     const record = this.createRecordEntity(createDto, billing, totals);
     const savedRecord = await this.billingRecordRepository.save(record);
 
@@ -50,6 +59,41 @@ export class BillingRecordService {
     await this.updateBillingItem(createDto, billing, totals.totalAmount);
 
     return savedRecord;
+  }
+
+  private async handleHouseAccount(createDto: CreateBillingRecordDto, billing: Billing): Promise<BillingRecord> {
+    const record = this.billingRecordRepository.create({
+      billingId: createDto.billingId,
+      billingItemId: createDto.billingItemId,
+      quantity: createDto.quantity,
+      unitPrice: 0,
+      totalAmount: 0,
+      tip: 0,
+      tax10Percent: 0,
+      grandTotal: 0,
+      houseAccount: true,
+      paymentStatus: 'pending',
+      pendingAmount: 0,
+      date: billing.date,
+    });
+
+    const savedRecord = await this.billingRecordRepository.save(record);
+    await this.updateBillingItemQuantity(createDto, billing);
+
+    return savedRecord;
+  }
+
+  private async updateBillingItemQuantity(createDto: CreateBillingRecordDto, billing: Billing): Promise<void> {
+    if (!createDto.billingItemId) return;
+
+    const billingItem = await this.billingItemRepository.findOne({
+      where: { id: createDto.billingItemId },
+    });
+    if (!billingItem) return;
+
+    billingItem.quantity = Number(billingItem.quantity || 0) + createDto.quantity;
+
+    await this.billingItemRepository.save(billingItem);
   }
 
   private async getBilling(billingId: number): Promise<Billing> {
@@ -64,6 +108,10 @@ export class BillingRecordService {
   }
 
   private validatePayments(createDto: CreateBillingRecordDto): void {
+    if (createDto.houseAccount) {
+      return;
+    }
+
     const { payments, lateBilling } = createDto;
     const paymentList = payments || [];
 
@@ -96,14 +144,14 @@ export class BillingRecordService {
     }
   }
 
-  private calculateTotals(createDto: CreateBillingRecordDto) {
+  private calculateTotals(createDto: CreateBillingRecordDto, hasTax10: boolean = false) {
     const productConsumptions = (createDto.items || []).map((item) => ({
       productId: item.productId,
       quantityConsumed: item.productQuantity,
     }));
 
     const totalAmount = createDto.quantity * createDto.unitPrice;
-    const tax10Percent = totalAmount * 0.1;
+    const tax10Percent = hasTax10 ? totalAmount * 0.1 : 0;
     const tip = createDto.tip || 0;
     const grandTotal = totalAmount + tax10Percent + tip;
 
@@ -131,6 +179,7 @@ export class BillingRecordService {
       isParked: false,
       lateBilling: createDto.lateBilling || false,
       pendingConsumption: false,
+      houseAccount: false,
     });
     return record;
   }
@@ -257,6 +306,10 @@ export class BillingRecordService {
       where: { id: createDto.billingItemId },
     });
     if (!billingItem) return;
+
+    if (Number(billingItem.priceUsd) === 0) {
+      billingItem.priceUsd = createDto.unitPrice;
+    }
 
     billingItem.quantity = Number(billingItem.quantity || 0) + createDto.quantity;
     billingItem.totalUsd = Number(billingItem.totalUsd || 0) + totalAmount;

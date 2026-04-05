@@ -38,6 +38,18 @@ export class BillingRecord {
   @Column()
   billingId: number;
 
+  @ApiProperty({ description: 'ID del item de facturación', example: 1 })
+  @Column({ type: 'int', nullable: true })
+  billingItemId: number | null;
+
+  @ApiProperty({ description: 'Cantidad del item facturado', example: 5 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  quantity: number;
+
+  @ApiProperty({ description: 'Precio unitario del item', example: 25.00 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  unitPrice: number;
+
   @ApiPropertyOptional({ description: 'ID de la reservación asociada', example: 1 })
   @Column({ type: 'int', nullable: true })
   reservationId: number | null;
@@ -101,6 +113,10 @@ export class BillingRecord {
   @ApiProperty({ description: 'Indica si hay consumo de inventario pendiente', example: false })
   @Column({ type: 'boolean', default: false })
   pendingConsumption: boolean;
+
+  @ApiProperty({ description: 'Indica si es cuenta casa (no se cobra)', example: false })
+  @Column({ type: 'boolean', default: false })
+  houseAccount: boolean;
 
   @ApiPropertyOptional({ description: 'Número de habitación asociada', example: 'P-101' })
   @Column({ type: 'varchar', length: 10, nullable: true })

@@ -107,21 +107,33 @@ export class BillingService {
       throw new NotFoundException(`Billing sheet with ID ${id} not found`);
     }
 
-    // Enhance response with calculated values as in the excel image
     const items = billing.items.map((item) => {
-      const totalUsd = Number(item.quantity) * Number(item.priceUsd);
-      const cup = totalUsd * Number(billing.usdToCupRate);
+      const totalUsd = Number(item.totalUsd || 0);
+      const totalCup = Number(item.totalCup || 0);
+      const quantity = Number(item.quantity || 0);
+      const priceUsd = Number(item.priceUsd || 0);
+      const category = item.concept?.category || '';
+      const hasTax10 = category.toLowerCase() === 'bar';
+      const tax10Usd = hasTax10 ? totalUsd * 0.1 : 0;
+      const tax10Cup = hasTax10 ? totalCup * 0.1 : 0;
       return {
         ...item,
+        quantity,
+        priceUsd,
         totalUsd,
-        cup,
+        totalCup,
+        hasTax10,
+        tax10Usd,
+        tax10Cup,
       };
     });
 
     const subtotalUsd = items.reduce((sum, item) => sum + item.totalUsd, 0);
-    const subtotalCup = subtotalUsd * Number(billing.usdToCupRate);
-    const tax10Percent = subtotalCup * 0.1;
-    const totalCup = subtotalCup + tax10Percent;
+    const subtotalCup = items.reduce((sum, item) => sum + item.totalCup, 0);
+    const tax10PercentUsd = items.reduce((sum, item) => sum + item.tax10Usd, 0);
+    const tax10PercentCup = items.reduce((sum, item) => sum + item.tax10Cup, 0);
+    const totalCup = subtotalCup + tax10PercentCup;
+    const totalUsd = subtotalUsd + tax10PercentUsd;
 
     return {
       ...billing,
@@ -129,8 +141,10 @@ export class BillingService {
       summary: {
         subtotalUsd,
         subtotalCup,
-        tax10Percent,
+        tax10PercentUsd,
+        tax10PercentCup,
         totalCup,
+        totalUsd,
       },
     };
   }

@@ -168,10 +168,10 @@ export class CreateBillingRecordDto {
     type: [BillingPaymentDto],
     required: false,
   })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => BillingPaymentDto)
-  @IsOptional()
   payments?: BillingPaymentDto[];
 
   @ApiProperty({
@@ -212,4 +212,14 @@ export class CreateBillingRecordDto {
   @IsNumber()
   @IsOptional()
   change?: number;
+
+  @ApiProperty({
+    description: 'House account - no se cobra, solo aumenta quantity',
+    example: false,
+    default: false,
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  houseAccount?: boolean;
 }
