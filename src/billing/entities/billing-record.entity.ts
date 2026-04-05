@@ -86,6 +86,10 @@ export class BillingRecord {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   advanceBalance: number;
 
+  @ApiProperty({ description: 'Vuelto (cantidad de dinero devuelto al cliente)', example: 0 })
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  change: number;
+
   @ApiProperty({ description: 'Indica si la factura está aparcada', example: false })
   @Column({ type: 'boolean', default: false })
   isParked: boolean;

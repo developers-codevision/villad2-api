@@ -194,4 +194,22 @@ export class CreateBillingRecordDto {
   @IsBoolean()
   @IsOptional()
   lateBilling?: boolean;
+
+  @ApiProperty({
+    description: 'Anticipo o saldo a favor del cliente',
+    example: 50,
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  advanceBalance?: number;
+
+  @ApiProperty({
+    description: 'Vuelto (cantidad de dinero devuelto al cliente)',
+    example: 10,
+    required: false,
+  })
+  @IsNumber()
+  @IsOptional()
+  change?: number;
 }

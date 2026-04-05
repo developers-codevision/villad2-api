@@ -18,24 +18,6 @@ import { BillingItem } from '../entities/billing-item.entity';
 import { InventoryConsumptionService } from './inventory-consumption.service';
 import { Reservation } from '../../reservations/entities/reservation.entity';
 
-const convertToUsd = (
-  amount: number,
-  currency: Currency,
-  exchangeRate: number,
-  billing: Billing,
-): number => {
-  if (currency === Currency.USD) {
-    return amount;
-  }
-  if (currency === Currency.EUR) {
-    return amount * exchangeRate;
-  }
-  if (currency === Currency.CUP) {
-    return amount / Number(billing.usdToCupRate);
-  }
-  return amount;
-};
-
 @Injectable()
 export class BillingRecordService {
   constructor(
@@ -53,92 +35,108 @@ export class BillingRecordService {
   ) {}
 
   async create(createDto: CreateBillingRecordDto): Promise<BillingRecord> {
+    const billing = await this.getBilling(createDto.billingId);
+    this.validatePayments(createDto);
+    await this.validateReservation(createDto.reservationId);
+
+    const totals = this.calculateTotals(createDto);
+    const record = this.createRecordEntity(createDto, billing, totals);
+    const savedRecord = await this.billingRecordRepository.save(record);
+
+    await this.handleLateBilling(createDto, totals.grandTotal);
+    await this.processPayments(createDto.payments, savedRecord, billing);
+    await this.updatePaymentStatus(savedRecord, createDto, totals.grandTotal);
+    await this.consumeInventoryIfNeeded(createDto, savedRecord, totals.productConsumptions);
+    await this.updateBillingItem(createDto, billing, totals.totalAmount);
+
+    return savedRecord;
+  }
+
+  private async getBilling(billingId: number): Promise<Billing> {
     const billing = await this.billingRepository.findOne({
-      where: { id: createDto.billingId },
+      where: { id: billingId },
       relations: ['items', 'items.concept', 'items.concept.products'],
     });
     if (!billing) {
-      throw new NotFoundException(
-        `Billing with ID ${createDto.billingId} not found`,
-      );
+      throw new NotFoundException(`Billing with ID ${billingId} not found`);
+    }
+    return billing;
+  }
+
+  private validatePayments(createDto: CreateBillingRecordDto): void {
+    const { payments, lateBilling } = createDto;
+    const paymentList = payments || [];
+
+    if (!lateBilling && paymentList.length === 0) {
+      throw new BadRequestException('payments es requerido cuando lateBilling es false');
     }
 
-    const items = createDto.items || [];
-    const productConsumptions = items.map((item) => ({
+    for (const paymentDto of paymentList) {
+      const hasDenominations = paymentDto.billDenominations?.length > 0;
+      const hasAmount = paymentDto.amount !== undefined;
+
+      if (paymentDto.paymentMethod.startsWith('cash_') && !hasDenominations) {
+        throw new BadRequestException('billDenominations es requerido para pagos en efectivo');
+      }
+
+      if (!paymentDto.paymentMethod.startsWith('cash_') && !hasAmount) {
+        throw new BadRequestException('amount es requerido para pagos que no son en efectivo');
+      }
+    }
+  }
+
+  private async validateReservation(reservationId?: number): Promise<void> {
+    if (reservationId) {
+      const reservation = await this.reservationRepository.findOne({
+        where: { id: reservationId },
+      });
+      if (!reservation) {
+        throw new NotFoundException(`Reservation with ID ${reservationId} not found`);
+      }
+    }
+  }
+
+  private calculateTotals(createDto: CreateBillingRecordDto) {
+    const productConsumptions = (createDto.items || []).map((item) => ({
       productId: item.productId,
       quantityConsumed: item.productQuantity,
     }));
 
     const totalAmount = createDto.quantity * createDto.unitPrice;
-
     const tax10Percent = totalAmount * 0.1;
     const tip = createDto.tip || 0;
     const grandTotal = totalAmount + tax10Percent + tip;
-    const lateBilling = createDto.lateBilling || false;
-    const payments = createDto.payments || [];
 
-    if (!lateBilling && payments.length === 0) {
-      throw new BadRequestException(
-        'payments es requerido cuando lateBilling es false',
-      );
-    }
+    return { productConsumptions, totalAmount, tax10Percent, tip, grandTotal };
+  }
 
-    const hasCashPayment = payments.some(
-      (p) =>
-        p.paymentMethod === PaymentMethod.CASH_USD ||
-        p.paymentMethod === PaymentMethod.CASH_EUR ||
-        p.paymentMethod === PaymentMethod.CASH_CUP,
-    );
-
-    for (const paymentDto of payments) {
-      const hasDenominations =
-        paymentDto.billDenominations && paymentDto.billDenominations.length > 0;
-      const hasAmount = paymentDto.amount !== undefined;
-
-      if (paymentDto.paymentMethod.startsWith('cash_') && !hasDenominations) {
-        throw new BadRequestException(
-          'billDenominations es requerido para pagos en efectivo',
-        );
-      }
-
-      if (!paymentDto.paymentMethod.startsWith('cash_') && !hasAmount) {
-        throw new BadRequestException(
-          'amount es requerido para pagos que no son en efectivo',
-        );
-      }
-    }
-
-    if (createDto.reservationId) {
-      const reservation = await this.reservationRepository.findOne({
-        where: { id: createDto.reservationId },
-      });
-      if (!reservation) {
-        throw new NotFoundException(
-          `Reservation with ID ${createDto.reservationId} not found`,
-        );
-      }
-    }
-
+  private createRecordEntity(
+    createDto: CreateBillingRecordDto,
+    billing: Billing,
+    totals: { productConsumptions: any[]; totalAmount: number; tax10Percent: number; tip: number; grandTotal: number },
+  ): BillingRecord {
     const record = this.billingRecordRepository.create({
       billingId: createDto.billingId,
       reservationId: createDto.reservationId || null,
       date: billing.date,
-      totalAmount,
-      tip,
-      tax10Percent,
-      grandTotal,
-      productConsumptions,
+      totalAmount: totals.totalAmount,
+      tip: totals.tip,
+      tax10Percent: totals.tax10Percent,
+      grandTotal: totals.grandTotal,
+      productConsumptions: totals.productConsumptions,
       paymentStatus: 'pending',
-      pendingAmount: grandTotal,
-      advanceBalance: 0,
+      pendingAmount: totals.grandTotal,
+      advanceBalance: createDto.advanceBalance || 0,
+      change: createDto.change || 0,
       isParked: false,
-      lateBilling,
+      lateBilling: createDto.lateBilling || false,
       pendingConsumption: false,
     });
+    return record;
+  }
 
-    const savedRecord = await this.billingRecordRepository.save(record);
-
-    if (lateBilling && createDto.reservationId) {
+  private async handleLateBilling(createDto: CreateBillingRecordDto, grandTotal: number): Promise<void> {
+    if (createDto.lateBilling && createDto.reservationId) {
       const reservation = await this.reservationRepository.findOne({
         where: { id: createDto.reservationId },
       });
@@ -147,45 +145,17 @@ export class BillingRecordService {
         await this.reservationRepository.save(reservation);
       }
     }
+  }
 
-    for (const paymentDto of payments) {
-      let amountInUsd: number;
+  private async processPayments(
+    payments: BillingPaymentDto[] | undefined,
+    savedRecord: BillingRecord,
+    billing: Billing,
+  ): Promise<void> {
+    const paymentList = payments || [];
 
-      if (
-        paymentDto.billDenominations &&
-        paymentDto.billDenominations.length > 0
-      ) {
-        const calculatedAmount = paymentDto.billDenominations.reduce(
-          (sum, d) => {
-            const rate =
-              d.currency === Currency.USD
-                ? 1
-                : d.currency === Currency.EUR
-                  ? Number(billing.eurToCupRate) / Number(billing.usdToCupRate)
-                  : 1 / Number(billing.usdToCupRate);
-            return sum + d.value * d.quantity * rate;
-          },
-          0,
-        );
-
-        if (
-          paymentDto.amount !== undefined &&
-          Math.abs(paymentDto.amount - calculatedAmount) > 0.01
-        ) {
-          throw new BadRequestException(
-            `El amount (${paymentDto.amount}) no coincide con la suma de las denominaciones (${calculatedAmount})`,
-          );
-        }
-
-        amountInUsd = calculatedAmount;
-      } else if (paymentDto.amount !== undefined) {
-        amountInUsd = paymentDto.amount;
-      } else {
-        throw new BadRequestException(
-          'Se requiere amount o billDenominations para el pago',
-        );
-      }
-
+    for (const paymentDto of paymentList) {
+      const amountInUsd = this.calculatePaymentAmount(paymentDto, billing);
       const payment = this.billingPaymentRepository.create({
         billingRecordId: savedRecord.id,
         paymentMethod: paymentDto.paymentMethod,
@@ -196,37 +166,72 @@ export class BillingRecordService {
       });
       await this.billingPaymentRepository.save(payment);
     }
+  }
 
-    const totalPaid = payments.reduce((sum, p) => {
-      if (p.billDenominations && p.billDenominations.length > 0) {
-        return (
-          sum +
-          p.billDenominations.reduce((s, d) => {
-            const rate =
-              d.currency === Currency.USD
-                ? 1
-                : d.currency === Currency.EUR
-                  ? Number(billing.eurToCupRate) / Number(billing.usdToCupRate)
-                  : 1 / Number(billing.usdToCupRate);
-            return s + d.value * d.quantity * rate;
-          }, 0)
+  private calculatePaymentAmount(paymentDto: BillingPaymentDto, billing: Billing): number {
+    if (paymentDto.billDenominations && paymentDto.billDenominations.length > 0) {
+      const calculatedAmount = paymentDto.billDenominations.reduce((sum, d) => {
+        const rate = this.getExchangeRate(d.currency, billing);
+        return sum + d.value * d.quantity * rate;
+      }, 0);
+
+      if (paymentDto.amount !== undefined && Math.abs(paymentDto.amount - calculatedAmount) > 0.01) {
+        throw new BadRequestException(
+          `El amount (${paymentDto.amount}) no coincide con la suma de las denominaciones (${calculatedAmount})`,
         );
+      }
+      return calculatedAmount;
+    }
+    return paymentDto.amount || 0;
+  }
+
+  private getExchangeRate(currency: Currency, billing: Billing): number {
+    if (currency === Currency.USD) return 1;
+    if (currency === Currency.EUR) return Number(billing.eurToCupRate) / Number(billing.usdToCupRate);
+    return 1 / Number(billing.usdToCupRate);
+  }
+
+  private async updatePaymentStatus(
+    savedRecord: BillingRecord,
+    createDto: CreateBillingRecordDto,
+    grandTotal: number,
+  ): Promise<void> {
+    const payments = createDto.payments || [];
+    if (createDto.lateBilling || payments.length === 0) return;
+
+    const totalPaid = this.calculateTotalPaid(payments, savedRecord.billingId);
+    const change = createDto.change || 0;
+
+    if (totalPaid >= Number(grandTotal) + change) {
+      savedRecord.paymentStatus = 'paid';
+      savedRecord.pendingAmount = 0;
+      savedRecord.advanceBalance = (createDto.advanceBalance || 0) + (totalPaid - Number(grandTotal) - change);
+      savedRecord.change = change;
+    } else if (totalPaid >= Number(grandTotal)) {
+      savedRecord.paymentStatus = 'paid';
+      savedRecord.pendingAmount = 0;
+      savedRecord.advanceBalance = createDto.advanceBalance || 0;
+    } else {
+      savedRecord.paymentStatus = 'partial';
+      savedRecord.pendingAmount = Number(grandTotal) - totalPaid;
+    }
+    await this.billingRecordRepository.save(savedRecord);
+  }
+
+  private calculateTotalPaid(payments: BillingPaymentDto[], billingId: number): number {
+    return payments.reduce((sum, p) => {
+      if (p.billDenominations && p.billDenominations.length > 0) {
+        return sum + p.billDenominations.reduce((s, d) => s + d.value * d.quantity, 0);
       }
       return sum + (p.amount || 0);
     }, 0);
+  }
 
-    if (!lateBilling && totalPaid > 0) {
-      if (totalPaid >= Number(grandTotal)) {
-        savedRecord.paymentStatus = 'paid';
-        savedRecord.pendingAmount = 0;
-        savedRecord.advanceBalance = totalPaid - Number(grandTotal);
-      } else {
-        savedRecord.paymentStatus = 'partial';
-        savedRecord.pendingAmount = Number(grandTotal) - totalPaid;
-      }
-      await this.billingRecordRepository.save(savedRecord);
-    }
-
+  private async consumeInventoryIfNeeded(
+    createDto: CreateBillingRecordDto,
+    savedRecord: BillingRecord,
+    productConsumptions: { productId: number; quantityConsumed: number }[],
+  ): Promise<void> {
     if (createDto.consumeImmediately !== false) {
       await this.inventoryConsumptionService.consumeInventoryForRecord(
         savedRecord.id,
@@ -239,26 +244,25 @@ export class BillingRecordService {
         true,
       );
     }
+  }
 
-    // Actualizar billingItem con la cantidad y totales
-    if (createDto.billingItemId) {
-      const billingItem = await this.billingItemRepository.findOne({
-        where: { id: createDto.billingItemId },
-      });
-      if (billingItem) {
-        const newQuantity = Number(billingItem.quantity || 0) + createDto.quantity;
-        const newTotalUsd = Number(billingItem.totalUsd || 0) + totalAmount;
-        const newTotalCup = Number(billingItem.totalCup || 0) + (totalAmount * Number(billing.usdToCupRate));
+  private async updateBillingItem(
+    createDto: CreateBillingRecordDto,
+    billing: Billing,
+    totalAmount: number,
+  ): Promise<void> {
+    if (!createDto.billingItemId) return;
 
-        billingItem.quantity = newQuantity;
-        billingItem.totalUsd = newTotalUsd;
-        billingItem.totalCup = newTotalCup;
+    const billingItem = await this.billingItemRepository.findOne({
+      where: { id: createDto.billingItemId },
+    });
+    if (!billingItem) return;
 
-        await this.billingItemRepository.save(billingItem);
-      }
-    }
+    billingItem.quantity = Number(billingItem.quantity || 0) + createDto.quantity;
+    billingItem.totalUsd = Number(billingItem.totalUsd || 0) + totalAmount;
+    billingItem.totalCup = Number(billingItem.totalCup || 0) + totalAmount * Number(billing.usdToCupRate);
 
-    return savedRecord;
+    await this.billingItemRepository.save(billingItem);
   }
 
   async findAll(): Promise<BillingRecord[]> {
