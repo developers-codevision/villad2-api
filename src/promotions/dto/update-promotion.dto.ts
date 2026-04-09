@@ -5,15 +5,26 @@ import { PromotionStatus } from '../entities/promotion.entity';
 
 export class UpdatePromotionDto {
   @ApiPropertyOptional({
-    description: 'Título de la promoción',
+    description: 'Título de la promoción en inglés',
     maxLength: 255,
-    example: 'Paquete Verano Especial',
+    example: 'Summer Special Package',
   })
   @IsOptional()
   @IsNotEmpty()
   @IsString()
   @MaxLength(255)
-  title?: string;
+  titleEn?: string;
+
+  @ApiPropertyOptional({
+    description: 'Título de la promoción en español',
+    maxLength: 255,
+    example: 'Paquete Especial de Verano',
+  })
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(255)
+  titleEs?: string;
 
   @ApiPropertyOptional({
     description: 'Número máximo de personas',
@@ -67,13 +78,22 @@ export class UpdatePromotionDto {
   services?: string[];
 
   @ApiPropertyOptional({
-    description: 'Descripción de la promoción',
+    description: 'Descripción de la promoción en inglés',
+    example: 'Enjoy our summer special with all meals included',
+  })
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  descriptionEn?: string;
+
+  @ApiPropertyOptional({
+    description: 'Descripción de la promoción en español',
     example: 'Disfruta de nuestro verano especial',
   })
   @IsOptional()
   @IsNotEmpty()
   @IsString()
-  description?: string;
+  descriptionEs?: string;
 
   @ApiPropertyOptional({
     description: 'Hora de check-in',

@@ -23,11 +23,18 @@ export class Promotion {
   id: number;
 
   @ApiProperty({
-    description: 'Promotion title',
+    description: 'Promotion title in English',
     example: 'Summer Special Package',
   })
-  @Column({ type: 'varchar', length: 255 })
-  title: string;
+  @Column({ type: 'varchar', length: 255, name: 'title_en' })
+  titleEn: string;
+
+  @ApiProperty({
+    description: 'Promotion title in Spanish',
+    example: 'Paquete Especial de Verano',
+  })
+  @Column({ type: 'varchar', length: 255, name: 'title_es' })
+  titleEs: string;
 
   @ApiProperty({
     description: 'Maximum number of people',
@@ -60,11 +67,18 @@ export class Promotion {
   services: string[];
 
   @ApiProperty({
-    description: 'Promotion description',
+    description: 'Promotion description in English',
     example: 'Enjoy our summer special with all meals included',
   })
-  @Column({ type: 'text', default: '' })
-  description: string;
+  @Column({ type: 'text', default: '', name: 'description_en' })
+  descriptionEn: string;
+
+  @ApiProperty({
+    description: 'Promotion description in Spanish',
+    example: 'Disfruta de nuestro especial de verano con todas las comidas incluidas',
+  })
+  @Column({ type: 'text', default: '', name: 'description_es' })
+  descriptionEs: string;
 
   @ApiProperty({
     description: 'Check-in time',

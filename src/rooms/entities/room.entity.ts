@@ -22,9 +22,13 @@ export class Room {
   @Column({ length: 100 })
   name: string;
 
-  @ApiProperty({ description: 'Descripción detallada de la habitación' })
-  @Column({ type: 'text' })
-  description: string;
+  @ApiProperty({ description: 'Descripción detallada de la habitación en español' })
+  @Column({ type: 'text', name: 'description_es' })
+  descriptionEs: string;
+
+  @ApiProperty({ description: 'Descripción detallada de la habitación en inglés' })
+  @Column({ type: 'text', name: 'description_en' })
+  descriptionEn: string;
 
   @ApiProperty({ description: 'Precio por noche en USD', example: 150.00 })
   @Column({ type: 'decimal', precision: 10, scale: 2 })
@@ -46,11 +50,11 @@ export class Room {
   @Column({ type: 'enum', enum: RoomType, default: RoomType.STANDARD })
   roomType: RoomType;
 
-  @ApiPropertyOptional({ description: 'Lista de comodidades de la habitación', example: ['TV', 'Minibar'] })
+  @ApiPropertyOptional({ description: 'Lista de comodidades de la habitación', example: ['TV, TV', 'Minibar, Minibar'] })
   @Column({ type: 'json', nullable: true })
   roomAmenities: string[];
 
-  @ApiPropertyOptional({ description: 'Lista de amenidades del baño', example: ['Ducha', 'Secador'] })
+  @ApiPropertyOptional({ description: 'Lista de amenidades del baño', example: ['Ducha, Shower', 'Secador, Hair dryer'] })
   @Column({ type: 'json', nullable: true })
   bathroomAmenities: string[];
 
