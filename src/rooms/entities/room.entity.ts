@@ -22,13 +22,9 @@ export class Room {
   @Column({ length: 100 })
   name: string;
 
-  @ApiProperty({ description: 'Descripción detallada de la habitación en español' })
-  @Column({ type: 'text', name: 'description_es' })
-  descriptionEs: string;
-
-  @ApiProperty({ description: 'Descripción detallada de la habitación en inglés' })
-  @Column({ type: 'text', name: 'description_en' })
-  descriptionEn: string;
+  @ApiProperty({ description: 'Descripción detallada de la habitación' })
+  @Column({ type: 'text' })
+  description: string;
 
   @ApiProperty({ description: 'Precio por noche en USD', example: 150.00 })
   @Column({ type: 'decimal', precision: 10, scale: 2 })
