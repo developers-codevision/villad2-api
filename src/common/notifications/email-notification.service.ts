@@ -72,7 +72,9 @@ export class EmailNotificationService implements OnModuleDestroy {
   private enqueueEmail(task: Omit<EmailTask, 'id'>): void {
     const id = `email_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     this.emailQueue.push({ ...task, id });
-    this.logger.debug(`Email task ${id} added to queue. Queue size: ${this.emailQueue.length}`);
+    this.logger.debug(
+      `Email task ${id} added to queue. Queue size: ${this.emailQueue.length}`,
+    );
   }
 
   async sendReservationConfirmedEmail(params: {
@@ -199,6 +201,56 @@ export class EmailNotificationService implements OnModuleDestroy {
 
         this.logger.log(
           `Pending reservation notification email sent for reservation ${reservation.id} to ${toEmail}.`,
+        );
+      },
+    });
+
+    // Also send email to owner for Zelle/Bizum payments
+    this.enqueueEmail({
+      sendFn: async () => {
+        const ownerEmail = this.configService.get<string>('OWNER_EMAIL');
+        if (!ownerEmail) {
+          this.logger.warn(
+            'OWNER_EMAIL is not configured. Owner notification email was skipped.',
+          );
+          return;
+        }
+
+        const fromEmail =
+          this.configService.get<string>('MAIL_FROM') ||
+          this.configService.get<string>('SMTP_USER') ||
+          'no-reply@localhost';
+
+        const providerLabel = paymentProvider.toUpperCase();
+        const guestName =
+          `${reservation.client?.firstName ?? ''} ${reservation.client?.lastName ?? ''}`.trim() ||
+          'cliente';
+
+        const subject = `Nueva reservacion pendiente por ${providerLabel} - ${reservation.reservationNumber}`;
+        const text = [
+          `Se recibio una nueva reservacion con pago por ${providerLabel}.`,
+          '',
+          `Metodo de pago: ${providerLabel} (transferencia manual)`,
+          `Reserva: ${reservation.reservationNumber} (ID ${reservation.id})`,
+          `Habitacion: ${reservation.room?.name ?? reservation.roomId}`,
+          `Huesped principal: ${guestName}`,
+          `Email huesped: ${reservation.client?.email ?? 'N/A'}`,
+          `Telefono huesped: ${reservation.client?.phone ?? 'N/A'}`,
+          `Check-in: ${reservation.checkInDate}`,
+          `Check-out: ${reservation.checkOutDate}`,
+          `Total: ${reservation.totalPrice}`,
+          '',
+        ].join('\n');
+
+        await this.transporter.sendMail({
+          from: fromEmail,
+          to: ownerEmail,
+          subject,
+          text,
+        });
+
+        this.logger.log(
+          `Owner notification email sent for pending reservation ${reservation.id} to ${ownerEmail}.`,
         );
       },
     });
