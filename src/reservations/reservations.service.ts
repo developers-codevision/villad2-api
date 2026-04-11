@@ -155,10 +155,10 @@ export class ReservationsService {
 
     // Early check-in and late check-out are 8% of room price per night
     const earlyCheckInFee = dto.earlyCheckIn
-      ? Math.round(Number(room.pricePerNight) * 0.08 * 100) / 100
+      ? Number((Number(room.pricePerNight) * 0.08).toFixed(2))
       : 0;
     const lateCheckOutFee = dto.lateCheckOut
-      ? Math.round(Number(room.pricePerNight) * 0.08 * 100) / 100
+      ? Number((Number(room.pricePerNight) * 0.08).toFixed(2))
       : 0;
     const additionalCharges = earlyCheckInFee + lateCheckOutFee;
 
@@ -567,10 +567,10 @@ export class ReservationsService {
 
       // Early check-in and late check-out are 8% of room price per night
       const earlyCheckInFee = reservation.earlyCheckIn
-        ? Math.round(Number(room.pricePerNight) * 0.08 * 100) / 100
+        ? Number((Number(room.pricePerNight) * 0.08).toFixed(2))
         : 0;
       const lateCheckOutFee = reservation.lateCheckOut
-        ? Math.round(Number(room.pricePerNight) * 0.08 * 100) / 100
+        ? Number((Number(room.pricePerNight) * 0.08).toFixed(2))
         : 0;
       const additionalCharges = earlyCheckInFee + lateCheckOutFee;
 
