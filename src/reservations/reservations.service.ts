@@ -153,10 +153,14 @@ export class ReservationsService {
       (dto.transferRoundTrip ? prices.transferRoundTripPrice : 0);
     const breakfastsCharge = (dto.breakfasts ?? 0) * prices.breakfastPrice;
 
-    // Add early check-in and late check-out charges if applicable
-    const additionalCharges =
-      (dto.earlyCheckIn ? prices.earlyCheckInPrice : 0) +
-      (dto.lateCheckOut ? prices.lateCheckOutPrice : 0);
+    // Early check-in and late check-out are 8% of room price per night
+    const earlyCheckInFee = dto.earlyCheckIn
+      ? Math.round(Number(room.pricePerNight) * 0.08 * 100) / 100
+      : 0;
+    const lateCheckOutFee = dto.lateCheckOut
+      ? Math.round(Number(room.pricePerNight) * 0.08 * 100) / 100
+      : 0;
+    const additionalCharges = earlyCheckInFee + lateCheckOutFee;
 
     const totalPrice =
       basePrice +
@@ -561,10 +565,14 @@ export class ReservationsService {
         (reservation.transferRoundTrip ? prices.transferRoundTripPrice : 0);
       const breakfastsCharge = reservation.breakfasts * prices.breakfastPrice;
 
-      // Add early check-in and late check-out charges if applicable
-      const additionalCharges =
-        (reservation.earlyCheckIn ? prices.earlyCheckInPrice : 0) +
-        (reservation.lateCheckOut ? prices.lateCheckOutPrice : 0);
+      // Early check-in and late check-out are 8% of room price per night
+      const earlyCheckInFee = reservation.earlyCheckIn
+        ? Math.round(Number(room.pricePerNight) * 0.08 * 100) / 100
+        : 0;
+      const lateCheckOutFee = reservation.lateCheckOut
+        ? Math.round(Number(room.pricePerNight) * 0.08 * 100) / 100
+        : 0;
+      const additionalCharges = earlyCheckInFee + lateCheckOutFee;
 
       reservation.totalPrice =
         basePrice +

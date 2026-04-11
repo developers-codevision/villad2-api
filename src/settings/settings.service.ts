@@ -74,26 +74,26 @@ export class SettingsService {
     const defaultSettings = [
       {
         key: 'early_check_in_price',
-        description: 'Precio adicional por early check-in',
-        value: 20,
-        type: 'currency',
+        description: 'Porcentaje adicional por early check-in (8% del precio de la habitación)',
+        value: 8,
+        type: 'percentage',
       },
       {
         key: 'late_check_out_price',
-        description: 'Precio adicional por late check-out',
-        value: 15,
-        type: 'currency',
+        description: 'Porcentaje adicional por late check-out (8% del precio de la habitación)',
+        value: 8,
+        type: 'percentage',
       },
       {
         key: 'transfer_one_way_price',
-        description: 'Precio del transfer de ida',
+        description: 'Precio del transfer de ida (airport pickup)',
         value: 40,
         type: 'currency',
       },
       {
         key: 'transfer_round_trip_price',
-        description: 'Precio del transfer de ida y vuelta',
-        value: 30,
+        description: 'Precio del transfer de ida y vuelta (airport return)',
+        value: 35,
         type: 'currency',
       },
       {
