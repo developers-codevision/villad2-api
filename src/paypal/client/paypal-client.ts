@@ -15,19 +15,12 @@ export class PaypalClient {
   constructor(private readonly configService: ConfigService) {
     this.clientId = this.configService.get<string>('PAYPAL_CLIENT_ID');
     this.clientSecret = this.configService.get<string>('PAYPAL_CLIENT_SECRET');
-    this.environment = this.configService.get<string>(
-      'PAYPAL_ENVIRONMENT',
-      'sandbox',
-    );
 
     if (!this.clientId || !this.clientSecret) {
       throw new Error('PayPal credentials are not defined');
     }
 
-    this.baseUrl =
-      this.environment === 'production'
-        ? 'https://api-m.paypal.com'
-        : 'https://api-m.sandbox.paypal.com';
+    this.baseUrl = this.configService.get<string>('PAYPAL_URL');
   }
 
   async getAccessToken(): Promise<string> {
@@ -80,9 +73,5 @@ export class PaypalClient {
 
   getBaseUrl(): string {
     return this.baseUrl;
-  }
-
-  isProduction(): boolean {
-    return this.environment === 'production';
   }
 }

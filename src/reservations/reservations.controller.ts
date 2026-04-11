@@ -171,7 +171,8 @@ export class ReservationsController {
       const reservationWithRelations = await this.reservationsService.findOne(
         reservation.id,
       );
-      await this.emailNotificationService.sendReservationPendingEmail({
+      // Email is now sent asynchronously (non-blocking background queue)
+      this.emailNotificationService.sendReservationPendingEmail({
         reservation: reservationWithRelations,
         paymentProvider: dto.paymentMethod,
       });
@@ -191,7 +192,8 @@ export class ReservationsController {
       reservation.id,
     );
 
-    await this.emailNotificationService.sendGuestReservationConfirmedEmail({
+    // Email is now sent asynchronously (non-blocking background queue)
+    this.emailNotificationService.sendGuestReservationConfirmedEmail({
       reservation: reservationWithRelations,
     });
 
