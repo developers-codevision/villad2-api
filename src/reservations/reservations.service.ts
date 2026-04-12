@@ -133,10 +133,13 @@ export class ReservationsService {
     const prices = await this.settingsService.getPrices();
 
     // Calculate total price using adjusted dates
-    const checkInTime = new Date(adjustedCheckInDate).getTime();
-    const checkOutTime = new Date(adjustedCheckOutDate).getTime();
-    const nights = Math.ceil(
-      (checkOutTime - checkInTime) / (1000 * 60 * 60 * 24),
+    // Normalize dates to midnight (00:00:00) to calculate nights based on calendar days only
+    const checkInDate = new Date(adjustedCheckInDate);
+    const checkOutDate = new Date(adjustedCheckOutDate);
+    checkInDate.setHours(0, 0, 0, 0);
+    checkOutDate.setHours(0, 0, 0, 0);
+    const nights = Math.round(
+      (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24),
     );
     if (nights <= 0) {
       throw new ConflictException(
@@ -547,7 +550,10 @@ export class ReservationsService {
 
       const checkIn = new Date(reservation.checkInDate);
       const checkOut = new Date(reservation.checkOutDate);
-      const nights = Math.ceil(
+      // Normalize dates to midnight (00:00:00) to calculate nights based on calendar days only
+      checkIn.setHours(0, 0, 0, 0);
+      checkOut.setHours(0, 0, 0, 0);
+      const nights = Math.round(
         (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
       );
       if (nights <= 0) {
