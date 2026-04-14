@@ -11,6 +11,12 @@ interface EmailTask {
   sendFn: () => Promise<void>;
 }
 
+interface ReservationEmailDetails {
+  reservation: Reservation;
+  paymentProvider?: PaymentProvider;
+  paymentReference?: string;
+}
+
 @Injectable()
 export class EmailNotificationService implements OnModuleDestroy {
   private readonly logger = new Logger(EmailNotificationService.name);
@@ -77,135 +83,134 @@ export class EmailNotificationService implements OnModuleDestroy {
     );
   }
 
-  async sendReservationConfirmedEmail(params: {
-    reservation: Reservation;
-    paymentProvider: PaymentProvider;
-    paymentReference?: string;
-  }): Promise<void> {
+  /**
+   * Generates detailed text for reservation emails including all available information
+   */
+  private generateReservationDetailsText(
+    params: ReservationEmailDetails,
+  ): string {
     const { reservation, paymentProvider, paymentReference } = params;
-    const toEmail = reservation.client?.email;
+    const lines: string[] = [];
 
-    if (!toEmail) {
-      this.logger.warn(
-        `Reservation ${reservation.id} has no client email. Reservation confirmation email was skipped.`,
-      );
-      return;
-    }
+    // Basic reservation info
+    lines.push(`Numero de reservacion: ${reservation.reservationNumber}`);
+    lines.push(`Habitacion: ${reservation.room?.name ?? reservation.roomId}`);
+    lines.push(`Check-in: ${reservation.checkInDate}`);
+    lines.push(`Check-out: ${reservation.checkOutDate}`);
 
-    if (!this.transporter) {
-      this.logger.warn(
-        'SMTP configuration is incomplete. Reservation confirmation email was skipped.',
-      );
-      return;
-    }
+    // Guests info
+    const totalGuests =
+      reservation.baseGuestsCount + reservation.extraGuestsCount;
+    lines.push(
+      `Huespedes: ${totalGuests} (base: ${reservation.baseGuestsCount}, extra: ${reservation.extraGuestsCount})`,
+    );
 
-    // Enqueue email for background processing
-    this.enqueueEmail({
-      sendFn: async () => {
-        const fromEmail =
-          this.configService.get<string>('MAIL_FROM') ||
-          this.configService.get<string>('SMTP_USER') ||
-          'no-reply@localhost';
-
-        const providerLabel = paymentProvider.toUpperCase();
-        const guestName =
-          `${reservation.client?.firstName ?? ''} ${reservation.client?.lastName ?? ''}`.trim() ||
-          'cliente';
-        const subject = `Confirmacion de reservacion - ${reservation.reservationNumber}`;
-        const text = [
-          `Hola ${guestName},`,
-          '',
-          'Tu reservacion ha sido confirmada.',
-          `Numero de reservacion: ${reservation.reservationNumber}`,
-          `Habitacion: ${reservation.room?.name ?? reservation.roomId}`,
-          `Check-in: ${reservation.checkInDate}`,
-          `Check-out: ${reservation.checkOutDate}`,
-          `Total: ${reservation.totalPrice}`,
-          `Proveedor de pago: ${providerLabel}`,
-          paymentReference ? `Referencia de pago: ${paymentReference}` : '',
-          '',
-          'Gracias por elegirnos.',
-        ]
-          .filter(Boolean)
-          .join('\n');
-
-        await this.transporter.sendMail({
-          from: fromEmail,
-          to: toEmail,
-          subject,
-          text,
-        });
-
-        this.logger.log(
-          `Reservation confirmation email sent for reservation ${reservation.id} to ${toEmail}.`,
+    // Additional guests details
+    if (
+      reservation.additionalGuests &&
+      reservation.additionalGuests.length > 0
+    ) {
+      lines.push(`Huespedes adicionales:`);
+      reservation.additionalGuests.forEach((guest, index) => {
+        lines.push(
+          `  ${index + 1}. ${guest.firstName} ${guest.lastName} (${guest.sex})${guest.idNumber ? ` - ID: ${guest.idNumber}` : ''}`,
         );
-      },
-    });
+      });
+    }
+
+    // Early check-in / Late check-out
+    if (reservation.earlyCheckIn) {
+      lines.push(`Early check-in: Si (entrada anticipada)`);
+    }
+    if (reservation.lateCheckOut) {
+      lines.push(`Late check-out: Si (salida tardia)`);
+    }
+
+    // Transfers
+    if (reservation.transferOneWay || reservation.transferRoundTrip) {
+      lines.push(`Transfer:`);
+      if (reservation.transferOneWay) {
+        lines.push(`  - One way (ida)`);
+      }
+      if (reservation.transferRoundTrip) {
+        lines.push(`  - Round trip (ida y vuelta)`);
+      }
+    }
+
+    // Breakfasts
+    if (reservation.breakfasts > 0) {
+      lines.push(`Desayunos: ${reservation.breakfasts}`);
+    }
+
+    // Total price
+    lines.push(`Total: ${reservation.totalPrice}`);
+
+    // Payment info
+    if (paymentProvider) {
+      lines.push(`Metodo de pago: ${paymentProvider.toUpperCase()}`);
+    }
+    if (paymentReference) {
+      lines.push(`Referencia de pago: ${paymentReference}`);
+    }
+
+    // Notes and observations
+    if (reservation.notes) {
+      lines.push(`Notas: ${reservation.notes}`);
+    }
+    if (reservation.observations) {
+      lines.push(`Observaciones: ${reservation.observations}`);
+    }
+
+    return lines.join('\n');
   }
 
-  async sendReservationPendingEmail(params: {
-    reservation: Reservation;
-    paymentProvider: 'zelle' | 'bizum';
-  }): Promise<void> {
-    const { reservation, paymentProvider } = params;
-    const toEmail = reservation.client?.email;
+  /**
+   * Generates detailed text for owner notification emails
+   */
+  private generateOwnerNotificationText(
+    params: ReservationEmailDetails & { status: string },
+  ): string {
+    const { reservation, status } = params;
+    const lines: string[] = [];
 
-    if (!toEmail) {
-      this.logger.warn(
-        `Reservation ${reservation.id} has no client email. Pending reservation notification email was skipped.`,
-      );
-      return;
+    const guestName =
+      `${reservation.client?.firstName ?? ''} ${reservation.client?.lastName ?? ''}`.trim() ||
+      'cliente';
+
+    lines.push(`Estado: ${status}`);
+    lines.push(
+      `Reserva: ${reservation.reservationNumber} (ID ${reservation.id})`,
+    );
+    lines.push('');
+    lines.push(`=== DATOS DEL HUESPED ===`);
+    lines.push(`Huesped principal: ${guestName}`);
+    lines.push(`Email huesped: ${reservation.client?.email ?? 'N/A'}`);
+    lines.push(`Telefono huesped: ${reservation.client?.phone ?? 'N/A'}`);
+    if (reservation.client?.idNumber) {
+      lines.push(`Documento ID: ${reservation.client.idNumber}`);
     }
+    lines.push('');
+    lines.push(`=== DETALLES DE LA RESERVA ===`);
+    lines.push(this.generateReservationDetailsText(params));
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Sends notification email to owner for any payment method
+   */
+  private sendOwnerNotificationEmail(
+    params: ReservationEmailDetails & { status: string },
+  ): void {
+    const { reservation, paymentProvider, status } = params;
 
     if (!this.transporter) {
       this.logger.warn(
-        'SMTP configuration is incomplete. Pending reservation notification email was skipped.',
+        'SMTP configuration is incomplete. Owner notification email was skipped.',
       );
       return;
     }
 
-    // Enqueue email for background processing
-    this.enqueueEmail({
-      sendFn: async () => {
-        const fromEmail =
-          this.configService.get<string>('MAIL_FROM') ||
-          this.configService.get<string>('SMTP_USER') ||
-          'no-reply@localhost';
-
-        const providerLabel = paymentProvider.toUpperCase();
-        const guestName =
-          `${reservation.client?.firstName ?? ''} ${reservation.client?.lastName ?? ''}`.trim() ||
-          'cliente';
-
-        const subject = `Reservacion pendiente de confirmacion - ${reservation.reservationNumber}`;
-        const text = [
-          `Hola ${guestName},`,
-          '',
-          'Tu reservacion ha sido registrada y esta pendiente de confirmacion.',
-          `Numero de reservacion: ${reservation.reservationNumber}`,
-          `Habitacion: ${reservation.room?.name ?? reservation.roomId}`,
-          `Metodo de pago: ${providerLabel}`,
-          `Check-in: ${reservation.checkInDate}`,
-          `Check-out: ${reservation.checkOutDate}`,
-          `Total: ${reservation.totalPrice}`,
-          '',
-          'Te notificaremos cuando tu reservacion sea confirmada.',
-        ].join('\n');
-
-        await this.transporter.sendMail({
-          from: fromEmail,
-          to: toEmail,
-          subject,
-          text,
-        });
-
-        this.logger.log(
-          `Pending reservation notification email sent for reservation ${reservation.id} to ${toEmail}.`,
-        );
-      },
-    });
-
-    // Also send email to owner for Zelle/Bizum payments
     this.enqueueEmail({
       sendFn: async () => {
         const ownerEmail = this.configService.get<string>('OWNER_EMAIL');
@@ -221,28 +226,14 @@ export class EmailNotificationService implements OnModuleDestroy {
           this.configService.get<string>('SMTP_USER') ||
           'no-reply@localhost';
 
-        const providerLabel = paymentProvider.toUpperCase();
-        const guestName =
-          `${reservation.client?.firstName ?? ''} ${reservation.client?.lastName ?? ''}`.trim() ||
-          'cliente';
+        const providerLabel = paymentProvider
+          ? ` - ${paymentProvider.toUpperCase()}`
+          : '';
+        const subject = `Nueva reservacion ${status}${providerLabel} - ${reservation.reservationNumber}`;
 
-        const subject = `Nueva reservacion pendiente por ${providerLabel} - ${reservation.reservationNumber}`;
-        const text = [
-          `Se recibio una nueva reservacion con pago por ${providerLabel}.`,
-          '',
-          `Metodo de pago: ${providerLabel} (transferencia manual)`,
-          `Reserva: ${reservation.reservationNumber} (ID ${reservation.id})`,
-          `Habitacion: ${reservation.room?.name ?? reservation.roomId}`,
-          `Huesped principal: ${guestName}`,
-          `Email huesped: ${reservation.client?.email ?? 'N/A'}`,
-          `Telefono huesped: ${reservation.client?.phone ?? 'N/A'}`,
-          `Check-in: ${reservation.checkInDate}`,
-          `Check-out: ${reservation.checkOutDate}`,
-          `Total: ${reservation.totalPrice}`,
-          '',
-        ].join('\n');
+        const text = this.generateOwnerNotificationText(params);
 
-        await this.transporter.sendMail({
+        await this.transporter!.sendMail({
           from: fromEmail,
           to: ownerEmail,
           subject,
@@ -250,7 +241,137 @@ export class EmailNotificationService implements OnModuleDestroy {
         });
 
         this.logger.log(
-          `Owner notification email sent for pending reservation ${reservation.id} to ${ownerEmail}.`,
+          `Owner notification email sent for reservation ${reservation.id} to ${ownerEmail}.`,
+        );
+      },
+    });
+  }
+
+  async sendReservationConfirmedEmail(params: {
+    reservation: Reservation;
+    paymentProvider: PaymentProvider;
+    paymentReference?: string;
+  }): Promise<void> {
+    const { reservation, paymentProvider, paymentReference } = params;
+    const toEmail = reservation.client?.email;
+
+    // Always notify owner first, regardless of client email
+    this.sendOwnerNotificationEmail({
+      ...params,
+      status: 'confirmada',
+    });
+
+    if (!toEmail) {
+      this.logger.warn(
+        `Reservation ${reservation.id} has no client email. Client confirmation email was skipped.`,
+      );
+      return;
+    }
+
+    if (!this.transporter) {
+      this.logger.warn(
+        'SMTP configuration is incomplete. Client confirmation email was skipped.',
+      );
+      return;
+    }
+
+    const transporter = this.transporter;
+
+    // Enqueue email for background processing
+    this.enqueueEmail({
+      sendFn: async () => {
+        const fromEmail =
+          this.configService.get<string>('MAIL_FROM') ||
+          this.configService.get<string>('SMTP_USER') ||
+          'no-reply@localhost';
+
+        const guestName =
+          `${reservation.client?.firstName ?? ''} ${reservation.client?.lastName ?? ''}`.trim() ||
+          'cliente';
+        const subject = `Confirmacion de reservacion - ${reservation.reservationNumber}`;
+        const text = [
+          `Hola ${guestName},`,
+          '',
+          'Tu reservacion ha sido confirmada.',
+          this.generateReservationDetailsText(params),
+          '',
+          'Gracias por elegirnos.',
+        ].join('\n');
+
+        await transporter.sendMail({
+          from: fromEmail,
+          to: toEmail,
+          subject,
+          text,
+        });
+
+        this.logger.log(
+          `Reservation confirmation email sent for reservation ${reservation.id} to ${toEmail}.`,
+        );
+      },
+    });
+  }
+
+  async sendReservationPendingEmail(params: {
+    reservation: Reservation;
+    paymentProvider: PaymentProvider;
+  }): Promise<void> {
+    const { reservation, paymentProvider } = params;
+    const toEmail = reservation.client?.email;
+
+    // Always notify owner first, regardless of client email
+    this.sendOwnerNotificationEmail({
+      ...params,
+      status: 'pendiente',
+    });
+
+    if (!toEmail) {
+      this.logger.warn(
+        `Reservation ${reservation.id} has no client email. Client pending notification email was skipped.`,
+      );
+      return;
+    }
+
+    if (!this.transporter) {
+      this.logger.warn(
+        'SMTP configuration is incomplete. Client pending notification email was skipped.',
+      );
+      return;
+    }
+
+    const transporter = this.transporter;
+
+    // Enqueue email for background processing
+    this.enqueueEmail({
+      sendFn: async () => {
+        const fromEmail =
+          this.configService.get<string>('MAIL_FROM') ||
+          this.configService.get<string>('SMTP_USER') ||
+          'no-reply@localhost';
+
+        const guestName =
+          `${reservation.client?.firstName ?? ''} ${reservation.client?.lastName ?? ''}`.trim() ||
+          'cliente';
+
+        const subject = `Reservacion pendiente de confirmacion - ${reservation.reservationNumber}`;
+        const text = [
+          `Hola ${guestName},`,
+          '',
+          'Tu reservacion ha sido registrada y esta pendiente de confirmacion.',
+          this.generateReservationDetailsText(params),
+          '',
+          'Te notificaremos cuando tu reservacion sea confirmada.',
+        ].join('\n');
+
+        await transporter.sendMail({
+          from: fromEmail,
+          to: toEmail,
+          subject,
+          text,
+        });
+
+        this.logger.log(
+          `Pending reservation notification email sent for reservation ${reservation.id} to ${toEmail}.`,
         );
       },
     });
@@ -258,23 +379,32 @@ export class EmailNotificationService implements OnModuleDestroy {
 
   async sendGuestReservationConfirmedEmail(params: {
     reservation: Reservation;
+    paymentProvider?: PaymentProvider;
   }): Promise<void> {
     const { reservation } = params;
     const toEmail = reservation.client?.email;
 
+    // Always notify owner first, regardless of client email
+    this.sendOwnerNotificationEmail({
+      ...params,
+      status: 'confirmada',
+    });
+
     if (!toEmail) {
       this.logger.warn(
-        `Reservation ${reservation.id} has no guest email. Guest confirmation email was skipped.`,
+        `Reservation ${reservation.id} has no guest email. Client confirmation email was skipped.`,
       );
       return;
     }
 
     if (!this.transporter) {
       this.logger.warn(
-        'SMTP configuration is incomplete. Guest confirmation email was skipped.',
+        'SMTP configuration is incomplete. Client confirmation email was skipped.',
       );
       return;
     }
+
+    const transporter = this.transporter;
 
     // Enqueue email for background processing
     this.enqueueEmail({
@@ -293,16 +423,12 @@ export class EmailNotificationService implements OnModuleDestroy {
           `Hola ${guestName},`,
           '',
           'Tu reservacion ha sido confirmada.',
-          `Numero de reservacion: ${reservation.reservationNumber}`,
-          `Habitacion: ${reservation.room?.name ?? reservation.roomId}`,
-          `Check-in: ${reservation.checkInDate}`,
-          `Check-out: ${reservation.checkOutDate}`,
-          `Total: ${reservation.totalPrice}`,
+          this.generateReservationDetailsText(params),
           '',
           'Gracias por elegirnos.',
         ].join('\n');
 
-        await this.transporter.sendMail({
+        await transporter.sendMail({
           from: fromEmail,
           to: toEmail,
           subject,

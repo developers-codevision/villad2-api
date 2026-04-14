@@ -51,8 +51,10 @@ export class PaypalClient {
     body?: unknown,
   ): Promise<T> {
     const accessToken = await this.getAccessToken();
+    const tokenUrl = `${this.baseUrl}${endpoint}`;
+    console.log(`This is the token url ${tokenUrl}`);
 
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const response = await fetch(tokenUrl, {
       method,
       headers: {
         'Content-Type': 'application/json',
