@@ -195,6 +195,7 @@ export class ReservationsController {
     // Email is now sent asynchronously (non-blocking background queue)
     this.emailNotificationService.sendGuestReservationConfirmedEmail({
       reservation: reservationWithRelations,
+      paymentProvider: 'manual',
     });
 
     return {
