@@ -22,6 +22,7 @@ import { DailyAttendanceModule } from './daily-attendance/daily-attendance.modul
 import { SalaryModule } from './salary/salary.module';
 import { VacationModule } from './vacation/vacation.module';
 import { AbsenceModule } from './absence/absence.module';
+import { IpvModule } from './ipv/ipv.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { AbsenceModule } from './absence/absence.module';
     SalaryModule,
     VacationModule,
     AbsenceModule,
+    IpvModule,
   ],
   controllers: [AppController],
   providers: [AppService],
