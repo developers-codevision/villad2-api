@@ -11,7 +11,7 @@ import { BlogStatus } from '../entities/blog.entity';
 
 export class UpdateBlogDto {
   @ApiPropertyOptional({
-    description: 'Título del blog',
+    description: 'Título del blog en español',
     maxLength: 255,
     example: 'Guía completa para visitar La Habana',
   })
@@ -19,10 +19,21 @@ export class UpdateBlogDto {
   @IsNotEmpty()
   @IsString()
   @MaxLength(255)
-  title?: string;
+  titleEs?: string;
 
   @ApiPropertyOptional({
-    description: 'URL-friendly slug (único)',
+    description: 'Blog title in English',
+    maxLength: 255,
+    example: 'Complete guide to visit Havana',
+  })
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(255)
+  titleEn?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL-friendly slug en español (único)',
     maxLength: 255,
     example: 'guia-completa-para-visitar-la-habana',
   })
@@ -30,24 +41,52 @@ export class UpdateBlogDto {
   @IsNotEmpty()
   @IsString()
   @MaxLength(255)
-  slug?: string;
+  slugEs?: string;
 
   @ApiPropertyOptional({
-    description: 'Descripción corta/resumen',
+    description: 'URL-friendly slug in English (unique)',
+    maxLength: 255,
+    example: 'complete-guide-to-visit-havana',
+  })
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(255)
+  slugEn?: string;
+
+  @ApiPropertyOptional({
+    description: 'Descripción corta/resumen en español',
     example: 'Descubre los mejores lugares para visitar en La Habana...',
   })
   @IsOptional()
   @IsString()
-  description?: string;
+  descriptionEs?: string;
 
   @ApiPropertyOptional({
-    description: 'Contenido HTML (será sanitizado para prevenir XSS)',
+    description: 'Short description/summary in English',
+    example: 'Discover the best places to visit in Havana...',
+  })
+  @IsOptional()
+  @IsString()
+  descriptionEn?: string;
+
+  @ApiPropertyOptional({
+    description: 'Contenido HTML en español (será sanitizado para prevenir XSS)',
     example: '<h2>Introducción</h2><p>La Habana es una ciudad...</p>',
   })
   @IsOptional()
   @IsNotEmpty()
   @IsString()
-  content?: string;
+  contentEs?: string;
+
+  @ApiPropertyOptional({
+    description: 'Full HTML content in English (sanitized)',
+    example: '<h2>Introduction</h2><p>Havana is a city...</p>',
+  })
+  @IsOptional()
+  @IsNotEmpty()
+  @IsString()
+  contentEn?: string;
 
   @ApiPropertyOptional({
     description: 'Ruta de la imagen destacada',

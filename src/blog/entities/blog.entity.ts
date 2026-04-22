@@ -22,34 +22,64 @@ export class Blog {
   id: number;
 
   @ApiProperty({
-    description: 'Blog title',
+    description: 'Blog title in Spanish',
     maxLength: 255,
     example: 'Guía completa para visitar La Habana',
   })
-  @Column({ type: 'varchar', length: 255 })
-  title: string;
+  @Column({ type: 'varchar', length: 255, name: 'title_es' })
+  titleEs: string;
 
   @ApiProperty({
-    description: 'URL-friendly slug',
+    description: 'Blog title in English',
+    maxLength: 255,
+    example: 'Complete guide to visit Havana',
+  })
+  @Column({ type: 'varchar', length: 255, name: 'title_en' })
+  titleEn: string;
+
+  @ApiProperty({
+    description: 'URL-friendly slug in Spanish',
     maxLength: 255,
     example: 'guia-completa-para-visitar-la-habana',
   })
-  @Column({ type: 'varchar', length: 255, unique: true })
-  slug: string;
-
-  @ApiPropertyOptional({
-    description: 'Short description/summary',
-    example: 'Descubre los mejores lugares para visitar en La Habana...',
-  })
-  @Column({ type: 'text', nullable: true })
-  description?: string;
+  @Column({ type: 'varchar', length: 255, name: 'slug_es', unique: true })
+  slugEs: string;
 
   @ApiProperty({
-    description: 'Full HTML content (sanitized)',
+    description: 'URL-friendly slug in English',
+    maxLength: 255,
+    example: 'complete-guide-to-visit-havana',
+  })
+  @Column({ type: 'varchar', length: 255, name: 'slug_en', unique: true })
+  slugEn: string;
+
+  @ApiPropertyOptional({
+    description: 'Short description/summary in Spanish',
+    example: 'Descubre los mejores lugares para visitar en La Habana...',
+  })
+  @Column({ type: 'text', nullable: true, name: 'description_es' })
+  descriptionEs?: string;
+
+  @ApiPropertyOptional({
+    description: 'Short description/summary in English',
+    example: 'Discover the best places to visit in Havana...',
+  })
+  @Column({ type: 'text', nullable: true, name: 'description_en' })
+  descriptionEn?: string;
+
+  @ApiProperty({
+    description: 'Full HTML content in Spanish (sanitized)',
     example: '<h2>Introducción</h2><p>La Habana es una ciudad...</p>',
   })
-  @Column({ type: 'text' })
-  content: string;
+  @Column({ type: 'text', name: 'content_es' })
+  contentEs: string;
+
+  @ApiProperty({
+    description: 'Full HTML content in English (sanitized)',
+    example: '<h2>Introduction</h2><p>Havana is a city...</p>',
+  })
+  @Column({ type: 'text', name: 'content_en' })
+  contentEn: string;
 
   @ApiPropertyOptional({
     description: 'Featured image path',

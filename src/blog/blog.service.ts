@@ -78,11 +78,13 @@ export class BlogService {
   }
 
   async create(createBlogDto: CreateBlogDto): Promise<Blog> {
-    const sanitizedContent = this.sanitizeContent(createBlogDto.content);
+    const sanitizedContentEs = this.sanitizeContent(createBlogDto.contentEs);
+    const sanitizedContentEn = this.sanitizeContent(createBlogDto.contentEn);
 
     const blog = this.blogRepository.create({
       ...createBlogDto,
-      content: sanitizedContent,
+      contentEs: sanitizedContentEs,
+      contentEn: sanitizedContentEn,
       publishedAt: createBlogDto.publishedAt
         ? new Date(createBlogDto.publishedAt)
         : undefined,
@@ -110,7 +112,7 @@ export class BlogService {
 
     if (search) {
       queryBuilder.andWhere(
-        '(blog.title ILIKE :search OR blog.description ILIKE :search)',
+        '(blog.titleEs ILIKE :search OR blog.titleEn ILIKE :search OR blog.descriptionEs ILIKE :search OR blog.descriptionEn ILIKE :search)',
         { search: `%${search}%` },
       );
     }
@@ -140,7 +142,9 @@ export class BlogService {
   }
 
   async findBySlug(slug: string): Promise<Blog> {
-    const blog = await this.blogRepository.findOne({ where: { slug } });
+    const blog = await this.blogRepository.findOne({
+      where: [{ slugEs: slug }, { slugEn: slug }],
+    });
 
     if (!blog) {
       throw new NotFoundException(`Blog with slug "${slug}" not found`);
@@ -155,15 +159,22 @@ export class BlogService {
     const oldImagePath = blog.image;
 
     const updateData: Partial<Blog> = {
-      title: updateBlogDto.title,
-      slug: updateBlogDto.slug,
-      description: updateBlogDto.description,
+      titleEs: updateBlogDto.titleEs,
+      titleEn: updateBlogDto.titleEn,
+      slugEs: updateBlogDto.slugEs,
+      slugEn: updateBlogDto.slugEn,
+      descriptionEs: updateBlogDto.descriptionEs,
+      descriptionEn: updateBlogDto.descriptionEn,
       image: updateBlogDto.image,
       status: updateBlogDto.status,
     };
 
-    if (updateBlogDto.content) {
-      updateData.content = this.sanitizeContent(updateBlogDto.content);
+    if (updateBlogDto.contentEs) {
+      updateData.contentEs = this.sanitizeContent(updateBlogDto.contentEs);
+    }
+
+    if (updateBlogDto.contentEn) {
+      updateData.contentEn = this.sanitizeContent(updateBlogDto.contentEn);
     }
 
     if (updateBlogDto.publishedAt) {

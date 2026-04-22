@@ -11,40 +11,76 @@ import { BlogStatus } from '../entities/blog.entity';
 
 export class CreateBlogDto {
   @ApiProperty({
-    description: 'Título del blog',
+    description: 'Título del blog en español',
     maxLength: 255,
     example: 'Guía completa para visitar La Habana',
   })
   @IsNotEmpty()
   @IsString()
   @MaxLength(255)
-  title: string;
+  titleEs: string;
 
   @ApiProperty({
-    description: 'URL-friendly slug (único)',
+    description: 'Blog title in English',
+    maxLength: 255,
+    example: 'Complete guide to visit Havana',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(255)
+  titleEn: string;
+
+  @ApiProperty({
+    description: 'URL-friendly slug en español (único)',
     maxLength: 255,
     example: 'guia-completa-para-visitar-la-habana',
   })
   @IsNotEmpty()
   @IsString()
   @MaxLength(255)
-  slug: string;
+  slugEs: string;
+
+  @ApiProperty({
+    description: 'URL-friendly slug in English (unique)',
+    maxLength: 255,
+    example: 'complete-guide-to-visit-havana',
+  })
+  @IsNotEmpty()
+  @IsString()
+  @MaxLength(255)
+  slugEn: string;
 
   @ApiPropertyOptional({
-    description: 'Descripción corta/resumen',
+    description: 'Descripción corta/resumen en español',
     example: 'Descubre los mejores lugares para visitar en La Habana...',
   })
   @IsOptional()
   @IsString()
-  description?: string;
+  descriptionEs?: string;
+
+  @ApiPropertyOptional({
+    description: 'Short description/summary in English',
+    example: 'Discover the best places to visit in Havana...',
+  })
+  @IsOptional()
+  @IsString()
+  descriptionEn?: string;
 
   @ApiProperty({
-    description: 'Contenido HTML (será sanitizado para prevenir XSS)',
+    description: 'Contenido HTML en español (será sanitizado para prevenir XSS)',
     example: '<h2>Introducción</h2><p>La Habana es una ciudad...</p>',
   })
   @IsNotEmpty()
   @IsString()
-  content: string;
+  contentEs: string;
+
+  @ApiProperty({
+    description: 'Full HTML content in English (sanitized)',
+    example: '<h2>Introduction</h2><p>Havana is a city...</p>',
+  })
+  @IsNotEmpty()
+  @IsString()
+  contentEn: string;
 
   @ApiPropertyOptional({
     description: 'Ruta de la imagen destacada',
