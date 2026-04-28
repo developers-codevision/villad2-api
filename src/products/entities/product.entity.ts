@@ -11,6 +11,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductFamily } from '../../product-families/entities/product-family.entity';
 import { ProductDailyRecord } from './product-daily-record.entity';
+import { Ipv } from '../../ipv/entities/ipv.entity';
 
 @Entity('products')
 export class Product {
@@ -46,6 +47,15 @@ export class Product {
   @ApiPropertyOptional({ description: 'ID de la familia de productos', example: 1 })
   @Column({ type: 'int', nullable: true })
   productFamilyId?: number;
+
+  @ApiPropertyOptional({ description: 'IPV al que pertenece el producto' })
+  @ManyToOne(() => Ipv, (ipv) => ipv.products, { nullable: true })
+  @JoinColumn({ name: 'ipvId' })
+  ipv?: Ipv;
+
+  @ApiPropertyOptional({ description: 'ID del IPV', example: 1 })
+  @Column({ type: 'int', nullable: true })
+  ipvId?: number;
 
   @ApiProperty({ description: 'Registros diarios de inventario' })
   @OneToMany(() => ProductDailyRecord, (record) => record.product)

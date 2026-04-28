@@ -3,14 +3,7 @@ import { IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-valida
 import { IpvType } from '../entities/ipv.entity';
 
 export class CreateIpvDto {
-	@ApiProperty({
-		example: 'COC-001',
-		description: 'Código asignado al IPV',
-	})
-	@IsString()
-	@IsNotEmpty()
-	code: string;
-
+	
 	@ApiProperty({
 		example: IpvType.COCINA,
 		description: 'Tipo de IPV',
@@ -21,10 +14,34 @@ export class CreateIpvDto {
 	type: IpvType;
 
 	@ApiPropertyOptional({
-		example: 1,
-		description: 'ID de Product asociado',
+		example: 'Revisión mensual de inventario',
+		description: 'Comentarios adicionales o notas de revisión',
+	})
+	@IsString()
+	@IsOptional()
+	review?: string;
+
+	@ApiPropertyOptional({
+		example: 10,
+		description: 'Cantidad de entradas de producto al inventario',
 	})
 	@IsNumber()
 	@IsOptional()
-	productId?: number;
+	intake?: number;
+
+	@ApiPropertyOptional({
+		example: 2,
+		description: 'Cantidad de mermas o pérdidas',
+	})
+	@IsNumber()
+	@IsOptional()
+	decrease?: number;
+
+	@ApiPropertyOptional({
+		example: 15,
+		description: 'Cantidad consumida/facturada',
+	})
+	@IsNumber()
+	@IsOptional()
+	bills?: number;
 }

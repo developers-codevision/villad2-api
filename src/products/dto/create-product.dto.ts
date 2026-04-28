@@ -48,4 +48,12 @@ export class CreateProductDto {
   @IsOptional()
   @IsInt()
   productFamilyId?: number;
+
+  @ApiPropertyOptional({
+    description: 'ID del IPV al que pertenece el producto',
+    example: 1,
+  })
+  @IsOptional()
+  @IsInt()
+  ipvId?: number;
 }

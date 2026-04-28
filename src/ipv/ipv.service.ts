@@ -11,41 +11,31 @@ export class IpvService {
   constructor(
     @InjectRepository(Ipv)
     private readonly ipvRepository: Repository<Ipv>,
-    @InjectRepository(Product)
-    private readonly productRepository: Repository<Product>,
   ) {}
 
   async create(createIpvDto: CreateIpvDto) {
-    const existingCode = await this.ipvRepository.findOne({
-      where: { code: createIpvDto.code },
+    // Buscamos el registro IPV anterior del mismo tipo para obtener su 'final'
+    const previousIpv = await this.ipvRepository.findOne({
+      where: { type: createIpvDto.type },
+      order: { id: 'DESC' },
     });
 
-    if (existingCode) {
-      throw new ConflictException(`Ya existe un IPV con el código '${createIpvDto.code}'`);
-    }
+    // El inicial es el final del día anterior (o 0 si es el primer registro)
+    const initial = previousIpv?.final || 0;
 
-    if (createIpvDto.productId) {
-      const product = await this.productRepository.findOne({
-        where: { id: createIpvDto.productId },
-      });
+    // Tomamos los valores del DTO (asumiendo 0 si no se envían)
+    const intake = createIpvDto.intake || 0;
+    const bills = createIpvDto.bills || 0; // Asumiendo que bills representa el "consumo"
+    const decrease = createIpvDto.decrease || 0;
 
-      if (!product) {
-        throw new NotFoundException(`El producto con id ${createIpvDto.productId} no existe`);
-      }
+    // Lógica calculada: inicial + entrada + consumo - merma
+    const final = initial + intake + bills - decrease;
 
-      const existingIpv = await this.ipvRepository.findOne({
-        where: {
-          productId: createIpvDto.productId,
-          type: createIpvDto.type,
-        },
-      });
-
-      if (existingIpv) {
-        throw new ConflictException(`Ya existe un IPV de tipo '${createIpvDto.type}' para este producto`);
-      }
-    }
-
-    const newIpv = this.ipvRepository.create(createIpvDto);
+    const newIpv = this.ipvRepository.create({
+      ...createIpvDto,
+      inital: initial,
+      final: final,
+    });
     return await this.ipvRepository.save(newIpv);
   }
 
@@ -68,42 +58,7 @@ export class IpvService {
 
   async update(id: number, updateIpvDto: UpdateIpvDto) {
     const ipv = await this.findOne(id);
-
-    if (updateIpvDto.productId) {
-      const product = await this.productRepository.findOne({
-        where: { id: updateIpvDto.productId },
-      });
-      if (!product) {
-        throw new NotFoundException(`El producto con id ${updateIpvDto.productId} no existe`);
-      }
-    }
-
     const nextType = updateIpvDto.type ?? ipv.type;
-    const nextCode = updateIpvDto.code ?? ipv.code;
-    const nextProductId = updateIpvDto.productId !== undefined ? updateIpvDto.productId : ipv.productId;
-
-    if (nextCode !== ipv.code) {
-      const existingCode = await this.ipvRepository.findOne({
-        where: { code: nextCode },
-      });
-
-      if (existingCode && existingCode.id !== ipv.id) {
-        throw new ConflictException(`Ya existe un IPV con el código '${nextCode}'`);
-      }
-    }
-
-    if ((nextType !== ipv.type || nextProductId !== ipv.productId) && nextProductId) {
-      const existingIpv = await this.ipvRepository.findOne({
-        where: { type: nextType, productId: nextProductId },
-      });
-
-      if (existingIpv && existingIpv.id !== ipv.id) {
-        throw new ConflictException(
-          `Ya existe un IPV de tipo '${nextType}' para el producto con id ${nextProductId}`,
-        );
-      }
-    }
-
     this.ipvRepository.merge(ipv, updateIpvDto);
     return await this.ipvRepository.save(ipv);
   }
