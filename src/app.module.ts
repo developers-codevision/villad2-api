@@ -23,6 +23,7 @@ import { SalaryModule } from './salary/salary.module';
 import { VacationModule } from './vacation/vacation.module';
 import { AbsenceModule } from './absence/absence.module';
 import { BlogModule } from './blog/blog.module';
+import { BlogCommentsModule } from './blog-comments/blog-comments.module';
 
 @Module({
   imports: [
@@ -66,6 +67,7 @@ import { BlogModule } from './blog/blog.module';
     VacationModule,
     AbsenceModule,
     BlogModule,
+    BlogCommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
