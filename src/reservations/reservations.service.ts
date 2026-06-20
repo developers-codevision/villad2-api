@@ -4,7 +4,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThan, Repository } from 'typeorm';
+import { LessThan, Like, Repository } from 'typeorm';
 import { Room } from '../rooms/entities/room.entity';
 import { RoomStatus } from '../rooms/enums/room-enums.enum';
 import { Client, ClientSex } from './entities/client.entity';
@@ -133,22 +133,39 @@ export class ReservationsService {
     const prices = await this.settingsService.getPrices();
 
     // Calculate total price using adjusted dates
+    const rawCheckIn = new Date(adjustedCheckInDate);
+    const rawCheckOut = new Date(adjustedCheckOutDate);
+    const hoursCount = Math.round(
+      (rawCheckOut.getTime() - rawCheckIn.getTime()) / (1000 * 60 * 60),
+    );
+
     // Normalize dates to midnight (00:00:00) to calculate nights based on calendar days only
-    const checkInDate = new Date(adjustedCheckInDate);
-    const checkOutDate = new Date(adjustedCheckOutDate);
+    const checkInDate = new Date(rawCheckIn);
+    const checkOutDate = new Date(rawCheckOut);
     checkInDate.setHours(0, 0, 0, 0);
     checkOutDate.setHours(0, 0, 0, 0);
     const nights = Math.round(
       (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24),
     );
-    if (nights <= 0) {
-      throw new ConflictException(
-        'Check-out date must be after check-in date.',
-      );
+
+    let basePrice: number;
+    let extraGuestsCharge: number;
+
+    if (nights > 0) {
+      basePrice = nights * room.pricePerNight;
+      extraGuestsCharge =
+        nights * (dto.extraGuestsCount ?? 0) * room.extraGuestCharge;
+    } else {
+      // Hourly reservation (same day): proportional price based on hours
+      if (hoursCount <= 0) {
+        throw new ConflictException(
+          'Check-out date must be after check-in date.',
+        );
+      }
+      basePrice = (hoursCount / 24) * Number(room.pricePerNight);
+      extraGuestsCharge =
+        (hoursCount / 24) * (dto.extraGuestsCount ?? 0) * Number(room.extraGuestCharge);
     }
-    const basePrice = nights * room.pricePerNight;
-    const extraGuestsCharge =
-      nights * (dto.extraGuestsCount ?? 0) * room.extraGuestCharge;
 
     // Use dynamic prices from settings
     const transferCharge =
@@ -548,22 +565,39 @@ export class ReservationsService {
       // Get current prices from settings
       const prices = await this.settingsService.getPrices();
 
-      const checkIn = new Date(reservation.checkInDate);
-      const checkOut = new Date(reservation.checkOutDate);
+      const rawCheckInUpdate = new Date(reservation.checkInDate);
+      const rawCheckOutUpdate = new Date(reservation.checkOutDate);
+      const hoursCountUpdate = Math.round(
+        (rawCheckOutUpdate.getTime() - rawCheckInUpdate.getTime()) / (1000 * 60 * 60),
+      );
+
+      const checkIn = new Date(rawCheckInUpdate);
+      const checkOut = new Date(rawCheckOutUpdate);
       // Normalize dates to midnight (00:00:00) to calculate nights based on calendar days only
       checkIn.setHours(0, 0, 0, 0);
       checkOut.setHours(0, 0, 0, 0);
       const nights = Math.round(
         (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
       );
-      if (nights <= 0) {
-        throw new ConflictException(
-          'Check-out date must be after check-in date.',
-        );
+
+      let basePrice: number;
+      let extraGuestsCharge: number;
+
+      if (nights > 0) {
+        basePrice = nights * room.pricePerNight;
+        extraGuestsCharge =
+          nights * reservation.extraGuestsCount * room.extraGuestCharge;
+      } else {
+        // Hourly reservation (same day): proportional price based on hours
+        if (hoursCountUpdate <= 0) {
+          throw new ConflictException(
+            'Check-out date must be after check-in date.',
+          );
+        }
+        basePrice = (hoursCountUpdate / 24) * Number(room.pricePerNight);
+        extraGuestsCharge =
+          (hoursCountUpdate / 24) * reservation.extraGuestsCount * Number(room.extraGuestCharge);
       }
-      const basePrice = nights * room.pricePerNight;
-      const extraGuestsCharge =
-        nights * reservation.extraGuestsCount * room.extraGuestCharge;
 
       // Use dynamic prices from settings
       const transferCharge =
@@ -940,22 +974,34 @@ export class ReservationsService {
         { status: ReservationStatus.PENDING, roomId },
         { status: ReservationStatus.CONFIRMED, roomId },
       ],
-      select: ['id', 'checkInDate', 'checkOutDate', 'status'],
+      select: [
+        'id',
+        'checkInDate',
+        'checkOutDate',
+        'status',
+        'paymentExpiresAt',
+      ],
     });
 
+    const now = new Date();
     const newCheckIn = new Date(checkInDate);
     const newCheckOut = new Date(checkOutDate);
 
     for (const reservation of conflictingReservations) {
+      // Skip PENDING reservations whose payment window has already expired
+      if (
+        reservation.status === ReservationStatus.PENDING &&
+        reservation.paymentExpiresAt &&
+        reservation.paymentExpiresAt < now
+      ) {
+        continue;
+      }
+
       const existingCheckIn = new Date(reservation.checkInDate);
       const existingCheckOut = new Date(reservation.checkOutDate);
 
-      // Check if date ranges overlap
       // Overlap occurs if: newCheckIn < existingCheckOut AND newCheckOut > existingCheckIn
-      if (
-        (newCheckIn <= existingCheckOut && newCheckIn >= existingCheckIn) ||
-        (newCheckOut >= existingCheckIn && newCheckOut <= existingCheckOut)
-      ) {
+      if (newCheckIn < existingCheckOut && newCheckOut > existingCheckIn) {
         throw new ConflictException(
           `Room ${roomId} is already reserved from ${existingCheckIn.toISOString()} to ${existingCheckOut.toISOString()}. ` +
             `Requested dates ${checkInDate} to ${checkOutDate} conflict with existing reservation.`,
@@ -1010,12 +1056,8 @@ export class ReservationsService {
       const existingCheckIn = new Date(reservation.checkInDate);
       const existingCheckOut = new Date(reservation.checkOutDate);
 
-      // Check if date ranges overlap
       // Overlap occurs if: newCheckIn < existingCheckOut AND newCheckOut > existingCheckIn
-      if (
-        (newCheckIn <= existingCheckOut && newCheckIn >= existingCheckIn) ||
-        (newCheckOut >= existingCheckIn && newCheckOut <= existingCheckOut)
-      ) {
+      if (newCheckIn < existingCheckOut && newCheckOut > existingCheckIn) {
         throw new ConflictException(
           `Room ${roomId} is already reserved from ${existingCheckIn.toISOString()} to ${existingCheckOut.toISOString()}. ` +
             `Requested dates ${checkInDate} to ${checkOutDate} conflict with existing reservation.`,
@@ -1180,21 +1222,37 @@ export class ReservationsService {
         {
           status: ReservationStatus.PENDING,
           type: ReservationType.TERRACE,
-          checkInDate: reservationDate,
+          checkInDate: Like(`${reservationDate}%`),
         },
         {
           status: ReservationStatus.CONFIRMED,
           type: ReservationType.TERRACE,
-          checkInDate: reservationDate,
+          checkInDate: Like(`${reservationDate}%`),
         },
       ],
-      select: ['id', 'checkInDate', 'checkOutDate', 'status'],
+      select: [
+        'id',
+        'checkInDate',
+        'checkOutDate',
+        'status',
+        'paymentExpiresAt',
+      ],
     });
 
+    const now = new Date();
     const newStart = new Date(checkInDate).getTime();
     const newEnd = new Date(checkOutDate).getTime();
 
     for (const reservation of conflictingReservations) {
+      // Skip expired PENDING reservations
+      if (
+        reservation.status === ReservationStatus.PENDING &&
+        reservation.paymentExpiresAt &&
+        reservation.paymentExpiresAt < now
+      ) {
+        continue;
+      }
+
       const existingStart = new Date(reservation.checkInDate).getTime();
       const existingEnd = new Date(reservation.checkOutDate).getTime();
 
