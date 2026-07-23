@@ -142,6 +142,32 @@ export class AuthService {
     return this.usersService.removeRefreshToken(userId);
   }
 
+  async changePassword(
+    userId: number,
+    currentPassword: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    const user = await this.usersService.findByUsername(
+      (await this.usersService.findOne(userId)).username,
+    );
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const isCurrentPasswordValid = await user.validatePassword(
+      currentPassword,
+    );
+    if (!isCurrentPasswordValid) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.updatePassword(userId, hashedPassword);
+
+    return { message: 'Password changed successfully' };
+  }
+
   async verifyRefreshToken(token: string): Promise<any> {
     try {
       return await this.jwtService.verify(token, {

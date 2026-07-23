@@ -65,7 +65,7 @@ export class ReservationsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.COMERCIAL)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Create a new reservation' })
   @ApiResponse({
@@ -232,6 +232,9 @@ export class ReservationsController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.COMERCIAL)
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get all reservations with pagination and filters' })
   @ApiResponse({
     status: 200,
@@ -410,6 +413,9 @@ export class ReservationsController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.COMERCIAL)
+  @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get a reservation by ID' })
   @ApiResponse({
     status: 200,

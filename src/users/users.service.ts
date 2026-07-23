@@ -92,4 +92,17 @@ export class UsersService {
       .where('id = :id', { id: userId })
       .execute();
   }
+
+  async saveUser(user: User): Promise<User> {
+    return this.usersRepository.save(user);
+  }
+
+  async updatePassword(userId: number, hashedPassword: string): Promise<void> {
+    await this.usersRepository
+      .createQueryBuilder()
+      .update(User)
+      .set({ password: hashedPassword })
+      .where('id = :id', { id: userId })
+      .execute();
+  }
 }
