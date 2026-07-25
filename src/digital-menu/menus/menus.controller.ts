@@ -1,7 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { MenusService } from './menus.service';
-import { CreateMenuDto } from './dto/create-menu.dto';
-import { UpdateMenuDto } from './dto/update-menu.dto';
+import { CreateMenuFullDto, UpdateMenuFullDto } from './dto/menu-nested.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 
 @Controller('api/menus')
@@ -10,23 +9,23 @@ export class MenusController {
   constructor(private readonly menusService: MenusService) {}
 
   @Get()
-  findAll() {
-    return this.menusService.findAll();
+  findAll(@Query('isActive') isActive?: string) {
+    return this.menusService.findAll(isActive === 'true');
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.menusService.findOne(id);
+  findOne(@Param('id', ParseIntPipe) id: number, @Query('isActive') isActive?: string) {
+    return this.menusService.findOne(id, isActive === 'true');
   }
 
   @Post()
-  create(@Body() dto: CreateMenuDto) {
-    return this.menusService.create(dto);
+  create(@Body() dto: CreateMenuFullDto) {
+    return this.menusService.createFull(dto);
   }
 
   @Put(':id')
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMenuDto) {
-    return this.menusService.update(id, dto);
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateMenuFullDto) {
+    return this.menusService.updateFull(id, dto);
   }
 
   @Delete(':id')

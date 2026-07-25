@@ -1,7 +1,7 @@
 import { Entity, PrimaryGeneratedColumn, Column, UpdateDateColumn } from 'typeorm';
 
-@Entity('menu_static_content')
-export class MenuStaticContent {
+@Entity('service_config')
+export class ServiceConfig {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -10,6 +10,9 @@ export class MenuStaticContent {
 
   @Column({ type: 'text' })
   value: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;

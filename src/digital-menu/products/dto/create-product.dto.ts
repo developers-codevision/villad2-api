@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsPositive, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsPositive, IsArray, IsInt } from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
@@ -13,18 +13,15 @@ export class CreateProductDto {
   price: number;
 
   @IsOptional()
-  @IsString()
-  image?: string;
-
-  @IsOptional()
-  @IsInt()
-  menuId?: number;
-
-  @IsOptional()
-  @IsInt()
-  categoryId?: number;
+  @IsBoolean()
+  active?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  active?: boolean;
+  featured?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsInt({ each: true })
+  categoryIds?: number[];
 }

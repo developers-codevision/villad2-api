@@ -1,9 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { Menu } from './menu.entity';
-import { MenuProduct } from './menu-product.entity';
+import { CategoryProduct } from './category-product.entity';
 
-@Entity('menu_categories')
-export class MenuCategory {
+@Entity('categories')
+export class Category {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -26,8 +26,8 @@ export class MenuCategory {
   @Column({ name: 'menu_id' })
   menuId: number;
 
-  @OneToMany(() => MenuProduct, (product) => product.category)
-  products: MenuProduct[];
+  @OneToMany(() => CategoryProduct, (cp) => cp.category, { cascade: true })
+  categoryProducts: CategoryProduct[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

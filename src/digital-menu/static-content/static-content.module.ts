@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { MenuStaticContent } from '../entities/menu-static-content.entity';
+import { ServiceConfig } from '../entities/service-config.entity';
 import { StaticContentService } from './static-content.service';
 import { StaticContentController } from './static-content.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MenuStaticContent])],
+  imports: [TypeOrmModule.forFeature([ServiceConfig])],
   controllers: [StaticContentController],
   providers: [StaticContentService],
   exports: [StaticContentService],

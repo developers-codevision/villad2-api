@@ -1,4 +1,6 @@
 export { Menu } from './menu.entity';
-export { MenuCategory } from './menu-category.entity';
-export { MenuProduct } from './menu-product.entity';
-export { MenuStaticContent } from './menu-static-content.entity';
+export { Category } from './category.entity';
+export { Product } from './product.entity';
+export { CategoryProduct } from './category-product.entity';
+export { Subtitulo } from './subtitulo.entity';
+export { ServiceConfig } from './service-config.entity';

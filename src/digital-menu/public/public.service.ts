@@ -19,8 +19,6 @@ export class PublicService {
       menus,
       staticContent,
       hostalName: process.env.HOSTAL_NAME || 'Hostal',
-      hostalLogo: process.env.HOSTAL_LOGO || '/images/logo.png',
-      hostalSubdomain: process.env.HOSTAL_SUBDOMAIN || '',
     };
   }
 }

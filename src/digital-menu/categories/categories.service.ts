@@ -1,36 +1,36 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { MenuCategory } from '../entities/menu-category.entity';
+import { Category } from '../entities/category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
   constructor(
-    @InjectRepository(MenuCategory)
-    private readonly categoryRepository: Repository<MenuCategory>,
+    @InjectRepository(Category)
+    private readonly categoryRepository: Repository<Category>,
   ) {}
 
-  async findAll(): Promise<MenuCategory[]> {
+  async findAll(): Promise<Category[]> {
     return this.categoryRepository.find({
       order: { order: 'ASC' },
-      relations: ['menu', 'products'],
+      relations: ['menu'],
     });
   }
 
-  async findByMenu(menuId: number): Promise<MenuCategory[]> {
+  async findByMenu(menuId: number): Promise<Category[]> {
     return this.categoryRepository.find({
       where: { menuId, active: true },
       order: { order: 'ASC' },
-      relations: ['products'],
+      relations: ['categoryProducts', 'categoryProducts.product'],
     });
   }
 
-  async findOne(id: number): Promise<MenuCategory> {
+  async findOne(id: number): Promise<Category> {
     const category = await this.categoryRepository.findOne({
       where: { id },
-      relations: ['menu', 'products'],
+      relations: ['menu', 'categoryProducts', 'categoryProducts.product'],
     });
     if (!category) {
       throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
@@ -38,12 +38,11 @@ export class CategoriesService {
     return category;
   }
 
-  async create(dto: CreateCategoryDto): Promise<MenuCategory> {
-    const category = this.categoryRepository.create(dto);
-    return this.categoryRepository.save(category);
+  async create(dto: CreateCategoryDto): Promise<Category> {
+    return this.categoryRepository.save(dto as any);
   }
 
-  async update(id: number, dto: UpdateCategoryDto): Promise<MenuCategory> {
+  async update(id: number, dto: UpdateCategoryDto): Promise<Category> {
     const category = await this.findOne(id);
     Object.assign(category, dto);
     return this.categoryRepository.save(category);
