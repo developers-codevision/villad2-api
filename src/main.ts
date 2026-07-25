@@ -8,22 +8,26 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
+import * as hbs from 'hbs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Cookie parser middleware
   app.use(cookieParser());
 
-  // Configure raw body parser for Stripe webhook endpoint BEFORE other middleware
   app.use('/payments/webhook', express.raw({ type: 'application/json' }));
+
+  app.setBaseViewsDir(join(__dirname, 'views'));
+  app.setViewEngine('hbs');
+  app.engine('hbs', (hbs as any).__express);
+  hbs.registerPartials(join(__dirname, 'views', 'public', 'partials'));
+  app.set('view options', { layout: 'layout' });
 
   const config = new DocumentBuilder()
     .setTitle('Tu API')
     .setDescription('Descripción')
     .setVersion('1.0')
     .addBearerAuth(
-      // <-- Importante: Configurar Bearer Auth
       {
         type: 'http',
         scheme: 'bearer',
@@ -32,17 +36,19 @@ async function bootstrap() {
         description: 'Ingresa tu token JWT',
         in: 'header',
       },
-      'access-token', // <-- Nombre del esquema
+      'access-token',
     )
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
-  // Configuración de archivos estáticos
+
   app.useStaticAssets(join(__dirname, '..', 'media'), {
     prefix: '/media/',
   });
+  app.useStaticAssets(join(__dirname, 'public'));
+
   app.enableCors({
-    origin: true, // En producción, reemplaza con los dominios permitidos
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

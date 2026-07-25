@@ -24,6 +24,12 @@ import { VacationModule } from './vacation/vacation.module';
 import { AbsenceModule } from './absence/absence.module';
 import { BlogModule } from './blog/blog.module';
 import { BlogCommentsModule } from './blog-comments/blog-comments.module';
+import { MenusModule } from './digital-menu/menus/menus.module';
+import { MenuCategoriesModule } from './digital-menu/categories/categories.module';
+import { MenuProductsModule } from './digital-menu/products/products.module';
+import { StaticContentModule } from './digital-menu/static-content/static-content.module';
+import { PublicModule } from './digital-menu/public/public.module';
+import { AdminModule } from './digital-menu/admin/admin.module';
 
 @Module({
   imports: [
@@ -68,6 +74,12 @@ import { BlogCommentsModule } from './blog-comments/blog-comments.module';
     AbsenceModule,
     BlogModule,
     BlogCommentsModule,
+    MenusModule,
+    MenuCategoriesModule,
+    MenuProductsModule,
+    StaticContentModule,
+    PublicModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
