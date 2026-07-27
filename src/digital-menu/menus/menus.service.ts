@@ -69,7 +69,7 @@ export class MenusService {
   }
 
   async findActive(): Promise<Menu[]> {
-    return this.menuRepository.find({
+    const menus = await this.menuRepository.find({
       where: { active: true },
       order: { order: 'ASC' },
       relations: [
@@ -79,6 +79,20 @@ export class MenusService {
         'subtitulos',
       ],
     });
+
+    for (const menu of menus) {
+      menu.categories = menu.categories?.filter(c => c.active) || [];
+      for (const cat of menu.categories) {
+        cat.categoryProducts = cat.categoryProducts?.filter(cp => cp.product?.active) || [];
+      }
+      menu.categories?.sort((a, b) => a.order - b.order);
+      for (const cat of menu.categories || []) {
+        cat.categoryProducts?.sort((a, b) => a.order - b.order);
+      }
+      menu.subtitulos?.sort((a, b) => a.order - b.order);
+    }
+
+    return menus;
   }
 
   async createFull(dto: CreateMenuFullDto): Promise<Menu> {
