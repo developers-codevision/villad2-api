@@ -118,6 +118,7 @@ export class MenusService {
             description: catDto.description,
             active: catDto.active,
             order: catDto.order,
+            price: catDto.price,
             menuId: menu.id,
           });
 
@@ -222,6 +223,7 @@ export class MenusService {
             if (catDto.description !== undefined) category.description = catDto.description;
             if (catDto.active !== undefined) category.active = catDto.active;
             if (catDto.order !== undefined) category.order = catDto.order;
+            if (catDto.price !== undefined) category.price = catDto.price;
             await queryRunner.manager.save(Category, category);
           } else {
             category = await queryRunner.manager.save(Category, {
@@ -229,6 +231,7 @@ export class MenusService {
               description: catDto.description,
               active: catDto.active,
               order: catDto.order,
+              price: catDto.price,
               menuId: menu.id,
             });
           }

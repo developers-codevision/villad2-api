@@ -48,6 +48,10 @@ export class NestedCategoryDto {
   order?: number;
 
   @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  price?: number;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => NestedProductDto)

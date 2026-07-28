@@ -19,6 +19,9 @@ export class Category {
   @Column({ type: 'int', default: 0 })
   order: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  price: number;
+
   @ManyToOne(() => Menu, (menu) => menu.categories, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'menu_id' })
   menu: Menu;

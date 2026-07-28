@@ -29,6 +29,7 @@ Devuelve todos los menús activos con sus categorías activas y productos activo
           "name": "Desayuno Económico / Simple breakfast",
           "order": 1,
           "active": true,
+          "price": null,
           "categoryProducts": [
             {
               "order": 0,
@@ -173,6 +174,7 @@ Devuelve el menú completo con categorías, productos y subtítulos anidados.
       "description": null,
       "active": true,
       "order": 1,
+      "price": null,
       "menuId": 2,
       "createdAt": "2026-07-25T17:43:19.797Z",
       "updatedAt": "2026-07-25T17:43:19.797Z",
@@ -213,7 +215,7 @@ Devuelve el menú completo con categorías, productos y subtítulos anidados.
 Menu
 ├── id, name, description, schedule, order, active
 ├── categories[]          ← ordenado por order ASC
-│   ├── id, name, description, active, order, menuId
+│   ├── id, name, description, active, order, price, menuId
 │   └── categoryProducts[] ← ordenado por order ASC
 │       ├── categoryId, productId, order
 │       └── product
@@ -316,6 +318,7 @@ El endpoint **rechaza** el request si detecta valores duplicados en el campo `or
 | `description` | `string` | No | `null` | — |
 | `active` | `boolean` | No | `true` | ¿Visible? |
 | `order` | `number` | No | `0` | Orden dentro del menú. **No puede repetirse** |
+| `price` | `number` | No | `null` | Precio de la categoría |
 | `products` | `array` | No | `[]` | Productos dentro de esta categoría |
 
 #### Producto (dentro de `categories[].products[]`)
@@ -443,6 +446,7 @@ Todos los campos son **opcionales**. Solo se actualiza lo que se envía.
 | `description` | `string` | — |
 | `active` | `boolean` | `false` → desactiva la categoría |
 | `order` | `number` | **No puede repetirse** |
+| `price` | `number` | Precio de la categoría |
 | `products` | `array` | Si se envía el array, reemplaza los productos de esta categoría |
 
 #### Producto (dentro de `categories[].products[]`)
