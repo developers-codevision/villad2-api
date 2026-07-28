@@ -59,9 +59,13 @@ async function seed() {
   await subtituloRepo.save(subtituloRepo.create({ menuId: menuPicadera.id, text: 'Servicio habitación $5 Usd de cargo adicional / Room service $5 usd additional charge', order: 2 }));
   console.log('Subtítulos creados.');
 
+  const catProductOrder = new Map<number, number>();
+
   async function addProduct(data: any) {
+    const order = (catProductOrder.get(data.categoryId) || 0) + 1;
+    catProductOrder.set(data.categoryId, order);
     const p = await prodRepo.save(prodRepo.create({ name: data.name, description: data.description || undefined, price: data.price }));
-    await cpRepo.save(cpRepo.create({ categoryId: data.categoryId, productId: p.id }));
+    await cpRepo.save(cpRepo.create({ categoryId: data.categoryId, productId: p.id, order }));
     return p;
   }
 
