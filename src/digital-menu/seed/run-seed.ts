@@ -5,131 +5,376 @@ import { CategoryProduct } from '../entities/category-product.entity';
 import { Subtitulo } from '../entities/subtitulo.entity';
 import { ServiceConfig } from '../entities/service-config.entity';
 import defaultDataSource from '../../data-source';
+import * as fs from 'fs';
+import * as path from 'path';
+
+interface ParsedProduct {
+  name: string;
+  price: number | null;
+}
+
+interface ParsedCategory {
+  name: string;
+  price: number | null;
+  products: ParsedProduct[];
+}
+
+interface ParsedMenu {
+  name: string;
+  description: string;
+  schedule: string;
+  categories: ParsedCategory[];
+}
+
+interface Token {
+  type: 'category' | 'header' | 'product' | 'plain';
+  text: string;
+}
+
+function unescapeMarkdown(text: string): string {
+  return text.replace(/\\([.()$])/g, '$1');
+}
+
+function parsePrice(str: string): number | null {
+  if (!str) return null;
+  const cleaned = str.replace(/[^\d.,]/g, '').replace(',', '.');
+  const num = parseFloat(cleaned);
+  return isNaN(num) ? null : num;
+}
+
+function stripTrailingFiller(name: string): string {
+  return name.replace(/[\s.…_·•\-\$]+$/, '').replace(/[\s\/]+$/, '').trim();
+}
+
+function cleanName(name: string): string {
+  let cleaned = stripTrailingFiller(name.replace(/\*+/g, '').trim());
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  return cleaned;
+}
+
+function isFooterLine(text: string): boolean {
+  const lower = text.toLowerCase();
+  if (/^(precios? en|unit prices?|prices? in|los precios)/.test(lower)) return true;
+  if (lower.includes('10% servicio') || lower.includes('10% service')) return true;
+  if (lower.includes('servicio habitación') || lower.includes('room service')) return true;
+  return false;
+}
+
+function isScheduleText(text: string): boolean {
+  const lower = text.toLowerCase();
+  return lower.includes('horario') || lower.includes('schedule') || lower.includes('servicio 24 horas');
+}
+
+function hasTime(text: string): boolean {
+  return /\d{1,2}:\d{2}/.test(text) || /\d{1,2}\s*(am|pm)/i.test(text);
+}
+
+function cleanSchedule(text: string): string {
+  return cleanName(text.replace(/^(Horario|Schedule)\s*[:]?\s*/i, ''));
+}
+
+function isImageLine(line: string): boolean {
+  return line.includes('data:image') || line.startsWith('![');
+}
+
+function isWebsiteLine(line: string): boolean {
+  return line.includes('villad2.com') || line.includes('www.') || /^https?:/.test(line) || line.includes('<www.');
+}
+
+const SKIP_CATEGORIES = new Set([
+  'menu bar terraza',
+  'carta de vinos / cavas / espumosos',
+  'snack',
+]);
+
+function isSkipCategory(name: string): boolean {
+  return SKIP_CATEGORIES.has(name.toLowerCase()) || isWebsiteLine(name);
+}
+
+function tokenize(line: string): Token[] {
+  const tokens: Token[] = [];
+  const regex = /(\*\*(.*?)\*\*)|(_(.*?)_)/g;
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(line)) !== null) {
+    if (m.index > lastIndex) {
+      const plain = line.slice(lastIndex, m.index).trim();
+      if (plain) tokens.push({ type: 'plain', text: plain });
+    }
+    if (m[1]) {
+      const raw = m[1];
+      const content = m[2].replace(/[*_]+/g, ' ').replace(/\s+/g, ' ').trim();
+      const type = raw.includes('_') ? 'category' : 'header';
+      if (content) tokens.push({ type, text: content });
+    } else {
+      tokens.push({ type: 'product', text: m[4] });
+    }
+    lastIndex = m.index + m[0].length;
+  }
+  if (lastIndex < line.length) {
+    const plain = line.slice(lastIndex).trim();
+    if (plain) tokens.push({ type: 'plain', text: plain });
+  }
+  return tokens;
+}
+
+function splitProducts(text: string): ParsedProduct[] {
+  const re = /(.+?)\s+(\d{1,2}[.,]\d{1,2})(?=\s|$)/g;
+  const products: ParsedProduct[] = [];
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) {
+    const name = cleanName(m[1]);
+    if (name) products.push({ name, price: parsePrice(m[2]) });
+    lastIndex = m.index + m[0].length;
+  }
+  let rest = text.slice(lastIndex).trim();
+  if (/^\d{1,2}[.,]\d{1,2}$/.test(rest)) {
+    rest = '';
+  }
+  if (rest) {
+    const name = cleanName(rest);
+    if (name) products.push({ name, price: null });
+  }
+  if (products.length === 0) {
+    const name = cleanName(text);
+    if (name) products.push({ name, price: null });
+  }
+  return products;
+}
+
+function extractCategoryPrice(content: string): { price: number | null; rest: string } {
+  const fillerOnly = content.match(/^[\s.…_·•]*\$?\s*(\d{1,2}[.,]\d{1,2})[\s.…_·•]*$/);
+  if (fillerOnly) return { price: parsePrice(fillerOnly[1]), rest: '' };
+  const leading = content.match(/^(\d{1,2}[.,]\d{1,2})\s+(.+)$/);
+  if (leading) return { price: parsePrice(leading[1]), rest: leading[2] };
+  return { price: null, rest: content };
+}
+
+function parseMarkdownFile(filePath: string): ParsedMenu {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const rawLines = content.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  const fileName = path.basename(filePath, '.md');
+  let menuName = fileName
+    .replace(/^Carta\s+(de\s+|del\s+)?/i, '')
+    .replace(/\s*VD2.*$/i, '')
+    .replace(/\s*D2.*$/i, '')
+    .replace(/Usd\s*en\s*Ingles/i, '')
+    .trim();
+  menuName = menuName.charAt(0).toUpperCase() + menuName.slice(1);
+  if (!menuName) menuName = fileName;
+
+  let schedule = '';
+  const categories: ParsedCategory[] = [];
+  let current: ParsedCategory | null = null;
+
+  const parsedLines: { line: string; tokens: Token[] }[] = [];
+  for (const line of rawLines) {
+    if (isImageLine(line) || isWebsiteLine(line)) continue;
+    const tokens = tokenize(line);
+    if (tokens.length === 0) continue;
+    parsedLines.push({ line, tokens });
+  }
+
+  const startsWithCategory = (pl: { tokens: Token[] }) => pl.tokens[0].type === 'category';
+
+  for (let i = 0; i < parsedLines.length; i++) {
+    const pl = parsedLines[i];
+
+    if (startsWithCategory(pl)) {
+      const name = cleanName(pl.tokens[0].text);
+
+      if (isSkipCategory(name)) continue;
+      if (isScheduleText(name)) {
+        if (name.toLowerCase().includes('servicio 24 horas')) {
+          if (!schedule) schedule = 'Servicio 24 horas';
+        } else if (hasTime(name)) {
+          if (!schedule) schedule = cleanSchedule(name);
+        }
+        continue;
+      }
+
+      let hasChildren = false;
+      for (let j = i + 1; j < parsedLines.length; j++) {
+        if (startsWithCategory(parsedLines[j])) break;
+        if (parsedLines[j].tokens.some(t => t.type === 'product' || t.type === 'plain')) {
+          hasChildren = true;
+          break;
+        }
+      }
+      const specialCategory = /^(Entremés|Picadera)/i.test(name);
+      const isCategory = hasChildren || specialCategory;
+
+      if (isCategory) {
+        current = { name, price: null, products: [] };
+        categories.push(current);
+        for (const token of pl.tokens.slice(1)) {
+          if (token.type === 'category') {
+            const midName = cleanName(token.text);
+            if (isScheduleText(midName)) continue;
+            if (isSkipCategory(midName)) continue;
+            current = { name: midName, price: null, products: [] };
+            categories.push(current);
+            continue;
+          }
+          const text = unescapeMarkdown(token.text).trim();
+          if (isFooterLine(text)) continue;
+          const { price, rest } = extractCategoryPrice(text);
+          if (price !== null && current.products.length === 0) {
+            current.price = price;
+          }
+          if (rest) {
+            for (const p of splitProducts(rest)) {
+              if (p.name) current.products.push(p);
+            }
+          }
+        }
+        continue;
+      }
+
+      if (!current) {
+        current = { name: 'General', price: null, products: [] };
+        categories.push(current);
+      }
+      const productName = cleanName(name);
+      let productPrice: number | null = null;
+      for (const token of pl.tokens.slice(1)) {
+        if (token.type === 'category') continue;
+        const text = unescapeMarkdown(token.text).trim();
+        const { price } = extractCategoryPrice(text);
+        if (price !== null) productPrice = price;
+      }
+      if (productName && !isFooterLine(productName)) {
+        current.products.push({ name: productName, price: productPrice });
+      }
+      continue;
+    }
+
+    for (const token of pl.tokens) {
+      if (token.type === 'category') {
+        const name = cleanName(token.text);
+        if (isSkipCategory(name)) continue;
+        if (isScheduleText(name)) {
+          if (name.toLowerCase().includes('servicio 24 horas')) {
+            if (!schedule) schedule = 'Servicio 24 horas';
+          } else if (hasTime(name)) {
+            if (!schedule) schedule = cleanSchedule(name);
+          }
+          continue;
+        }
+        current = { name, price: null, products: [] };
+        categories.push(current);
+        continue;
+      }
+
+      if (token.type === 'header') {
+        if (hasTime(token.text) && !schedule) schedule = cleanSchedule(token.text);
+        continue;
+      }
+
+      const text = unescapeMarkdown(token.text).trim();
+      if (isFooterLine(text)) continue;
+      if (isScheduleText(text)) {
+        if (text.toLowerCase().includes('servicio 24 horas')) {
+          if (!schedule) schedule = 'Servicio 24 horas';
+        } else if (hasTime(text)) {
+          if (!schedule) schedule = cleanSchedule(text);
+        }
+        continue;
+      }
+      if (SKIP_CATEGORIES.has(text.toLowerCase())) continue;
+
+      if (!current) {
+        current = { name: 'General', price: null, products: [] };
+        categories.push(current);
+      }
+      for (const p of splitProducts(text)) {
+        if (p.name) current.products.push(p);
+      }
+    }
+  }
+
+  return { name: menuName, description: '', schedule, categories };
+}
 
 async function seed() {
   const ds = await defaultDataSource.initialize();
-  console.log('Conectado a MariaDB.');
+  console.log('Conectado a la base de datos (MariaDB).');
 
   const menuRepo = ds.getRepository(Menu);
   const catRepo = ds.getRepository(Category);
   const prodRepo = ds.getRepository(Product);
-  const cpRepo = ds.getRepository(CategoryProduct);
-  const subtituloRepo = ds.getRepository(Subtitulo);
+  const catProdRepo = ds.getRepository(CategoryProduct);
   const configRepo = ds.getRepository(ServiceConfig);
 
-  const menuBebidas = await menuRepo.save(menuRepo.create({ name: 'Bebidas', description: 'Menú de bebidas', order: 1, active: true }));
-  const menuDesayunos = await menuRepo.save(menuRepo.create({ name: 'Desayunos', description: 'Menú de desayunos', schedule: '7:30 am a 10 am', order: 2, active: true }));
-  const menuAlmuerzos = await menuRepo.save(menuRepo.create({ name: 'Almuerzos', description: 'Menú de almuerzos', order: 3, active: true }));
-  const menuCenas = await menuRepo.save(menuRepo.create({ name: 'Cenas', description: 'Menú de cenas', order: 4, active: true }));
-  const menuBar = await menuRepo.save(menuRepo.create({ name: 'Bar Terraza', description: 'Menú del bar', schedule: '4:00 pm a 12 am', order: 5, active: true }));
-  const menuPicadera = await menuRepo.save(menuRepo.create({ name: 'Picadera', description: 'Menú de picaderas y snacks', order: 6, active: true }));
-  const menuLavanderia = await menuRepo.save(menuRepo.create({ name: 'Lavandería', description: 'Servicio de lavado y planchado', schedule: '9:00 am a 4:00 pm', order: 7, active: true }));
-  const menuTransfer = await menuRepo.save(menuRepo.create({ name: 'Transfer y Traslados', description: 'Servicios de transfer y traslados', order: 8, active: true }));
-  console.log('Menús creados.');
+  const menusDir = path.resolve(__dirname, '../../../../menus/md');
+  const files = fs.readdirSync(menusDir).filter(f => f.endsWith('.md'));
 
-  const catCafes = await catRepo.save(catRepo.create({ name: 'Cafés', order: 1, active: true, menuId: menuBebidas.id }));
-  const catJugos = await catRepo.save(catRepo.create({ name: 'Jugos Naturales', order: 2, active: true, menuId: menuBebidas.id }));
-  const catRefrescos = await catRepo.save(catRepo.create({ name: 'Refrescos', order: 3, active: true, menuId: menuBebidas.id }));
-  const catLicuados = await catRepo.save(catRepo.create({ name: 'Licuados', order: 4, active: true, menuId: menuBebidas.id }));
-  const catDesayunoEco = await catRepo.save(catRepo.create({ name: 'Desayuno Económico / Simple breakfast', order: 1, active: true, menuId: menuDesayunos.id }));
-  const catDesayunoStd = await catRepo.save(catRepo.create({ name: 'Desayuno Standard / Standard breakfast', order: 2, active: true, menuId: menuDesayunos.id }));
-  const catDesayunoVd2 = await catRepo.save(catRepo.create({ name: 'Desayuno Villa D2 / Villa D2 breakfast', order: 3, active: true, menuId: menuDesayunos.id }));
-  const catEntradas = await catRepo.save(catRepo.create({ name: 'Entradas', order: 1, active: true, menuId: menuAlmuerzos.id }));
-  const catSopas = await catRepo.save(catRepo.create({ name: 'Sopas', order: 2, active: true, menuId: menuAlmuerzos.id }));
-  const catPlatosFuertes = await catRepo.save(catRepo.create({ name: 'Platos Fuertes', order: 3, active: true, menuId: menuAlmuerzos.id }));
-  const catPostres = await catRepo.save(catRepo.create({ name: 'Postres', order: 4, active: true, menuId: menuAlmuerzos.id }));
-  const catCenaLigera = await catRepo.save(catRepo.create({ name: 'Cenas Ligeras', order: 1, active: true, menuId: menuCenas.id }));
-  const catCenaCompleta = await catRepo.save(catRepo.create({ name: 'Cenas Completas', order: 2, active: true, menuId: menuCenas.id }));
-  const catCocteles = await catRepo.save(catRepo.create({ name: 'Cocteles', order: 1, active: true, menuId: menuBar.id }));
-  const catLicores = await catRepo.save(catRepo.create({ name: 'Whiskys / Rones / Tequilas / Vodkas', order: 2, active: true, menuId: menuBar.id }));
-  const catCervezas = await catRepo.save(catRepo.create({ name: 'Cervezas', order: 3, active: true, menuId: menuBar.id }));
-  const catSandwiches = await catRepo.save(catRepo.create({ name: 'Sandwiches', order: 1, active: true, menuId: menuPicadera.id }));
-  const catPizzas = await catRepo.save(catRepo.create({ name: 'Pizzas', order: 2, active: true, menuId: menuPicadera.id }));
-  const catLadies = await catRepo.save(catRepo.create({ name: 'Señoras / Ladies', order: 1, active: true, menuId: menuLavanderia.id }));
-  const catGentlemen = await catRepo.save(catRepo.create({ name: 'Caballeros / Gentlemen', order: 2, active: true, menuId: menuLavanderia.id }));
-  const catChildren = await catRepo.save(catRepo.create({ name: 'Niños / Children', order: 3, active: true, menuId: menuLavanderia.id }));
-  console.log('Categorías creadas.');
+  let menuOrder = 1;
+  let totalProducts = 0;
 
-  await subtituloRepo.save(subtituloRepo.create({ menuId: menuDesayunos.id, text: 'Precios en Usd + 10% Servicio / Prices in Usd plus 10% for the service', order: 1 }));
-  await subtituloRepo.save(subtituloRepo.create({ menuId: menuDesayunos.id, text: 'Servicio habitación $5 Usd de cargo adicional / Room service $5 usd additional charge', order: 2 }));
-  await subtituloRepo.save(subtituloRepo.create({ menuId: menuBar.id, text: 'Prices in Usd + 10% Service', order: 1 }));
-  await subtituloRepo.save(subtituloRepo.create({ menuId: menuLavanderia.id, text: 'Precios unitarios en Usd + 10% Servicio / Unit prices in Usd + 10% Service', order: 1 }));
-  await subtituloRepo.save(subtituloRepo.create({ menuId: menuTransfer.id, text: 'Precios en Usd / Prices in Usd', order: 1 }));
-  await subtituloRepo.save(subtituloRepo.create({ menuId: menuPicadera.id, text: 'Precios en Usd + 10% Servicio / Prices in Usd plus 10% for the service', order: 1 }));
-  await subtituloRepo.save(subtituloRepo.create({ menuId: menuPicadera.id, text: 'Servicio habitación $5 Usd de cargo adicional / Room service $5 usd additional charge', order: 2 }));
-  console.log('Subtítulos creados.');
+  for (const file of files) {
+    const filePath = path.join(menusDir, file);
+    const menuData = parseMarkdownFile(filePath);
 
-  const catProductOrder = new Map<number, number>();
+    const menu = await menuRepo.save(menuRepo.create({
+      name: menuData.name,
+      description: menuData.description,
+      schedule: menuData.schedule,
+      order: menuOrder++,
+      active: true,
+    }));
 
-  async function addProduct(data: any) {
-    const order = (catProductOrder.get(data.categoryId) || 0) + 1;
-    catProductOrder.set(data.categoryId, order);
-    const p = await prodRepo.save(prodRepo.create({ name: data.name, description: data.description || undefined, price: data.price }));
-    await cpRepo.save(cpRepo.create({ categoryId: data.categoryId, productId: p.id, order }));
-    return p;
+    let catOrder = 0;
+    for (const catData of menuData.categories) {
+      if (!catData.products.length) continue;
+
+      const category = await catRepo.save(catRepo.create({
+        name: catData.name,
+        price: catData.price,
+        order: catOrder++,
+        active: true,
+        menuId: menu.id,
+      }));
+
+      let prodOrder = 0;
+      for (const prodData of catData.products) {
+        const product = await prodRepo.save(prodRepo.create({
+          name: prodData.name,
+          price: prodData.price,
+          active: true,
+        }));
+
+        await catProdRepo.save(catProdRepo.create({
+          categoryId: category.id,
+          productId: product.id,
+          order: prodOrder++,
+        }));
+
+        totalProducts++;
+      }
+    }
+
+    const catCount = menuData.categories.filter(c => c.products.length > 0).length;
+    const prodCount = menuData.categories.reduce((s, c) => s + c.products.length, 0);
+    console.log(`OK "${menu.name}" - ${catCount} categorias, ${prodCount} productos, horario: "${menu.schedule}"`);
   }
 
-  await addProduct({ name: 'Café Americano / American coffee', price: 2.50, categoryId: catCafes.id });
-  await addProduct({ name: 'Café con Leche / Coffee with milk', price: 3.00, categoryId: catCafes.id });
-  await addProduct({ name: 'Capuchino / Cappuccino', price: 3.50, categoryId: catCafes.id });
-  await addProduct({ name: 'Espresso Doble / Double espresso', price: 3.00, categoryId: catCafes.id });
-  await addProduct({ name: 'Jugo de Naranja / Orange juice', price: 3.50, categoryId: catJugos.id });
-  await addProduct({ name: 'Jugo de Fresa / Strawberry juice', price: 4.00, categoryId: catJugos.id });
-  await addProduct({ name: 'Coca-Cola', price: 2.00, categoryId: catRefrescos.id });
-  await addProduct({ name: 'Agua Natural 500ml / Natural Water 500ml', price: 1.10, categoryId: catRefrescos.id });
-  await addProduct({ name: 'Licuado de Banana / Banana milkshake', price: 4.50, categoryId: catLicuados.id });
-  await addProduct({ name: 'Smoothie de Frutos Rojos / Red fruits smoothie', price: 5.00, categoryId: catLicuados.id });
-  await addProduct({ name: 'Jugo de frutas tropicales / Tropical fruit juice', price: 0, categoryId: catDesayunoEco.id });
-  await addProduct({ name: 'Sandwich de jamón y queso / Ham and Cheese sandwich', price: 0, categoryId: catDesayunoEco.id });
-  await addProduct({ name: 'Café con leche / Café / Té / Coffee with milk / Coffee / Tea', price: 0, categoryId: catDesayunoEco.id });
-  await addProduct({ name: 'Tostadas de pan con mantequilla / Toast with butter', price: 0, categoryId: catDesayunoStd.id });
-  await addProduct({ name: 'Frutas tropicales / Tropical fruit', price: 0, categoryId: catDesayunoStd.id });
-  await addProduct({ name: 'Bollería / Sweets', price: 0, categoryId: catDesayunoVd2.id });
-  await addProduct({ name: 'Mojito', price: 2.00, categoryId: catCocteles.id });
-  await addProduct({ name: 'Cuba Libre', price: 2.00, categoryId: catCocteles.id });
-  await addProduct({ name: 'Piña Colada', price: 3.00, categoryId: catCocteles.id });
-  await addProduct({ name: 'Daiquirí', price: 2.00, categoryId: catCocteles.id });
-  await addProduct({ name: 'Cerveza Nacional / Cuban Beer', price: 1.60, categoryId: catCervezas.id });
-  await addProduct({ name: 'Cerveza Importada / Imported Beer', price: 1.10, categoryId: catCervezas.id });
-  await addProduct({ name: 'Ceviche Mixto / Mixed ceviche', price: 8.00, categoryId: catEntradas.id });
-  await addProduct({ name: 'Ensalada César / Caesar salad', price: 6.50, categoryId: catEntradas.id });
-  await addProduct({ name: 'Sopa de Verduras / Vegetable soup', price: 5.00, categoryId: catSopas.id });
-  await addProduct({ name: 'Pollo a la Parrilla / Grilled chicken', price: 10.00, categoryId: catPlatosFuertes.id });
-  await addProduct({ name: 'Lomo Saltado / Sautéed beef loin', price: 12.00, categoryId: catPlatosFuertes.id });
-  await addProduct({ name: 'Flan de Caramelo / Caramel flan', price: 4.00, categoryId: catPostres.id });
-  await addProduct({ name: 'Brownie con Helado / Brownie with ice cream', price: 5.00, categoryId: catPostres.id });
-  await addProduct({ name: 'Wrap de Pollo / Chicken wrap', price: 7.00, categoryId: catCenaLigera.id });
-  await addProduct({ name: 'Ensalada Mediterránea / Mediterranean salad', price: 6.50, categoryId: catCenaLigera.id });
-  await addProduct({ name: 'Salmón a la Plancha / Grilled salmon', price: 13.00, categoryId: catCenaCompleta.id });
-  await addProduct({ name: 'Filete de Res / Beef steak', price: 14.00, categoryId: catCenaCompleta.id });
-  await addProduct({ name: 'Sandwich de Jamón / Ham Sandwich', price: 3.50, categoryId: catSandwiches.id });
-  await addProduct({ name: 'Sandwich Jamón y Queso / Ham and Cheese Sandwich', price: 4.00, categoryId: catSandwiches.id });
-  await addProduct({ name: 'Pizza napolitana / Neapolitan pizza', price: 3.00, categoryId: catPizzas.id });
-  await addProduct({ name: 'Pizza de Jamón y Queso / Ham and Cheese pizza', price: 3.60, categoryId: catPizzas.id });
-  await addProduct({ name: 'Blusa / Blouse', price: 2.00, categoryId: catLadies.id });
-  await addProduct({ name: 'Falda / Skirt', price: 2.00, categoryId: catLadies.id });
-  await addProduct({ name: 'Camisa / Shirt', price: 2.00, categoryId: catGentlemen.id });
-  await addProduct({ name: 'Pantalón / Trousers', price: 2.00, categoryId: catGentlemen.id });
-  await addProduct({ name: 'Camisa / Shirt', price: 1.00, categoryId: catChildren.id });
-  await addProduct({ name: 'Vestido / Dress', price: 1.00, categoryId: catChildren.id });
+  const existing = await configRepo.count();
+  if (existing === 0) {
+    const defaults = [
+      { key: 'service_hours', value: 'Lunes a Viernes 7:00 AM - 10:00 PM | Sábados y Domingos 8:00 AM - 11:00 PM' },
+      { key: 'intro_text', value: 'Bienvenidos al menú digital de nuestro hostal.' },
+      { key: 'footer_text', value: 'Gracias por su preferencia. Todos los precios incluyen IVA.' },
+    ];
+    for (const s of defaults) {
+      await configRepo.save(configRepo.create(s));
+    }
+    console.log('OK Contenido estatico creado.');
+  }
 
-  const catTransfer = await catRepo.save(catRepo.create({ name: 'Aeropuerto José Martí', order: 1, active: true, menuId: menuTransfer.id }));
-  const catEmbajadas = await catRepo.save(catRepo.create({ name: 'Embajadas / Consulados / Hospitales', order: 2, active: true, menuId: menuTransfer.id }));
-  await addProduct({ name: 'Recogida aeropuerto 8am-6pm / Airport pickup 8am-6pm', price: 40.00, categoryId: catTransfer.id });
-  await addProduct({ name: 'Recogida aeropuerto 7pm-7am / Airport pickup 7pm-7am', price: 50.00, categoryId: catTransfer.id });
-  await addProduct({ name: 'Retorno al aeropuerto 8am-6pm / Return to airport 8am-6pm', price: 35.00, categoryId: catTransfer.id });
-  await addProduct({ name: 'Ida a embajadas / One way to embassies', price: 10.00, categoryId: catEmbajadas.id });
-  await addProduct({ name: 'Ida y regreso embajadas / Round trip to embassies', price: 18.00, categoryId: catEmbajadas.id });
-
-  console.log('Productos creados.');
-
-  await configRepo.save(configRepo.create({ key: 'service_charge_pct', value: '10', description: 'Porcentaje de servicio' }));
-  await configRepo.save(configRepo.create({ key: 'room_service_fee', value: '5.00', description: 'Cargo por servicio a la habitación' }));
-  await configRepo.save(configRepo.create({ key: 'intro_text', value: 'Bienvenidos al menú digital de nuestro hostal. / Welcome to our hostel digital menu.' }));
-  await configRepo.save(configRepo.create({ key: 'footer_text', value: 'Gracias por su preferencia. / Thank you for your preference.' }));
-  console.log('Config creada.');
-
-  console.log('\n✅ Seed completado!');
+  console.log(`\nSeed completado: ${files.length} menus, ${totalProducts} productos.`);
   await ds.destroy();
 }
 

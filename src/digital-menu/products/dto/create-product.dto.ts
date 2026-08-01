@@ -8,9 +8,9 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @IsPositive()
-  price: number;
+  price?: number;
 
   @IsOptional()
   @IsBoolean()
