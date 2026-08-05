@@ -308,7 +308,7 @@ async function seed() {
   const catProdRepo = ds.getRepository(CategoryProduct);
   const configRepo = ds.getRepository(ServiceConfig);
 
-  const menusDir = path.resolve(__dirname, '../../../../menus/md');
+  const menusDir = path.join(__dirname, 'menus', 'md');
   const files = fs.readdirSync(menusDir).filter(f => f.endsWith('.md'));
 
   let menuOrder = 1;
