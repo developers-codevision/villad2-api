@@ -135,6 +135,7 @@ export class MenusService {
               await queryRunner.manager.save(CategoryProduct, {
                 categoryId: category.id,
                 productId: product.id,
+                order: prodDto.order ?? 0,
               });
             }
           }
@@ -289,8 +290,11 @@ export class MenusService {
         await queryRunner.manager.save(Product, product);
 
         const existingCp = await queryRunner.manager.findOne(CategoryProduct, { where: { categoryId, productId: product.id } });
-        if (!existingCp) {
-          await queryRunner.manager.save(CategoryProduct, { categoryId, productId: product.id });
+        if (existingCp) {
+          existingCp.order = prodDto.order ?? existingCp.order;
+          await queryRunner.manager.save(CategoryProduct, existingCp);
+        } else {
+          await queryRunner.manager.save(CategoryProduct, { categoryId, productId: product.id, order: prodDto.order ?? 0 });
         }
       } else {
         product = await queryRunner.manager.save(Product, {
@@ -301,7 +305,7 @@ export class MenusService {
           featured: prodDto.featured,
         } as any);
 
-        await queryRunner.manager.save(CategoryProduct, { categoryId, productId: product.id });
+        await queryRunner.manager.save(CategoryProduct, { categoryId, productId: product.id, order: prodDto.order ?? 0 });
       }
     }
   }
@@ -338,8 +342,8 @@ export class MenusService {
         throw new BadRequestException(`Órdenes de categorías duplicados: ${[...new Set(dupCat)].join(', ')}`);
       }
       for (const cat of categories) {
-        if (cat.products) {
-          const prodOrders = cat.products.map(() => 0);
+        if (cat.products && cat.products.length > 0) {
+          const prodOrders = cat.products.map(p => p.order ?? 0);
           const dupProd = prodOrders.filter((o, i) => prodOrders.indexOf(o) !== i);
           if (dupProd.length > 0) {
             throw new BadRequestException(`Órdenes de productos duplicados en categoría "${cat.name}": ${[...new Set(dupProd)].join(', ')}`);

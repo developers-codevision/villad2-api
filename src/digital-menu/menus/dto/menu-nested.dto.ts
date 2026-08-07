@@ -24,6 +24,11 @@ export class NestedProductDto {
   @IsOptional()
   @IsBoolean()
   featured?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  order?: number;
 }
 
 export class NestedCategoryDto {
