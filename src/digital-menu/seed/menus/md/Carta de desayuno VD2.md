@@ -4,41 +4,41 @@
 
 _Horario de 7:30 am a 10 am_
 
-**_Desayuno económico / Simple breakfast_**
+**_Desayuno económico / Simple breakfast_**_ ………………… $ 4.00_
 
-_Jugo de frutas tropicales / Leche / Tropical fruit juice / Milk_
+_Jugo de frutas tropicales / Leche &/ Tropical fruit juice / Milk_
 
-_Sandwich de jamón y queso ó Tortilla natural con tostada / Ham and Cheese sandwich or natural Omelet with toast_
+_Sandwich de jamón y queso ó Tortilla natural con tostada &/ Ham and Cheese sandwich or natural Omelet with toast_
 
-_Café con leche / Café / Té / Coffee with milk / Coffee / Tea_
+_Café con leche / Café / Té &/ Coffee with milk / Coffee / Tea_
 
-**_Desayuno standard / Standard breakfast_**
+**_Desayuno standard / Standard breakfast_**_ ………………… $ 6.00_
 
-_Tostadas de pan con mantequilla / Toast with butter_
+_Tostadas de pan con mantequilla &/ Toast with butter_
 
-_Frutas tropicales / Tropical fruit_
+_Frutas tropicales &/ Tropical fruit_
 
-_Jugo de frutas tropicales / Leche / Tropical fruit juice / Milk_
+_Jugo de frutas tropicales / Leche &/ Tropical fruit juice / Milk_
 
-_Entremés ó sandwich de jamón y queso ó Tortilla natural con tostada / Ham and Cheese sandwich or natural Omelet with toast_
+_Entremés ó sandwich de jamón y queso ó Tortilla natural con tostada &/ Ham and Cheese sandwich or natural Omelet with toast_
 
-_Café con leche / Café / Té / Coffee with milk / Coffee / Tea_
+_Café con leche / Café / Té &/ Coffee with milk / Coffee / Tea_
 
-**_Desayuno Villa D2 / Villa D2 breakfast_**
+**_Desayuno Villa D2 / Villa D2 breakfast_**_ ………………… $ 8.00_
 
-_Tostadas de pan con mantequilla / Toast with butter_
+_Tostadas de pan con mantequilla &/ Toast with butter_
 
-_Frutas tropicales / Tropical fruit_
+_Frutas tropicales &/ Tropical fruit_
 
-_Jugo de frutas tropicales / Leche / Tropical fruit juice / Milk_
+_Jugo de frutas tropicales / Leche &/ Tropical fruit juice / Milk_
 
-_Entremés o sandwich de jamón y queso / Ham and Cheese sandwich_
+_Entremés o sandwich de jamón y queso &/ Ham and Cheese sandwich_
 
-_Tortilla/Huevos fritos o revueltos/Huevo cocido / Omelet / Fried egg / Scrambled egg /Boiled egg_
+_Tortilla/Huevos fritos o revueltos/Huevo cocido &/ Omelet / Fried egg / Scrambled egg /Boiled egg_
 
-_Bollería / Sweets_
+_Bollería &/ Sweets_
 
-_Café con leche / Café / Té / Coffee with milk / Coffee / Tea_
+_Café con leche / Café / Té &/ Coffee with milk / Coffee / Tea_
 
 _Precios en Usd + 10% Servicio / Prices in Usd plus 10% for the service_
 
