@@ -25,7 +25,8 @@
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d ./src/data-source.ts",
     "migration:create": "typeorm-ts-node-commonjs migration:create",
     "seed": "npx ts-node src/seed.ts",
-    "seed:menu": "npx ts-node src/digital-menu/seed/run-seed.ts"
+    "seed:menu": "npx ts-node src/digital-menu/seed/run-seed.ts",
+    "seed:menu:prod": "node dist/digital-menu/seed/run-seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.13",
