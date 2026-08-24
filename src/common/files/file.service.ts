@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 @Injectable()
 export class FileService {
-  private readonly uploadPath = path.join(process.cwd(), 'media/rooms');
+  private readonly uploadPath = path.join(process.env.MEDIA_PATH || path.join(process.cwd(), 'media'), 'rooms');
   async saveFile(file: Express.Multer.File): Promise<string> {
     const fileExt = path.extname(file.originalname);
     const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${fileExt}`;
@@ -23,7 +23,7 @@ export class FileService {
     return `media/rooms/${fileName}`;
   }
   async deleteFile(filePath: string): Promise<void> {
-    const fullPath = path.join(process.cwd(), filePath);
+    const fullPath = path.join(process.env.MEDIA_PATH || process.cwd(), filePath);
     try {
       await fs.promises.unlink(fullPath);
     } catch (error) {

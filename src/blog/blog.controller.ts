@@ -39,7 +39,7 @@ import * as fs from 'fs';
 const multerBlogOptions = {
   storage: diskStorage({
     destination: (req, _file, callback) => {
-      const uploadPath = path.join(process.cwd(), 'media', 'blog');
+      const uploadPath = path.join(process.env.MEDIA_PATH || path.join(process.cwd(), 'media'), 'blog');
       if (!fs.existsSync(uploadPath)) {
         fs.mkdirSync(uploadPath, { recursive: true });
       }

@@ -8,6 +8,8 @@ import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import * as express from 'express';
 import * as cookieParser from 'cookie-parser';
 
+const MEDIA_PATH = process.env.MEDIA_PATH || join(__dirname, '..', 'media');
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
@@ -34,7 +36,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  app.useStaticAssets(join(__dirname, '..', 'media'), {
+  app.useStaticAssets(MEDIA_PATH, {
     prefix: '/media/',
   });
 

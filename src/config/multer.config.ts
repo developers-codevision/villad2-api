@@ -6,7 +6,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 // Asegúrate de que el directorio de medios exista
-const mediaDir = path.join(process.cwd(), 'media/rooms');
+const mediaDir = path.join(process.env.MEDIA_PATH || path.join(process.cwd(), 'media'), 'rooms');
 if (!fs.existsSync(mediaDir)) {
   fs.mkdirSync(mediaDir, { recursive: true });
 }
