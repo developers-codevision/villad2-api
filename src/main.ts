@@ -41,7 +41,11 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: true,
+    origin: [
+      'https://villad2.com',
+      'https://menu.villad2.com',
+      'https://api.villad2.com',
+    ],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
