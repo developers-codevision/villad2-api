@@ -84,7 +84,7 @@ export class AuthService {
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>(
           'JWT_ACCESS_SECRET',
-          'your-default-access-secret',
+          this.configService.get<string>('JWT_SECRET', 'fallback-secret'),
         ),
         expiresIn: this.configService.get<number>(
           'JWT_ACCESS_EXPIRES_IN',
@@ -94,7 +94,7 @@ export class AuthService {
       this.jwtService.signAsync(payload, {
         secret: this.configService.get<string>(
           'JWT_REFRESH_SECRET',
-          'your-default-refresh-secret',
+          this.configService.get<string>('JWT_SECRET', 'fallback-secret'),
         ),
         expiresIn: this.configService.get<number>(
           'JWT_REFRESH_EXPIRES_IN',

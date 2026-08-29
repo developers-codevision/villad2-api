@@ -16,7 +16,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
       ignoreExpiration: false,
       secretOrKey: configService.get<string>(
         'JWT_ACCESS_SECRET',
-        'your-default-access-secret',
+        configService.get<string>('JWT_SECRET', 'fallback-secret'),
       ),
     });
   }
