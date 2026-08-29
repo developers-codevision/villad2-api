@@ -17,24 +17,26 @@ async function bootstrap() {
 
   app.use('/payments/webhook', express.raw({ type: 'application/json' }));
 
-  const config = new DocumentBuilder()
-    .setTitle('Hostal Villa D2 API')
-    .setDescription('API del Hostal Villa D2')
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Ingresa tu token JWT',
-        in: 'header',
-      },
-      'access-token',
-    )
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Hostal Villa D2 API')
+      .setDescription('API del Hostal Villa D2')
+      .setVersion('1.0')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Ingresa tu token JWT',
+          in: 'header',
+        },
+        'access-token',
+      )
+      .build();
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api-docs', app, document);
+  }
 
   app.useStaticAssets(MEDIA_PATH, {
     prefix: '/media/',
