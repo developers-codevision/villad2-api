@@ -12,6 +12,12 @@ services:
       - DB_USERNAME=root
       - DB_PASSWORD=root
       - DB_DATABASE=hostal
+      - JINA_API_KEY=${JINA_API_KEY}
+      - JINA_EMBEDDING_MODEL=jina-embeddings-v5-text-nano
+      - JINA_EMBEDDING_DIMS=768
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - MISTRAL_MODEL=mistral-small-latest
+      - MISTRAL_BASE_URL=https://api.mistral.ai
       - STRIPE_SECRET_KEY=sk_test_tu_clave
       - STRIPE_PUBLISHABLE_KEY=pk_test_tu_clave
       - STRIPE_WEBHOOK_SECRET=whsec_tu_secreto
@@ -42,6 +48,8 @@ services:
 networks:
   hostal-net:
     driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: hostal-net
 
 volumes:
   mariadb_data:

@@ -9,6 +9,10 @@ export class CreateProductDto {
   description?: string;
 
   @IsOptional()
+  @IsString()
+  privateDescription?: string;
+
+  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   price?: number;
 

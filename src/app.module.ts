@@ -29,6 +29,7 @@ import { MenuCategoriesModule } from './digital-menu/categories/categories.modul
 import { MenuProductsModule } from './digital-menu/products/products.module';
 import { StaticContentModule } from './digital-menu/static-content/static-content.module';
 import { PublicModule } from './digital-menu/public/public.module';
+import { AiModule } from './digital-menu/ai/ai.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { PublicModule } from './digital-menu/public/public.module';
     MenuProductsModule,
     StaticContentModule,
     PublicModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

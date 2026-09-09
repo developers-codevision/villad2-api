@@ -21,6 +21,12 @@ export class Product {
   @Column({ type: 'boolean', default: false })
   featured: boolean;
 
+  @Column({ type: 'text', nullable: true, name: 'private_description' })
+  privateDescription: string;
+
+  @Column({ type: 'text', nullable: true })
+  embedding: string; // JSON float[] from Jina
+
   @OneToMany(() => CategoryProduct, (cp) => cp.product)
   categoryProducts: CategoryProduct[];
 

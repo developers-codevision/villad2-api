@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Product } from '../entities/product.entity';
@@ -9,6 +9,9 @@ import { UpdateProductDto } from './dto/update-product.dto';
 
 @Injectable()
 export class ProductsService {
+  private readonly logger = new Logger(ProductsService.name);
+  private embeddingService: any = null;
+
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
@@ -17,6 +20,11 @@ export class ProductsService {
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
   ) {}
+
+  // Lazy inject to avoid circular dependency
+  setEmbeddingService(service: any) {
+    this.embeddingService = service;
+  }
 
   async findAll(): Promise<Product[]> {
     return this.productRepository.find({
@@ -65,7 +73,14 @@ export class ProductsService {
       }
     }
 
-    return this.findOne(saved.id);
+    const result = await this.findOne(saved.id);
+
+    // Auto-embed async (fire and forget)
+    this.embedProduct(result).catch((err) =>
+      this.logger.error(`Auto-embed failed for product ${saved.id}: ${err.message}`),
+    );
+
+    return result;
   }
 
   async update(id: number, dto: UpdateProductDto): Promise<Product> {
@@ -84,11 +99,25 @@ export class ProductsService {
       }
     }
 
-    return this.findOne(id);
+    const result = await this.findOne(id);
+
+    // Re-embed async (fire and forget)
+    this.embedProduct(result).catch((err) =>
+      this.logger.error(`Auto-embed failed for product ${id}: ${err.message}`),
+    );
+
+    return result;
   }
 
   async remove(id: number): Promise<void> {
     const product = await this.findOne(id);
     await this.productRepository.remove(product);
+  }
+
+  private async embedProduct(product: Product): Promise<void> {
+    if (!this.embeddingService) return;
+    const cat = product.categoryProducts?.[0]?.category;
+    const menu = cat?.menu;
+    await this.embeddingService.embedProduct(product, cat?.name, menu?.name);
   }
 }
