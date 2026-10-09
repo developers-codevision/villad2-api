@@ -28,4 +28,8 @@ export class CreateProductDto {
   @IsArray()
   @IsInt({ each: true })
   categoryIds?: number[];
+
+  @IsOptional()
+  @IsString()
+  video?: string;
 }

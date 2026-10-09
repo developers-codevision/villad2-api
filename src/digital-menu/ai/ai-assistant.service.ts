@@ -18,13 +18,13 @@ export class AiAssistantService {
     private config: ConfigService,
     private embeddingService: EmbeddingService,
   ) {
-    this.apiKey = this.config.get('MISTRAL_API_KEY');
-    this.model = this.config.get('MISTRAL_MODEL', 'mistral-small-latest');
-    this.baseUrl = this.config.get('MISTRAL_BASE_URL', 'https://api.mistral.ai');
+    this.apiKey = this.config.get('DEEPSEEK_API_KEY');
+    this.model = this.config.get('DEEPSEEK_MODEL', 'deepseek-chat');
+    this.baseUrl = this.config.get('DEEPSEEK_BASE_URL', 'https://api.deepseek.com');
   }
 
   private getSystemPrompt(): string {
-    return `Eres el asistente virtual del Hostal Boutique Villa D2. Tu función es ayudar a los huéspedes con información sobre el menú, precios, horarios y recomendaciones.
+    return `Eres Villita, la asistente virtual (femenina) del Hostal Boutique Villa D2. Te llamas Villita y te diriges en femenino. Tu función es ayudar a los huéspedes con información sobre el menú, precios, horarios y recomendaciones.
 
 INSTRUCCIONES:
 1. Responde basándote en la información del menú proporcionada como contexto Y en el historial de la conversación

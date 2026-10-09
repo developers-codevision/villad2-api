@@ -4,12 +4,14 @@ import { Repository } from 'typeorm';
 import { Category } from '../entities/category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { FileService } from '../../common/files/file.service';
 
 @Injectable()
 export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+    private readonly fileService: FileService,
   ) {}
 
   async findAll(): Promise<Category[]> {
@@ -51,5 +53,25 @@ export class CategoriesService {
   async remove(id: number): Promise<void> {
     const category = await this.findOne(id);
     await this.categoryRepository.remove(category);
+  }
+
+  async setVideo(id: number, video: string): Promise<Category> {
+    const category = await this.findOne(id);
+    if (category.video && category.video !== video) {
+      await this.fileService.deleteFile(category.video);
+    }
+    category.video = video;
+    await this.categoryRepository.save(category);
+    return this.findOne(id);
+  }
+
+  async clearVideo(id: number): Promise<Category> {
+    const category = await this.findOne(id);
+    if (category.video) {
+      await this.fileService.deleteFile(category.video);
+      category.video = null;
+      await this.categoryRepository.save(category);
+    }
+    return this.findOne(id);
   }
 }

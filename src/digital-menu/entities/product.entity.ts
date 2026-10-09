@@ -27,6 +27,12 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   embedding: string; // JSON float[] from Jina
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  video: string; // relative URL e.g. /media/menu-videos/167.mp4
+
+  @Column({ type: 'text', nullable: true })
+  images: string; // JSON array of relative paths e.g. ["media/menu-images/product-250-x.jpg"]
+
   @OneToMany(() => CategoryProduct, (cp) => cp.product)
   categoryProducts: CategoryProduct[];
 

@@ -22,6 +22,9 @@ export class Category {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   price: number;
 
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  video: string; // header banner video, e.g. /media/menu-videos/cat-2.mp4
+
   @ManyToOne(() => Menu, (menu) => menu.categories, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'menu_id' })
   menu: Menu;

@@ -4,11 +4,12 @@ import { Category } from '../entities/category.entity';
 import { CategoryProduct } from '../entities/category-product.entity';
 import { CategoriesService } from './categories.service';
 import { CategoriesController } from './categories.controller';
+import { FileService } from '../../common/files/file.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Category, CategoryProduct])],
   controllers: [CategoriesController],
-  providers: [CategoriesService],
+  providers: [CategoriesService, FileService],
   exports: [CategoriesService],
 })
 export class MenuCategoriesModule {}

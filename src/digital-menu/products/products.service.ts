@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Product } from '../entities/product.entity';
@@ -6,6 +6,7 @@ import { CategoryProduct } from '../entities/category-product.entity';
 import { Category } from '../entities/category.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { FileService } from '../../common/files/file.service';
 
 @Injectable()
 export class ProductsService {
@@ -19,6 +20,7 @@ export class ProductsService {
     private readonly cpRepository: Repository<CategoryProduct>,
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+    private readonly fileService: FileService,
   ) {}
 
   // Lazy inject to avoid circular dependency
@@ -111,6 +113,9 @@ export class ProductsService {
 
   async remove(id: number): Promise<void> {
     const product = await this.findOne(id);
+    for (const img of this.parseImages(product.images)) {
+      await this.fileService.deleteFile(img.replace(/^\//, ''));
+    }
     await this.productRepository.remove(product);
   }
 
@@ -119,5 +124,65 @@ export class ProductsService {
     const cat = product.categoryProducts?.[0]?.category;
     const menu = cat?.menu;
     await this.embeddingService.embedProduct(product, cat?.name, menu?.name);
+  }
+
+  async setVideo(id: number, video: string): Promise<Product> {
+    const product = await this.findOne(id);
+    if (product.video && product.video !== video) {
+      await this.fileService.deleteFile(product.video);
+    }
+    product.video = video;
+    await this.productRepository.save(product);
+    return this.findOne(id);
+  }
+
+  async clearVideo(id: number): Promise<Product> {
+    const product = await this.findOne(id);
+    if (product.video) {
+      await this.fileService.deleteFile(product.video);
+      product.video = null;
+      await this.productRepository.save(product);
+    }
+    return this.findOne(id);
+  }
+
+  private parseImages(raw: string | null): string[] {
+    if (!raw) return [];
+    try {
+      const v = JSON.parse(raw);
+      return Array.isArray(v) ? v : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async addImages(id: number, paths: string[]): Promise<Product> {
+    const product = await this.findOne(id);
+    const current = this.parseImages(product.images);
+    if (current.length + paths.length > 12) {
+      throw new BadRequestException('Máximo 12 imágenes por producto');
+    }
+    product.images = JSON.stringify([...current, ...paths]);
+    await this.productRepository.save(product);
+    return this.findOne(id);
+  }
+
+  async removeImage(id: number, imagePath: string): Promise<Product> {
+    // Guard: only allow deletion inside media/menu-images/
+    const normalized = imagePath.replace(/^\//, '');
+    if (!normalized.startsWith('media/menu-images/') || normalized.includes('..')) {
+      throw new BadRequestException('Ruta de imagen inválida');
+    }
+    const product = await this.findOne(id);
+    const current = this.parseImages(product.images);
+    if (!current.includes(imagePath) && !current.includes(normalized)) {
+      throw new NotFoundException('Imagen no encontrada en este producto');
+    }
+    product.images = JSON.stringify(
+      current.filter((p) => p !== imagePath && p !== normalized),
+    );
+    await this.productRepository.save(product);
+    await this.fileService.deleteFile(normalized);
+    return this.findOne(id);
   }
 }

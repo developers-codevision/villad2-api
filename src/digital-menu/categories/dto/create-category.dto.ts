@@ -23,4 +23,8 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   price?: number;
+
+  @IsOptional()
+  @IsString()
+  video?: string;
 }
