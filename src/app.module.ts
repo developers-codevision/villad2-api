@@ -37,6 +37,14 @@ import { AiModule } from './digital-menu/ai/ai.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // Hostinger: lsnode inyecta env parcial en process.env; el resto
+      // (claves IA) vive en hbuilds/config/.env. Local: solo .env.
+      envFilePath: [
+        ...(process.env.LSNODE_ROOT
+          ? [`${process.env.LSNODE_ROOT}/config/.env`]
+          : []),
+        '.env',
+      ],
     }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
