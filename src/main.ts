@@ -40,6 +40,9 @@ async function bootstrap() {
 
   app.useStaticAssets(MEDIA_PATH, {
     prefix: '/media/',
+    // 1d: browsers+CDN cache menu media; video names are deterministic
+    // (product-167.mp4 overwrite-in-place) so immutable is not safe.
+    maxAge: '1d',
   });
 
   app.enableCors({
