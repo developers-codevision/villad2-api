@@ -16,6 +16,7 @@ export class PublicController {
 
   @Get('menu/:id')
   async getMenuById(@Param('id', ParseIntPipe) id: number) {
-    return this.menusService.findOne(id, true);
+    const menu = await this.menusService.findOne(id, true);
+    return this.publicService.sanitizeMenu(menu);
   }
 }
