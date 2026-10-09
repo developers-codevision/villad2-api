@@ -28,6 +28,8 @@ services:
       - ./src:/app/src
       - ./test:/app/test
       - ./tsconfig.json:/app/tsconfig.json
+      # media persistente: sobrevive recreate (videos/imágenes menú)
+      - ./media:/app/media
     networks:
       - hostal-net
     depends_on:

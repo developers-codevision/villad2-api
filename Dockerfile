@@ -2,8 +2,8 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# Habilitar Corepack
-RUN corepack enable
+# pnpm vía npm (corepack falla en red de buildkit)
+RUN npm i -g pnpm@10.20.0
 
 # Configurar pnpm con timeouts más largos
 RUN pnpm config set fetch-retries 5
