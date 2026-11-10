@@ -71,12 +71,12 @@ export class Review {
   @ApiProperty({
     description: 'Review status',
     enum: ReviewStatus,
-    example: ReviewStatus.ACTIVE,
+    example: ReviewStatus.INACTIVE,
   })
   @Column({
     type: 'enum',
     enum: ReviewStatus,
-    default: ReviewStatus.ACTIVE,
+    default: ReviewStatus.INACTIVE,
   })
   status: ReviewStatus;
 

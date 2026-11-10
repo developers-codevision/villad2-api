@@ -7,6 +7,16 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
+import { inspect } from 'util';
+
+interface StructuredErrorResponse {
+  message?: string | string[];
+  code?: string;
+  details?: unknown;
+  operation?: string;
+  retryable?: boolean;
+}
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -19,6 +29,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     let status: HttpStatus;
     let message: string;
+    let structuredError: Omit<StructuredErrorResponse, 'message'> = {};
+    const incomingRequestId = request.header('x-request-id');
+    const requestId = incomingRequestId?.trim() || randomUUID();
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -30,18 +43,29 @@ export class AllExceptionsFilter implements ExceptionFilter {
         typeof exceptionResponse === 'object' &&
         exceptionResponse !== null
       ) {
-        const responseObj = exceptionResponse as {
-          message?: string | string[];
-        };
+        const responseObj = exceptionResponse as StructuredErrorResponse;
         message = Array.isArray(responseObj.message)
           ? responseObj.message.join(', ')
           : responseObj.message || exception.message;
+        structuredError = {
+          ...(responseObj.code ? { code: responseObj.code } : {}),
+          ...(responseObj.details !== undefined
+            ? { details: responseObj.details }
+            : {}),
+          ...(responseObj.operation
+            ? { operation: responseObj.operation }
+            : {}),
+          ...(typeof responseObj.retryable === 'boolean'
+            ? { retryable: responseObj.retryable }
+            : {}),
+        };
       } else {
         message = exception.message;
       }
 
       this.logger.error(
-        `${request.method} ${request.url} - Status: ${status} - Message: ${JSON.stringify(message)}`,
+        `[${requestId}] ${request.method} ${request.url} - Status: ${status} - ` +
+          `Error: ${JSON.stringify({ message, ...structuredError })}`,
         exception.stack,
       );
     } else {
@@ -49,8 +73,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = 'Internal server error';
 
       this.logger.error(
-        `${request.method} ${request.url} - Status: ${status} - Message: ${message}`,
-        exception instanceof Error ? exception.stack : String(exception),
+        `[${requestId}] ${request.method} ${request.url} - Status: ${status} - Message: ${message}`,
+        exception instanceof Error ? exception.stack : inspect(exception),
       );
     }
 
@@ -60,8 +84,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       path: request.url,
       method: request.method,
       message: message,
+      requestId,
+      ...structuredError,
     };
 
+    response.setHeader('x-request-id', requestId);
     response.status(status).json(errorResponse);
   }
 }
